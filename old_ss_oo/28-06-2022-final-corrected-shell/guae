@@ -1,0 +1,3 @@
+ps yux | grep root | wc -c
+ps yux | grep root | wc -c
+[A

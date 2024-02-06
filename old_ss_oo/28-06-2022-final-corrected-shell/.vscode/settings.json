@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "wait.h": "c",
+        "err.h": "c",
+        "string": "c",
+        "exec_commands.h": "c"
+    }
+}

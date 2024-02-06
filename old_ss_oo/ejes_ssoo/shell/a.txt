@@ -1,0 +1,40 @@
+
+# a.txt
+ejemplo.txt
+f.txt
+foutcm2 < foutCmd1
+main.c
+main.o
+pipeline
+pipeline.c
+pipeline.o
+pipes.c
+pipes.h
+pipes.o
+salida.txt
+shell
+shell.c
+shell.h
+shell.o
+t.txt
+y.txt
+# # a.txt
+ejemplo.txt
+f.txt
+foutcm2 < foutCmd1
+main.c
+main.o
+pipeline
+pipeline.c
+pipeline.o
+pipes.c
+pipes.h
+pipes.o
+salida.txt
+shell
+shell.c
+shell.h
+shell.o
+t.txt
+y.txt
+# 
