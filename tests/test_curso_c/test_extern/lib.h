@@ -1,0 +1,4 @@
+// INCLUIR LOS EXTERN  Y CUALQUIER SÍMBOLO AQUÍ 
+
+void
+imprimehola()
