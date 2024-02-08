@@ -2,40 +2,36 @@
 #include <stdio.h>
 #include <string.h>
 
-// crear función que ordena palabras
+void
+// punteros a string
+swapstrings(char **str1, char **str2){
 
-/*void
-swap(char *){
+    char *temp = *str1;
 
-
-}*/ 
+    *str1 = *str2;
+    *str2 = temp;
+}
 
 void 
-ordenastrings(char **strings, int n){
+sortstrings(char **strings, int n){
 
     int i;
     int j;
 
-    //char *swap;
-
     for (i = 2; i <= n; i++){
         for(j = 1; j < i; j++){
 
-            printf("comparando %s con %s\n", strings[j], strings[i]);
+            //printf("comparando %s con %s\n", strings[j], strings[i]);
 
-            // hacer algo cuando el resultado de strcmp es > 0 (s1 > s2)
+            // Intercambiar valores cuando s1 > s2 ç
+            // finalmente el orden tiene que ir de menor a mayor debido a 
+            // la tabla ASCII
             if(strcmp(strings[j], strings[i]) > 0){
 
-                //swap(strings[i],strings[j]);
+                swapstrings(&strings[j], &strings[i]);
 
-                printf("hay que intercambiar %s por %s\n", strings[j], strings[i]);
+                //printf("hay que intercambiar %s por %s\n", strings[j], strings[i]);
 
-                
-
-                // intercambio de posiciones
-                //swap = strings[i];
-
-                //strings[]
             }
         }
     }
@@ -51,7 +47,7 @@ main(int argc, char *argv[]){
 
     NumArgs = argc - 1;
 
-    ordenastrings(argv, NumArgs);
+    sortstrings(argv, NumArgs);
     // el argumento 0 es el propio nombre del programa
     for (i = 1; i < argc; i++)
     {
