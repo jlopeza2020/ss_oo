@@ -1,6 +1,6 @@
 #include <stdlib.h>		/* Instrucciones para el preprocesador */
 #include <stdio.h>
-# include "dist.h"
+#include "dist.h"
 /* Comentario */
 
 // int dist(int, int);
