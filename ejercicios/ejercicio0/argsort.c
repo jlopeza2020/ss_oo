@@ -21,23 +21,17 @@ sortstrings(char **strings, int n){
     for (i = 2; i <= n; i++){
         for(j = 1; j < i; j++){
 
-            //printf("comparando %s con %s\n", strings[j], strings[i]);
-
-            // Intercambiar valores cuando s1 > s2 ç
-            // finalmente el orden tiene que ir de menor a mayor debido a 
-            // la tabla ASCII
+            // Intercambiar valores cuando s1 > s2 así, el orden tiene que ir
+            // de menor a mayor debido a la tabla ASCII
             if(strcmp(strings[j], strings[i]) > 0){
 
                 swapstrings(&strings[j], &strings[i]);
-
-                //printf("hay que intercambiar %s por %s\n", strings[j], strings[i]);
-
+            
             }
         }
     }
 
 }
-
 
 int 
 main(int argc, char *argv[]){
@@ -48,14 +42,12 @@ main(int argc, char *argv[]){
     NumArgs = argc - 1;
 
     sortstrings(argv, NumArgs);
-    // el argumento 0 es el propio nombre del programa
+    // el argumento 0 es el propio nombre del programa; por eso, lo omitimos
     for (i = 1; i < argc; i++)
     {
-        // argumentos ordenado
+        // argumentos ordenados
         printf("%s\n", argv[i]);
     }
 
     exit(EXIT_SUCCESS);
-
-
 }
