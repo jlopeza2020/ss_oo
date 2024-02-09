@@ -18,8 +18,8 @@ sortstrings(char **strings, int n)
 	int i;
 	int j;
 
-	for (i = 2; i <= n; i++) {
-		for (j = 1; j < i; j++) {
+	for (i = 1; i < n; i++) {
+		for (j = 0; j < i; j++) {
 			/*Intercambiar valores cuando s1 > s2 así,
 			   el orden tiene que ir de menor a mayor 
 			   debido a la tabla ASCII */
@@ -34,14 +34,14 @@ int
 main(int argc, char *argv[])
 {
 	int i;
-	int NumArgs;
 
-	NumArgs = argc - 1;
-
-	sortstrings(argv, NumArgs);
+	argc--;
+    argv++;
+	
+	sortstrings(argv, argc);
 	/*el argumento 0 es el propio nombre 
 	   del programa; por eso, lo omitimos */
-	for (i = 1; i < argc; i++) {
+	for (i = 0; i < argc; i++) {
 		printf("%s\n", argv[i]);
 	}
 
