@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-// punteros a string
+// Punteros a string
 void
 swapstrings(char **str1, char **str2)
 {
@@ -13,7 +13,7 @@ swapstrings(char **str1, char **str2)
 }
 
 void
-sortstrings(char **strings, int n)
+sortargs(char **strings, int n)
 {
 	int i;
 	int j;
@@ -30,20 +30,26 @@ sortstrings(char **strings, int n)
 	}
 }
 
-int
-main(int argc, char *argv[])
+void
+printargs(char **strings, int n)
 {
 	int i;
 
-	argc--;
-    argv++;
-	
-	sortstrings(argv, argc);
-	/*el argumento 0 es el propio nombre 
-	   del programa; por eso, lo omitimos */
-	for (i = 0; i < argc; i++) {
-		printf("%s\n", argv[i]);
+	for (i = 0; i < n; i++) {
+		printf("%s\n", strings[i]);
 	}
+}
+
+int
+main(int argc, char *argv[])
+{
+	/*Omitimos el primer argumento: 
+	   es la invocación al propio programa */
+	argc--;
+	argv++;
+
+	sortargs(argv, argc);
+	printargs(argv, argc);
 
 	exit(EXIT_SUCCESS);
 }
