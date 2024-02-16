@@ -2,6 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 
+void
+usage(void)
+{
+	fprintf(stderr, "usage: eje0 string [string ...] \n");
+	exit(EXIT_FAILURE);
+}
+
 // Punteros a string
 void
 swapstrings(char **str1, char **str2)
@@ -29,38 +36,40 @@ sortargs(char **strings, int n)
 		}
 	}
 }
-void 
-omitvocals(char **strings, int n)
+int
+checkifvowels(char *string)
 {
-    int i;
-    int j;
+	
+	int j;
     int k;
+	int hasvowel;
 
-    char vocales[] = "aAeEiIoOuU";
+	hasvowel = 0;
 
-    // recorremos el array de strings 
-    for(i = 0; i < n; i++){
-        //printf("palabras %s\n", strings[i]);
-        // recorremos el array de vocales
-        for (j = 0; j < strlen(strings[i]); j++){
-            for(k = 0; k < strlen(vocales); k++){
-                fprintf(stderr,"%s: comparando %c con %c\n", strings[i], vocales[k], strings[i][j]);
+	char vocales[] = "aAeEiIoOuU";
 
-                if(vocales[k] == strings[i][j]){
-                    printf("la palabra %s tiene vocales\n", strings[i]);
-                    
-                }
-           }
+	// recorremos el array de vocales
+    for (j = 0; j < strlen(string); j++){
+        for(k = 0; k < strlen(vocales); k++){
+
+            if(vocales[k] == string[j]){
+				return ++hasvowel;                    
+            }
         }
     }
+
+	return hasvowel;
+
 }
+
 void
 printargs(char **strings, int n)
 {
 	int i;
 
 	for (i = 0; i < n; i++) {
-		printf("%s\n", strings[i]);
+		if(checkifvowels(strings[i]) != 0)
+			printf("%s\n", strings[i]);
 	}
 }
 
@@ -72,9 +81,12 @@ main(int argc, char *argv[])
 	argc--;
 	argv++;
 
-	sortargs(argv, argc);
-    omitvocals(argv, argc);
-	//printargs(argv, argc);
-
+	if(argc != 0)
+	{
+		sortargs(argv, argc);
+		printargs(argv, argc);
+	}else
+		usage();
+		
 	exit(EXIT_SUCCESS);
 }
