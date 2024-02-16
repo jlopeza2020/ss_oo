@@ -5,9 +5,11 @@
 void
 usage(void)
 {
-	fprintf(stderr, "Env variable is defined but its value is not forward either backward\n");
+	fprintf(stderr,
+		"Env variable is defined but its value is not forward either backward\n");
 	exit(EXIT_FAILURE);
 }
+
 // Punteros a string
 void
 swapstrings(char **str1, char **str2)
@@ -51,7 +53,7 @@ printbackwardargs(char **strings, int n)
 {
 	int i;
 
-	for (i = n-1; i >= 0; --i) {
+	for (i = n - 1; i >= 0; --i) {
 		printf("%s\n", strings[i]);
 	}
 }
@@ -60,39 +62,28 @@ int
 main(int argc, char *argv[])
 {
 	char *varenv;
-    char *forward;
-    char *backward;
-    
+	char *forward;
+	char *backward;
+
 	// Omitimos primer argumento
 	argc--;
 	argv++;
 
-    forward = "forward";
-    backward = "backward";
+	forward = "forward";
+	backward = "backward";
 
 	sortargs(argv, argc);
 
-    varenv = getenv("DIRECTION");
-    /*if (varenv == NULL){ 
-        printf("soy NULL\n");
-    }*/
-    //fprintf(stderr,"%s\n", varenv); // eliminar
+	varenv = getenv("DIRECTION");
 
-    if(varenv == NULL || strcmp(varenv, forward) == 0)
-    {
-        printforwardargs(argv, argc);
+	if (varenv == NULL || strcmp(varenv, forward) == 0) {
+		printforwardargs(argv, argc);
 
-    }else if(strcmp(varenv, backward) == 0)
-    {
-        printbackwardargs(argv, argc);
+	} else if (strcmp(varenv, backward) == 0) {
+		printbackwardargs(argv, argc);
 
-    }else{
+	} else {
 		usage();
 	}
-	//printforwardargs(argv, argc);
-    //printbackwardargs(argv, argc);
-
-    // si está definida o no es forward o backward -> dar un error -> usage
-
 	exit(EXIT_SUCCESS);
 }
