@@ -2,6 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 
+void
+usage(void)
+{
+	fprintf(stderr, "Env variable is defined but its value is not forward either backward\n");
+	exit(EXIT_FAILURE);
+}
 // Punteros a string
 void
 swapstrings(char **str1, char **str2)
@@ -56,8 +62,8 @@ main(int argc, char *argv[])
 	char *varenv;
     char *forward;
     char *backward;
-    /*Omitimos el primer argumento: 
-	   es la invocación al propio programa */
+    
+	// Omitimos primer argumento
 	argc--;
 	argv++;
 
@@ -70,19 +76,19 @@ main(int argc, char *argv[])
     /*if (varenv == NULL){ 
         printf("soy NULL\n");
     }*/
-    fprintf(stderr,"%s\n", varenv); // eliminar
+    //fprintf(stderr,"%s\n", varenv); // eliminar
 
-    if(strcmp(varenv, forward) == 0 || varenv == NULL) // CAMBIAR ORDEN 
+    if(varenv == NULL || strcmp(varenv, forward) == 0)
     {
         printforwardargs(argv, argc);
 
-    }
-
-    if(strcmp(varenv, backward) == 0)
+    }else if(strcmp(varenv, backward) == 0)
     {
         printbackwardargs(argv, argc);
 
-    }
+    }else{
+		usage();
+	}
 	//printforwardargs(argv, argc);
     //printbackwardargs(argv, argc);
 
