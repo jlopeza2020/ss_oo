@@ -1,11 +1,9 @@
 #include <stdio.h>
-#include <stdlib.h> 
-#include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
-
-int nbla;
-
+#include <err.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 enum {
 
 	NoArgs,		
@@ -23,57 +21,42 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	// Omitimos primer argumento
+	int pid;
+    int sts;
+    int i; 
+    
+    // Omitimos primer argumento
 	argc--;
 	argv++;
-
-    // tokenizar argumentos
 
     if(argc == NoArgs){
         usage();
     }
 
+    for(i = 0; i < argc; i++){
 
-    pid_t p;
-    int i;
+        pid = fork();
 
-    nbla++;
-
-    for (i = 0; i < 2; i++){ 
-        p = fork();
-        if(p == 0){
-            nbla++;
-            printf("soy el hijo %d nbla:%d\n", p,nbla);
-            exit(EXIT_SUCCESS);
-        }else{
-            nbla++;
-            printf("soy el padre %d nbla:%d\n", p, nbla);
-
-
+        switch(pid){
+            case -1:
+                err(EXIT_FAILURE, "fork failed!") ;
+            case 0:
+                execl("/bin/sleep", "sleep", "10", NULL);
+                err(EXIT_FAILURE , "exec failed") ;
+            default:
+                printf("child created : %d\n", pid ) ;
         }
-        printf("sigo siendo el padre %d nbla: %d\n", p, nbla);
     }
 
-    
+    while((pid = wait(&sts)) != -1){ 
+        printf("Did process %d exit?\n", pid);
 
-    //makeping(argv,argc);
-    
-	/*forward = "forward";
-	backward = "backward";
+        if(WIFEXITED(sts)) {
+            printf("Yes! the status was : %d\n" , WEXITSTATUS(sts) ) ;
+        } else {
+            printf("No\n");
+        }
+    }
 
-	sortargs(argv, argc);
-
-	varenv = getenv("DIRECTION");
-
-	if (varenv == NULL || strcmp(varenv, forward) == 0) {
-		printforwardargs(argv, argc);
-
-	} else if (strcmp(varenv, backward) == 0) {
-		printbackwardargs(argv, argc);
-
-	} else {
-		usage();
-	}*/
-	
 	exit(EXIT_SUCCESS);
 }
