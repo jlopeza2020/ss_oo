@@ -41,7 +41,7 @@ main(int argc, char *argv[])
             case -1:
                 err(EXIT_FAILURE, "fork failed!") ;
             case 0:
-                execl("/bin/sleep", "sleep", "10", NULL);
+                execl("/bin/ping", "ping", "-c", "1", "-w", "5", argv[i], NULL);
                 err(EXIT_FAILURE , "exec failed") ;
             default:
                 printf("child created : %d\n", pid ) ;
