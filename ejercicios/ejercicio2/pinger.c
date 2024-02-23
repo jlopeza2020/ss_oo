@@ -34,6 +34,7 @@ main(int argc, char *argv[])
 
 	for (i = 0; i < argc; i++) {
 
+		// hace ping 
 		pid = fork();
 
 		switch (pid) {
@@ -64,3 +65,6 @@ main(int argc, char *argv[])
 
 	exit(EXIT_SUCCESS);
 }
+
+// para cada argumento hace ping (función: )
+// recoge su estado 
