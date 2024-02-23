@@ -24,6 +24,7 @@ main(int argc, char *argv[])
 	int pid;
     int sts;
     int i; 
+    int exitsts;
     
     // Omitimos primer argumento
 	argc--;
@@ -39,24 +40,40 @@ main(int argc, char *argv[])
 
         switch(pid){
             case -1:
-                err(EXIT_FAILURE, "fork failed!") ;
+                err(EXIT_FAILURE, "fork failed!");
             case 0:
                 execl("/bin/ping", "ping", "-c", "1", "-w", "5", argv[i], NULL);
-                err(EXIT_FAILURE , "exec failed") ;
+                err(EXIT_FAILURE , "exec failed");
             default:
-                printf("child created : %d\n", pid ) ;
+                printf("child created : %d\n", pid );
         }
     }
 
+    exitsts = 0;
     while((pid = wait(&sts)) != -1){ 
-        printf("Did process %d exit?\n", pid);
 
         if(WIFEXITED(sts)) {
-            printf("Yes! the status was : %d\n" , WEXITSTATUS(sts) ) ;
+            if(WEXITSTATUS(sts) != 0){
+                exitsts = 1;
+            }
+        }
+        //printf("Did process %d exit?\n", pid);
+
+        /*if(WIFEXITED(sts)) {
+            printf("Yes! the status was : %d\n" , WEXITSTATUS(sts));
+
         } else {
             printf("No\n");
-        }
+        }*/
     }
 
+    if(exitsts == 1){
+        exit(EXIT_FAILURE);
+    }
+
+    // comprobar si alguno de ellos ha fallado
+    // crear un array de la dimensión del número de argumentos e ir almacenando 
+    // su valor dentro de él 
+    fprintf(stderr, "values exists %d\n", exitsts);
 	exit(EXIT_SUCCESS);
 }
