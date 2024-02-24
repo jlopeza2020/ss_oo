@@ -17,10 +17,10 @@ usage()
     exit(EXIT_FAILURE);
 }
 
-int
+pid_t
 ping(char *ip){
     
-    int pid;
+    pid_t pid;
 
 	pid = fork();
 
@@ -28,7 +28,8 @@ ping(char *ip){
 	case -1:
 		err(EXIT_FAILURE, "fork failed!");
 	case 0:
-		execl("/bin/ping", "myping", "-c", "1", "-w", "5", ip, NULL);
+		fprintf(stderr, "I am the child %d\n", pid);
+        execl("/bin/ping", "myping", "-c", "1", "-w", "5", ip, NULL);
 		err(EXIT_FAILURE, "exec failed");
 	default:
         fprintf(stderr, "child created %d\n", pid);
@@ -37,7 +38,7 @@ ping(char *ip){
 } 
 
 int
-waitall(int pid){
+waitall(pid_t pid){
 
     int sts;
     int exitsts;
