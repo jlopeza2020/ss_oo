@@ -1,4 +1,3 @@
-// librerías 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -6,14 +5,11 @@
 #include <unistd.h>
 #include <err.h>
 
-// constantes
-
 enum{
 
     NoArgs,
 };
 
-// usage 
 void 
 usage()
 {
@@ -21,14 +17,11 @@ usage()
     exit(EXIT_FAILURE);
 }
 
-
-// ping
 int
 ping(char *ip){
     
     int pid;
 
-    // hace ping 
 	pid = fork();
 
 	switch (pid) {
@@ -39,18 +32,17 @@ ping(char *ip){
 		err(EXIT_FAILURE, "exec failed");
 	default:
         fprintf(stderr, "child created %d\n", pid);
-
 	}
     return pid;
 } 
 
-
-// waitall 
 int
 waitall(int pid){
 
     int sts;
     int exitsts;
+
+    exitsts = 0;
 
 	while ((pid = wait(&sts)) != -1) {
 
@@ -71,14 +63,13 @@ waitall(int pid){
 	return EXIT_SUCCESS;
 }
 
-// main
 int 
 main(int argc, char *argv[]){
     
     int i; 
     int status;
     int pid;
-    // omitir primer argumento
+
     argc--;
     argv++;
 
@@ -86,14 +77,11 @@ main(int argc, char *argv[]){
         usage();
     }
 
-    // hacer ping a los argumentos 
     for(i = 0; i < argc; i++){
         pid = ping(argv[i]);
     }
 
-    // hacer wait por todos
     status = waitall(pid);
 
     exit(status);
-    //exit(EXIT_SUCCESS);
 }
