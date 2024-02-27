@@ -29,11 +29,9 @@ ping(char *ip)
 	case -1:
 		err(EXIT_FAILURE, "fork failed!");
 	case 0:
-		//fprintf(stderr, "I am the child %d\n", pid);
 		execl("/bin/ping", "myping", "-c", "1", "-w", "5", ip, NULL);
 		err(EXIT_FAILURE, "exec failed");
 	default:
-		//fprintf(stderr, "child created %d\n", pid);
 	}
 	return pid;
 }
@@ -49,14 +47,9 @@ waitall(pid_t pid)
 
 	while ((pid = wait(&sts)) != -1) {
 
-		//fprintf(stderr, "Did process %d exit?\n", pid);
-
 		if (WIFEXITED(sts)) {
-			//fprintf(stderr, "Yes the pid: %d status was %d \n", pid,
-			//      WEXITSTATUS(sts));
 			if (WEXITSTATUS(sts) != 0) {
 				exitsts = 1;
-				//fprintf(stderr, "failure!\n");
 			}
 		}
 	}
