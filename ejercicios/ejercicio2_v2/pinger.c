@@ -66,7 +66,7 @@ main(int argc, char *argv[])
 
 	int i;
 	int status;
-	int pid;
+	pid_t pid;
 
 	argc--;
 	argv++;
