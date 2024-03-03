@@ -28,9 +28,6 @@ isnumber(char *str){
     errno = 0;
     val = strtol(str, &endptr, base);
         
-    //strtol(str, &endptr, base);
-
-
     // Se comprueban posibles errores 
     if (errno != 0) {
         perror("strtol");
@@ -45,12 +42,9 @@ isnumber(char *str){
     // Ahora es necesario comprobar si la string ha sido un número o no
 
     if (*endptr != '\0'){    
-        // Devuelve fallo
-        //return 0;
         fprintf(stderr, "Is not a complete number\n");
         exit(EXIT_FAILURE);
     }
-    // Devuelve éxito
     return val;
 }
 
@@ -58,6 +52,7 @@ int
 main(int argc, char *argv[]){
 
     long buffsize;
+    long copybytesize;
     
     argc--; 
     argv++;
@@ -66,23 +61,31 @@ main(int argc, char *argv[]){
 
     case EnoughArgs:
         // se comprueba que el tamaño del buffer sea un número
-        buffsize = isnumber(argv[2]);
-        printf("es un numero: %ld\n", buffsize);
+        //buffsize = isnumber(argv[2]);
+        //printf("es un numero: %ld\n", buffsize);
 
         break;
     case MaxArgs:
         // se comprueba que el tamaño del buffer sea un número
-        buffsize = isnumber(argv[2]);
-        printf("es un numero: %ld\n", buffsize);
+        //buffsize = isnumber(argv[2]);
+        //printf("buffer es un numero: %ld\n", buffsize);
 
-        
+        // se comprueba cuarto parámetro
+        copybytesize = isnumber(argv[3]);
+        //printf("size bytes es un numero: %ld\n", copybytesize);
+        // si es menor de 0 -> ERROR
+
         break;
 
     default:
         usage();
     }
 
-    printf("hola\n");
+    // ya las posibles opciones es que sean 3 o 4 argumentos
+    buffsize = isnumber(argv[2]);
+    // si el valor es menor o igual a 0 -> ERROR
+
+
 
     // comprueba el fichero origen 
     // destino 
