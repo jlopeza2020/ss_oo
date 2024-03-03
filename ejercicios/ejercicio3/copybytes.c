@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <err.h>
 
 enum{
     EnoughArgs = 3,
@@ -17,7 +18,7 @@ usage(){
 }
 
 long
-isnumber(char *str){
+getnumber(char *str){
 
     int base;
     char *endptr;
@@ -35,85 +36,73 @@ isnumber(char *str){
     }
 
     if (endptr == str) {
-        fprintf(stderr, "No digits were found\n");
-        exit(EXIT_FAILURE);
+        errx(EXIT_FAILURE, "No digits were found");
     }
     // Si llegamos hasta aquí strtol() ha sido capaz de parsear un número
     // Ahora es necesario comprobar si la string ha sido un número o no
 
     if (*endptr != '\0'){    
-        fprintf(stderr, "Is not a complete number\n");
-        exit(EXIT_FAILURE);
+        errx(EXIT_FAILURE, "is not a complete number");
     }
     return val;
 }
 
+/*void 
+copybytes(char *src, char dest, long buffsize, long copybytesize){
+
+
+
+} */
+
 int
 main(int argc, char *argv[]){
 
-    long buffsize;
-    long copybytesize;
-    
     argc--; 
     argv++;
+
+    char *srcpath = argv[0];
+    char *destpath = argv[1];
+    long buffsize;
+    long copybytesize;
+
+    //int srcfd;
+    //int destfd;
 
     switch(argc){
 
     case EnoughArgs:
-        // se comprueba que el tamaño del buffer sea un número
-        //buffsize = isnumber(argv[2]);
-        //printf("es un numero: %ld\n", buffsize);
-
+        copybytesize = -1;
         break;
+
     case MaxArgs:
-        // se comprueba que el tamaño del buffer sea un número
-        //buffsize = isnumber(argv[2]);
-        //printf("buffer es un numero: %ld\n", buffsize);
-
-        // se comprueba cuarto parámetro
-        copybytesize = isnumber(argv[3]);
-        //printf("size bytes es un numero: %ld\n", copybytesize);
-        // si es menor de 0 -> ERROR
-
+        copybytesize = getnumber(argv[3]);
+        if(copybytesize < 0){
+            errx(EXIT_FAILURE, "fourth parameter should be positive");
+        }
         break;
 
     default:
         usage();
     }
 
-    // ya las posibles opciones es que sean 3 o 4 argumentos
-    buffsize = isnumber(argv[2]);
-    // si el valor es menor o igual a 0 -> ERROR
-
-
+    // se comprueba que el tamaño del buffer sea un número > 0
+    buffsize = getnumber(argv[2]);
+    if(buffsize <= 0){
+        errx(EXIT_FAILURE, "third parameter should be bigger than 0");
+    }
 
     // comprueba el fichero origen 
     // destino 
-    // se opera 
-
-
-    /*
-    // comprueba el número de argumentos
-    if (argc < Enough || argc > Maximun){
-        usage();
-    }
-    // 
-    if ()
-
-    // comprueba si el tercer y cuarto parámetro es un entero
-    // strtol y casting 
-    // comprobar que el buffer sea >= 0
-    // comprobar que el numero de bytes copiados sea > 0
-    if(!isnumber()){
-
-    }*/
-
-    // usar err
-
-
-
-
-
     
+    //getfd(srcpath); // usar access para comprobar si se puede leer ... 
+    // stat para saber si ers directorio o fichero  y comprobar open 
+    //getfd(destpath);
+    
+    //copybytes(srcpath, destpath, buffsize, copybytesize); 
+
+    // read y write 
+
+    // close los 2 descriptores usados
+
     exit(EXIT_SUCCESS);
 }

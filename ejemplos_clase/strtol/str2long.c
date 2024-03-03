@@ -9,11 +9,11 @@ main(int argc, char *argv[])
     int base;
     char *endptr, *str;
     long val;
-
+    /*
     if (argc < 2) {
         fprintf(stderr, "Usage: %s str [base]\n", argv[0]);
         exit(EXIT_FAILURE);
-    }
+    }*/
 
     str = argv[1];
     //base = (argc > 2) ? atoi(argv[2]) : 0;
