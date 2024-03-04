@@ -55,23 +55,15 @@ getnumber(char *str){
     return val;
 }
 
-/*void 
-copybytes(char *src, char dest, long buffsize, long copybytesize){
-
-
-
-} */
-
 int
-//void
 getfd(char *path, int tipefile){
 
     int isaccessible;
     struct stat sb;
     int fd;
-    mode_t mode = 0666; // Permisos de lectura-escritura para el propietario, grupo y otros
+    // Permisos de lectura-escritura para el propietario, grupo y otros
+    mode_t mode = 0666;
 
-    // source file 
     if (tipefile == SourceFile){
 
         // permite comprobar si tenemos permisos para leer un fichero
@@ -79,7 +71,6 @@ getfd(char *path, int tipefile){
         if(isaccessible == -1){
             errx(EXIT_FAILURE, "%s does not exit or cannot be read ", path);
         }
-
         // permite comprobar si es un fichero normal: no un enlace simbólico, etc.
         if (lstat(path, &sb) == -1) {
             perror("lstat");
@@ -88,7 +79,6 @@ getfd(char *path, int tipefile){
         if((sb.st_mode & S_IFMT) != S_IFREG){
             errx(EXIT_FAILURE, "%s is not a regular file", path); 
         }
-
         // usar open en modo lectura 
         fd = open(path, O_RDONLY);
         if(fd == -1){
@@ -97,48 +87,28 @@ getfd(char *path, int tipefile){
         }
     }else if (tipefile == DestinationFile){
 
-        // permite comprobar si tenemos permisos para leer un fichero
-        /*isaccessible = access(path, W_OK);
-        if(isaccessible == -1){
-            errx(EXIT_FAILURE, "%s does not exit or cannot be written ", path);
-        }
-
-        // permite comprobar si es un fichero normal: no un enlace simbólico, etc.
-        if (lstat(path, &sb) == -1) {
-            perror("lstat");
-            exit(EXIT_FAILURE);
-        }
-        if((sb.st_mode & S_IFMT) != S_IFREG){
-            errx(EXIT_FAILURE, "%s is not a regular file", path); 
-        }*/
-
-        // usar open en modo lectura 
+        // usar open en modo escritura y sino crear el fichero 
+        // con los permisos escritos en el tercer parámetro 
         fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
         if(fd == -1){
             //chmod(path, mode);
             perror("open");
             exit(EXIT_FAILURE);
         }
-
-        /*// permite comprobar si tenemos permisos para leer un fichero
-        isaccessible = access(path, W_OK);
-        if(isaccessible == -1){
-            errx(EXIT_FAILURE, "%s does not exit or cannot be written ", path);
-        }
-
-        // permite comprobar si es un fichero normal: no un enlace simbólico, etc.
-        if (lstat(path, &sb) == -1) {
-            perror("lstat");
-            exit(EXIT_FAILURE);
-        }
-        if((sb.st_mode & S_IFMT) != S_IFREG){
-            //errx(EXIT_FAILURE, "%s is not a regular file", path); 
-            chmod(path, mode);
-        }*/
-
     }
 
     return fd;
+}
+
+void 
+copybytes(srcfd, destfd, buffsize, copybytesize){
+
+    // read y write 
+    // para el buffer usar malloc y free por si el número es muy grande
+
+
+
+
 }
 
 int
@@ -160,14 +130,12 @@ main(int argc, char *argv[]){
     case EnoughArgs:
         copybytesize = -1;
         break;
-
     case MaxArgs:
         copybytesize = getnumber(argv[3]);
         if(copybytesize < 0){
             errx(EXIT_FAILURE, "fourth parameter should be positive");
         }
         break;
-
     default:
         usage();
     }
@@ -178,6 +146,8 @@ main(int argc, char *argv[]){
         errx(EXIT_FAILURE, "third parameter should be bigger than 0");
     }
 
+    // se obtienen los descriptores de ficheros de entrada y salida
+    // dependiendo de la string obtenida
     if(strcmp(srcpath, "-") == 0){
         srcfd = STDIN_FILENO;
     }else{
@@ -190,22 +160,11 @@ main(int argc, char *argv[]){
         destfd = getfd(destpath, DestinationFile); 
     } 
 
-    //srcfd = getfd(srcpath, SourceFile); 
-
-    fprintf(stderr, "%d \n", srcfd);
-    fprintf(stderr, "%d \n", destfd);
-
-    //destfd = getfd(destpath, DestinationFile);
-    
-    //copybytes(srcfd, destpath, buffsize, copybytesize); 
-
-    // read y write // para el buffer usar malloc y free por si el número es muy grande
+    copybytes(srcfd, destfd, buffsize, copybytesize); 
 
     // close los 2 descriptores usados
-
-    // manejo de errores en todo momento.
-
     close(srcfd);
+    close(destfd);
 
     exit(EXIT_SUCCESS);
 }
