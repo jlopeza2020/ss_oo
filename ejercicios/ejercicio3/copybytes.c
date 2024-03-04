@@ -101,14 +101,66 @@ getfd(char *path, int tipefile){
 }
 
 void 
-copybytes(srcfd, destfd, buffsize, copybytesize){
+copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
 
     // read y write 
     // para el buffer usar malloc y free por si el número es muy grande
+    // incluir lseek para ver si se ha llegado al objetivo deseado
+
+    //ssize t read(int fd, void *buf, size t count);
+    // 0  -> final de fichero
+    // -1 -> ha habido un error
+    //ssize t write(int fd, const void *buf, size t count);
+    
+    // si write devuelve un número distinto al número de bytes 
+    // solicitado en el tercer parámetro, se debe considerar un error. Esto
+    // es fácil de entender con un ejemplo de la vida real.
+
+    // tamaño del buffer con malloc
+
+    char *buffer; 
+    ssize_t nr; 
+    int offset;
+
+    offset = 0;
+
+    buffer = (char *)malloc(sizeof(char)*buffsize); // tamaño de una variable entera * 128 (numero de veces que queremos crear la estructura) 
+
+    if (buffer == NULL) {
+        fprintf(stderr, "Error: dynamic memory cannot be allocated\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // set offset y repasarlo
+
+    while((nr = read(srcfd, buffer, buffsize)) != 0) { 
+        if (nr < 0){
+            err(EXIT_FAILURE, "can't read");
+        }
+        if(write(destfd, buffer, nr) != nr){
+            err(EXIT_FAILURE, "can't write");
+        }
+        offset += nr;
+
+        // salir del bucle cuando se haya cumplido el número de 
+        // bytes copiados del cuarto parámetro
+
+        if(copybytesize > 0 && offset >= copybytesize){
+            break;
+        }
+    }
 
 
 
+    //*cadena = "hola buenos dias";
 
+    
+    //x = sizeof(int);
+    //strcpy(buffer, "hola buenos dias"); // copia de la cadena en el espacio de memoria asignado
+
+    //printf("%s\n", buffer);
+
+    free(buffer);
 }
 
 int
