@@ -5,7 +5,8 @@
 #include <err.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <fcntl.h>
+#include <string.h>
 
 enum{
     SourceFile,
@@ -60,8 +61,8 @@ copybytes(char *src, char dest, long buffsize, long copybytesize){
 
 } */
 
-//int
-void
+int
+//void
 getfd(char *path, int tipefile){
 
     
@@ -69,54 +70,37 @@ getfd(char *path, int tipefile){
     // stat para saber si es directorio o fichero  y comprobar open 
     int isaccessible;
     struct stat sb;
+    int fd;
 
-    //int fd;
+    // comprobar la entrada estándar 
 
     // source file 
     if (tipefile == 0){
 
-        // permite comprobar si tenemos permisos para ejecutar
-        // leer o escribir un fichero
+        // permite comprobar si tenemos permisos para leer un fichero
         isaccessible = access(path, R_OK);
         if(isaccessible == -1){
             errx(EXIT_FAILURE, "%s does not exit or cannot be read ", path);
         }
 
+        // permite comprobar si es un fichero normal: no un enlace simbólico, etc.
         if (lstat(path, &sb) == -1) {
             perror("lstat");
             exit(EXIT_FAILURE);
         }
         if((sb.st_mode & S_IFMT) != S_IFREG){
-            errx(EXIT_FAILURE, "%s is not a regular file", path);
+            errx(EXIT_FAILURE, "%s is not a regular file", path); 
         }
 
-        /*printf("ID of containing device:  [%jx,%jx]\n",
-            (uintmax_t) major(sb.st_dev),
-            (uintmax_t) minor(sb.st_dev));*/
-
-        printf("File type:                ");
-
-        switch (sb.st_mode & S_IFMT) {
-        case S_IFBLK:  printf("block device\n");            break;
-        case S_IFCHR:  printf("character device\n");        break;
-        case S_IFDIR:  printf("directory\n");               break;
-        case S_IFIFO:  printf("FIFO/pipe\n");               break;
-        case S_IFLNK:  printf("symlink\n");                 break;
-        case S_IFREG:  printf("regular file\n");            break;
-        case S_IFSOCK: printf("socket\n");                  break;
-        default:       printf("unknown?\n");                break;
+        // usar open en modo lectura 
+        fd = open(path, O_RDONLY);
+        if(fd == -1){
+            perror("open");
+            exit(EXIT_FAILURE);
         }
-
-        
-
-
-
-
-
     }
 
-
-    //return fd;
+    return fd;
 }
 
 int
@@ -130,7 +114,7 @@ main(int argc, char *argv[]){
     long buffsize;
     long copybytesize;
 
-    //int srcfd;
+    int srcfd;
     
     //int destfd;
 
@@ -159,18 +143,32 @@ main(int argc, char *argv[]){
 
     // comprueba el fichero origen 
     // destino 
-    getfd(srcpath, SourceFile); 
+    //getfd(srcpath, SourceFile); 
+
+    // check
+
+    if(strcmp(srcpath, "-") == 0){
+        srcfd = STDIN_FILENO;
+
+    }else{
+        srcfd = getfd(srcpath, SourceFile); 
+    } 
+
     //srcfd = getfd(srcpath, SourceFile); 
+
+    fprintf(stderr, "%d \n", srcfd);
 
     //destfd = getfd(destpath, DestinationFile);
     
-    //copybytes(srcpath, destpath, buffsize, copybytesize); 
+    //copybytes(srcfd, destpath, buffsize, copybytesize); 
 
     // read y write // para el buffer usar malloc y free por si el número es muy grande
 
     // close los 2 descriptores usados
 
     // manejo de errores en todo momento.
+
+    close(srcfd);
 
     exit(EXIT_SUCCESS);
 }
