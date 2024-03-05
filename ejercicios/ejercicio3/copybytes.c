@@ -102,28 +102,17 @@ getfd(char *path, int tipefile){
 
 void 
 copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
-
-    // read y write 
-    // para el buffer usar malloc y free por si el número es muy grande
-    // incluir lseek para ver si se ha llegado al objetivo deseado
-
-    //ssize t read(int fd, void *buf, size t count);
-    // 0  -> final de fichero
-    // -1 -> ha habido un error
-    //ssize t write(int fd, const void *buf, size t count);
     
     // si write devuelve un número distinto al número de bytes 
     // solicitado en el tercer parámetro, se debe considerar un error. Esto
     // es fácil de entender con un ejemplo de la vida real.
 
-    // tamaño del buffer con malloc
-
     char *buffer; 
     int nr; 
-    //off_t offset;
-    //int posfinal;
+    int offset;
+    int posicionrestar;
 
-    //offset = 0;
+    offset = 0;
 
     buffer = (char *)malloc(sizeof(char)*buffsize); // tamaño de una variable entera * 128 (numero de veces que queremos crear la estructura) 
 
@@ -132,40 +121,35 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
         exit(EXIT_FAILURE);
     }
 
-    // set offset y repasarlo
+    // lee todo del fd de origen hasta que se acabe el fichero
     while((nr = read(srcfd, buffer, buffsize)) != 0) { 
+        
         fprintf(stderr, "valor de nr es : %d\n", nr);
+
+        // si la lectura es -1 es un error 
         if (nr < 0){
             err(EXIT_FAILURE, "can't read");
         }
-        // mirar lseek y hacer los cambios
+
+        // se va acumulando el valor de cada lectura
+        offset += nr;
+        fprintf(stderr, "valor de offset es : %d\n", offset);
+
+        // si existe 4º parámetro
         if(copybytesize > 0){
-            // si la posición actual es mayor que la objetivo
+            // si la posición actual es mayor que la objetivo:
             // se ha leído más de lo debido 
-            if(nr > copybytesize){
-               //posfinal =  nr - copybytesize;
-                nr =  nr - copybytesize;
-                fprintf(stderr, "valor final - de nr es : %d\n", nr);
+            if(offset > copybytesize){
 
-                //offset = lseek(srcfd, -nr, SEEK_CUR);
-                nr = lseek(srcfd, -nr, SEEK_CUR);
+                posicionrestar =  offset - copybytesize;
+                fprintf(stderr, "valor final de posicion es : %d\n", posicionrestar);
+                offset = lseek(srcfd, -posicionrestar, SEEK_CUR);
 
+                nr = nr - posicionrestar;
 
-                fprintf(stderr, "el offset - se situa en : %d\n", nr);
-
+                fprintf(stderr, "offset: %d y nr: %d\n", offset, nr);
+                //offset = nr;
             }
-            /*else{
-                // se ha leido menos de lo debido
-                //seguir leyendo 
-                nr = nr + copybytesize;
-                fprintf(stderr, "valor final  + de nr es : %d\n", nr);
-
-                //offset = lseek(srcfd, -nr, SEEK_CUR);
-                nr = lseek(srcfd, nr, SEEK_CUR);
-
-                fprintf(stderr, "el offset +  se situa en : %d\n", nr);
-
-            }*/
         }
 
         if(write(destfd, buffer, nr) != nr){
@@ -174,14 +158,13 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
         //offset += nr;
 
         
-        
+        fprintf(stderr, "valor offset: %d y valor copybytesize: %d, isTRUE?: %d \n", offset, copybytesize, offset == copybytesize);
         // salir del bucle cuando se haya cumplido el número de 
         // bytes copiados del cuarto parámetro
-        if(copybytesize > 0 && nr == copybytesize){
+        if(copybytesize > 0 && offset == copybytesize){
             break;
         }
     }
-
 
 
     //*cadena = "hola buenos dias";
