@@ -109,9 +109,9 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
     int posicionrestar;
 
     offset = 0;
-    
+
     // tamaño de una variable entera * 128 (numero de veces que queremos crear la estructura)
-    buffer = (char *)malloc(sizeof(char)*buffsize);
+    buffer = (char *)malloc(sizeof(char)*buffsize); 
     if (buffer == NULL) {
         err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
     }
