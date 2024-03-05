@@ -19,7 +19,7 @@ enum{
 void
 usage(){
 	
-    fprintf(stderr, "usage: copybytes orfile desfile bufsize [bytes copied]\n");
+    fprintf(stderr, "usage: copybytes orfile desfile buffersize [bytes copied]\n");
 	exit(EXIT_FAILURE);
 
 }
@@ -119,10 +119,11 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
     // tamaño del buffer con malloc
 
     char *buffer; 
-    ssize_t nr; 
-    int offset;
+    int nr; 
+    //off_t offset;
+    //int posfinal;
 
-    offset = 0;
+    //offset = 0;
 
     buffer = (char *)malloc(sizeof(char)*buffsize); // tamaño de una variable entera * 128 (numero de veces que queremos crear la estructura) 
 
@@ -132,20 +133,51 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize){
     }
 
     // set offset y repasarlo
-
     while((nr = read(srcfd, buffer, buffsize)) != 0) { 
+        fprintf(stderr, "valor de nr es : %d\n", nr);
         if (nr < 0){
             err(EXIT_FAILURE, "can't read");
         }
+        // mirar lseek y hacer los cambios
+        if(copybytesize > 0){
+            // si la posición actual es mayor que la objetivo
+            // se ha leído más de lo debido 
+            if(nr > copybytesize){
+               //posfinal =  nr - copybytesize;
+                nr =  nr - copybytesize;
+                fprintf(stderr, "valor final - de nr es : %d\n", nr);
+
+                //offset = lseek(srcfd, -nr, SEEK_CUR);
+                nr = lseek(srcfd, -nr, SEEK_CUR);
+
+
+                fprintf(stderr, "el offset - se situa en : %d\n", nr);
+
+            }
+            /*else{
+                // se ha leido menos de lo debido
+                //seguir leyendo 
+                nr = nr + copybytesize;
+                fprintf(stderr, "valor final  + de nr es : %d\n", nr);
+
+                //offset = lseek(srcfd, -nr, SEEK_CUR);
+                nr = lseek(srcfd, nr, SEEK_CUR);
+
+                fprintf(stderr, "el offset +  se situa en : %d\n", nr);
+
+            }*/
+        }
+
         if(write(destfd, buffer, nr) != nr){
             err(EXIT_FAILURE, "can't write");
         }
-        offset += nr;
+        //offset += nr;
 
+        
+        
         // salir del bucle cuando se haya cumplido el número de 
         // bytes copiados del cuarto parámetro
-
-        if(copybytesize > 0 && offset >= copybytesize){
+        if(copybytesize > 0 && nr == copybytesize){
             break;
         }
     }
