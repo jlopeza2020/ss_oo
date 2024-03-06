@@ -19,14 +19,12 @@ enum {
 void
 usage()
 {
-
 	fprintf(stderr,
-		"usage: copybytes orfile desfile buffersize [bytes copied]\n");
+		"usage: ./copybytes orfile desfile buffersize [bytes copied]\n");
 	exit(EXIT_FAILURE);
 
 }
 
-// comprueba que sea un número y devuelve su valor
 long
 getnumber(char *str)
 {
@@ -43,8 +41,7 @@ getnumber(char *str)
 
 	// Se comprueban posibles errores 
 	if (errno != 0) {
-		perror("strtol");
-		exit(EXIT_FAILURE);
+		err(EXIT_FAILURE, "strtol");
 	}
 
 	if (endptr == str) {
@@ -73,15 +70,14 @@ getfd(char *path, int tipefile)
 	if (tipefile == SourceFile) {
 
 		// permite comprobar si tenemos permisos para leer un fichero
+		errno = 0;
 		isaccessible = access(path, R_OK);
 		if (isaccessible == -1) {
-			errx(EXIT_FAILURE,
-			     "%s does not exit or cannot be read ", path);
+        	err(EXIT_FAILURE, "%s", path);
 		}
 		// permite comprobar si es un fichero normal: no un enlace simbólico, etc.
 		if (lstat(path, &sb) == -1) {
-			perror("lstat");
-			exit(EXIT_FAILURE);
+			err(EXIT_FAILURE, "lstat");
 		}
 		if ((sb.st_mode & S_IFMT) != S_IFREG) {
 			errx(EXIT_FAILURE, "%s is not a regular file", path);
@@ -89,8 +85,7 @@ getfd(char *path, int tipefile)
 		// usar open en modo lectura 
 		fd = open(path, O_RDONLY);
 		if (fd == -1) {
-			perror("open");
-			exit(EXIT_FAILURE);
+			err(EXIT_FAILURE, "open");
 		}
 	} else if (tipefile == DestinationFile) {
 
@@ -98,9 +93,7 @@ getfd(char *path, int tipefile)
 		// con los permisos escritos en el tercer parámetro 
 		fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 		if (fd == -1) {
-			//chmod(path, mode);
-			perror("open");
-			exit(EXIT_FAILURE);
+			err(EXIT_FAILURE, "open");
 		}
 	}
 
@@ -121,7 +114,7 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
 	// tamaño de una variable entera * 128 (numero de veces que queremos crear la estructura)
 	buffer = (char *)malloc(sizeof(char) * buffsize);
 	if (buffer == NULL) {
-		err(EXIT_FAILURE,
+		errx(EXIT_FAILURE,
 		    "Error: dynamic memory cannot be allocated\n");
 	}
 	// lee todo del fd de origen hasta que se acabe el fichero
@@ -129,7 +122,8 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
 
 		// si la lectura es -1 es un error 
 		if (nr < 0) {
-			err(EXIT_FAILURE, "can't read");
+			free(buffer);
+			errx(EXIT_FAILURE, "can't read");
 		}
 		// se va acumulando el valor de cada lectura 
 		// para saber hasta dónde ha leído read
@@ -145,16 +139,19 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
 				// encuentra adelantado con respecto al valor objetivo
 				// diff = actual - objetivo
 				offsetdiff = offset - copybytesize;
+				// necesario actualizar el valor actual
+				offset -= offsetdiff;
 				// el valor de escritura en este caso será el valor que
 				// se ha obtenido en la lectura menos la diferencia
 				// calculada anteriormente
-				nr = nr - offsetdiff;
+				nr -= offsetdiff;
 			}
 		}
 		// si write devuelve un número distinto al número de bytes
 		// solicitado se considera un error 
 		if (write(destfd, buffer, nr) != nr) {
-			err(EXIT_FAILURE, "can't write");
+			free(buffer);
+			errx(EXIT_FAILURE, "can't write");
 		}
 		// salir del bucle cuando se haya cumplido el número de 
 		// bytes copiados del cuarto parámetro
@@ -197,13 +194,13 @@ main(int argc, char *argv[])
 		usage();
 	}
 
-	// se comprueba que el tamaño del buffer sea un número y > 0
+	// se comprueba que el tamaño del buffer sea un número,
+	// se obtiene su valor y se comprueba que sea > 0
 	buffsize = getnumber(argv[2]);
 	if (buffsize <= 0) {
 		errx(EXIT_FAILURE, "third parameter should be bigger than 0");
 	}
-	// se obtienen los descriptores de ficheros de entrada y salida
-	// dependiendo de la string obtenida
+
 	if (strcmp(srcpath, "-") == 0) {
 		srcfd = STDIN_FILENO;
 	} else {
