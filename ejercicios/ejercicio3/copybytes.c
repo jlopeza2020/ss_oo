@@ -73,7 +73,7 @@ getfd(char *path, int tipefile)
 		errno = 0;
 		isaccessible = access(path, R_OK);
 		if (isaccessible == -1) {
-        	err(EXIT_FAILURE, "%s", path);
+			err(EXIT_FAILURE, "%s", path);
 		}
 		// permite comprobar si es un fichero normal: no un enlace simbólico, etc.
 		if (lstat(path, &sb) == -1) {
@@ -115,7 +115,7 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
 	buffer = (char *)malloc(sizeof(char) * buffsize);
 	if (buffer == NULL) {
 		errx(EXIT_FAILURE,
-		    "Error: dynamic memory cannot be allocated\n");
+		     "Error: dynamic memory cannot be allocated\n");
 	}
 	// lee todo del fd de origen hasta que se acabe el fichero
 	while ((nr = read(srcfd, buffer, buffsize)) != 0) {
