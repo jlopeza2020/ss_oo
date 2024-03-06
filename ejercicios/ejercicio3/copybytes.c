@@ -145,8 +145,6 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
 				// encuentra adelantado con respecto al valor objetivo
 				// diff = actual - objetivo
 				offsetdiff = offset - copybytesize;
-				offset = lseek(srcfd, -offsetdiff, SEEK_CUR);
-
 				// el valor de escritura en este caso será el valor que
 				// se ha obtenido en la lectura menos la diferencia
 				// calculada anteriormente
