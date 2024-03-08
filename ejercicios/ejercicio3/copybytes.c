@@ -99,7 +99,6 @@ getfd(char *path, int tipefile)
 void
 copybytes(int srcfd, int destfd, long buffsize, long copybytesize)
 {
-
 	char *buffer;
 	int nr;
 	int offset;
@@ -162,7 +161,6 @@ copybytes(int srcfd, int destfd, long buffsize, long copybytesize)
 int
 main(int argc, char *argv[])
 {
-
 	argc--;
 	argv++;
 
