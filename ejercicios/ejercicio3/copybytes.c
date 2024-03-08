@@ -13,7 +13,6 @@ enum {
 	DestinationFile,
 	EnoughArgs = 3,
 	MaxArgs,
-
 };
 
 void
@@ -22,13 +21,11 @@ usage()
 	fprintf(stderr,
 		"usage: ./copybytes orfile desfile buffersize [bytes copied]\n");
 	exit(EXIT_FAILURE);
-
 }
 
 long
 getnumber(char *str)
 {
-
 	int base;
 	char *endptr;
 	long val;
@@ -59,7 +56,6 @@ getnumber(char *str)
 int
 getfd(char *path, int tipefile)
 {
-
 	int isaccessible;
 	struct stat sb;
 	int fd;
@@ -101,17 +97,17 @@ getfd(char *path, int tipefile)
 }
 
 void
-copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
+copybytes(int srcfd, int destfd, long buffsize, long copybytesize)
 {
 
 	char *buffer;
 	int nr;
 	int offset;
-	int offsetdiff;
+	long offsetdiff;
 
 	offset = 0;
 
-	// tamaño de una variable entera * 128 (numero de veces que queremos crear la estructura)
+	// tamaño de una variable entera * (numero de veces que queremos crear la estructura)
 	buffer = (char *)malloc(sizeof(char) * buffsize);
 	if (buffer == NULL) {
 		errx(EXIT_FAILURE,
