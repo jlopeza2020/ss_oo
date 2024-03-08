@@ -130,7 +130,7 @@ copybytes(int srcfd, int destfd, int buffsize, int copybytesize)
 		offset += nr;
 
 		// si existe 4º parámetro
-		if (copybytesize > 0) {
+		if (copybytesize >= 0) {
 			// si la posición actual es mayor que la objetivo:
 			// se ha leído más de lo debido 
 			if (offset > copybytesize) {
