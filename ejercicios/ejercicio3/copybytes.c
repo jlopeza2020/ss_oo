@@ -60,7 +60,7 @@ getfd(char *path, int tipefile)
 	struct stat sb;
 	int fd;
 
-	// Permisos de lectura-escritura para el propietario, grupo y otros
+	// permisos de lectura-escritura para el propietario, grupo y otros
 	mode_t mode = 0666;
 
 	if (tipefile == SourceFile) {
@@ -161,16 +161,19 @@ copybytes(int srcfd, int destfd, long buffsize, long copybytesize)
 int
 main(int argc, char *argv[])
 {
-	argc--;
-	argv++;
-
-	char *srcpath = argv[0];
-	char *destpath = argv[1];
+	char *srcpath;
+	char *destpath;
 	long buffsize;
 	long copybytesize;
 
 	int srcfd;
 	int destfd;
+
+	argc--;
+	argv++;
+
+	srcpath = argv[0];
+	destpath = argv[1];
 
 	switch (argc) {
 
