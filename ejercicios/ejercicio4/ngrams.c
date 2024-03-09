@@ -3,12 +3,9 @@
 #include <err.h>
 #include <errno.h>
 
-
-// estructura de datos para el 
-// buffer circular
 struct Circulararray{ 
 
-    int *array;
+    int *array; // cambiarlo a char *
     int front;
     int end;
     long size;
@@ -39,11 +36,9 @@ getnumber(char *str)
 	if (errno != 0) {
 		err(EXIT_FAILURE, "strtol");
 	}
-
 	if (endptr == str) {
 		errx(EXIT_FAILURE, "No digits were found");
 	}
-
 	// Ahora es necesario comprobar si la string ha sido un número o no
 	if (*endptr != '\0') {
 		errx(EXIT_FAILURE, "is not a complete number");
@@ -61,18 +56,23 @@ isempty(Circulararray *q){
 	return (q->front == -1 && q->end == -1);
 }
 
+// en un futuro se encolarán chars no ints
 void
 enqueue(Circulararray *q, int x)
 {
-    if(q->front == -1 && q->end == -1){
+    // si el array está vacío ambos punteros se sitúan 
+	// en la posición 0 y se almacena en la posición 
+	// del puntero "end" (es 0), el valor de x.
+	if(q->front == -1 && q->end == -1){
         q->front = q->end = 0;
         q->array[q->end] = x;
-    }
-	//else if (((q->end + 1) % q->size) == q->front){ 
-	else if (isfull(q)){ 
 
+    }else if (isfull(q)){ 
         printf("circular array is full\n");
     }else{
+		// si hay algún elemento en el array: 
+		// se incrementa la posición de end 
+		// y se almacena en ella el valor de x.
         q->end = (q->end + 1) % q->size;
         q->array[q->end] = x;
     }
@@ -81,24 +81,28 @@ enqueue(Circulararray *q, int x)
 void
 dequeue(Circulararray *q)
 {   
-    //if(q->front == -1 && q->end == -1){
 	if(isempty(q)){
         printf("circular array is empty\n");
         return;
     }
-
+	// cuando front y end se encuentran en la misma posición: 
+	// (solo queda un elemento en el array)
+	// se fijan a -1 para indicar que está vacío el array
     if (q->front == q->end)
         q->front = q->end = -1;
     else
+		// si hay más de un elemento en el array: 
+		// se avanza una posición del puntero "front"
         q->front = (q->front + 1) % q->size;
+
 }
 
+// se imprime desde donde se encuentra front hasta end
 void
 display(Circulararray *q)
 {
     int i = q->front;
     
-    //if(q->front == -1 && q->end == -1){
 	if(isempty(q)){
         printf("circular array is empty\n");
         return;
