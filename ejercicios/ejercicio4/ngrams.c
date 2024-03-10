@@ -20,6 +20,7 @@ struct Circulararray{
     int front;
     int end;
     long size;
+    long szcounter;
 };
 typedef struct Circulararray Circulararray; 
 
@@ -123,6 +124,7 @@ enqueue(Circulararray *q, int x)
 
     }else if (isfull(q)){ 
         printf("circular array is full\n");
+        return;
     }else{
 		// si hay algún elemento en el array: 
 		// se incrementa la posición de end 
@@ -130,6 +132,7 @@ enqueue(Circulararray *q, int x)
         q->end = (q->end + 1) % q->size;
         q->array[q->end] = x;
     }
+    q->szcounter++;
 }
 
 void
@@ -142,12 +145,15 @@ dequeue(Circulararray *q)
 	// cuando front y end se encuentran en la misma posición: 
 	// (solo queda un elemento en el array)
 	// se fijan a -1 para indicar que está vacío el array
-    if (q->front == q->end)
-        q->front = q->end = -1;
-    else
+    if (q->front == q->end){
+       q->front = q->end = -1; 
+    }
+    else{
 		// si hay más de un elemento en el array: 
 		// se avanza una posición del puntero "front"
         q->front = (q->front + 1) % q->size;
+    }
+    q->szcounter--;
 
 }
 
@@ -178,64 +184,40 @@ printgrams(char *srcpath, long size){
 
     FILE *srcfd;
     Circulararray ca;
-    size_t bytesread;
-    size_t i;
+    //size_t bytesread;
+    //size_t i;
+    char c;
 
     //inicializada la estructura de datos
     ca.size = size;
     ca.array = (char *)malloc(sizeof(char)* ca.size);  
     ca.front = -1;
     ca.end = -1;
+    ca.szcounter = 0;
 
     srcfd = getfd(srcpath, SourceFile);
 
-    // leer todo el fichero
-    // leer
-    // ffread lee del stream un número de elementos (size), 
-    // los guarda en memoria a  partir de ptr (retorna el numero de
-    // elementos leídos). Retona menos elementos que los solicitados o cero
-    // cuando llega a final de ficheoro o tiene un error. 
-    // Hay que usar feof y ferror: 
     // feof: devuelve un número distinto de 0 si ha llegado a final del fichero
-    while(!feof(srcfd)){
+    //while(!feof(srcfd)){
+    while (fread(&c, sizeof(char), 1, srcfd) != 0) {
 
-
-        bytesread = fread(ca.array,1, ca.size, srcfd);
-        //enqueue(&ca, );
-        //fprintf(stderr, "mun bytes leido %ld", bytesread);
-        for(i = 0; i < bytesread; i++){
+        //bytesread = fread(&c,1, ca.size, srcfd);
+        //for(i = 0; i < bytesread; i++){
             // añade y se hace display
             //fprintf(stderr, "len  %ld ca.array\n", i);
-            enqueue(&ca, ca.array[i]);
-            if(ca.size == size){ // si la dimensión es 3 imprimirlo
-                display(&ca);
-                dequeue(&ca);
-            }
-
-            //display(&ca);
-        }
-        
-        /*if(ca.size == size){
+        enqueue(&ca, c);
+        if(ca.szcounter == size){ // si la dimensión es 3 imprimirlo
             display(&ca);
             dequeue(&ca);
-
-        }*/
-         //display(&ca);
-        //dequeue(&ca);
+        }
+        //}
 
         // ferror: devuelve un número distinto de 0 si está establecido. 
         if (ferror(srcfd)) {
             errx(EXIT_FAILURE , "fread error ocurred\n");
         }
-
-        //errx(EXIT_FAILURE , "fread failed");
     }
     
-    // usar enqueue 
-    // display
-    // dequeue ??? 
-    //
-
     fclose(srcfd);
     free(ca.array);
 }
@@ -253,9 +235,7 @@ main(int argc, char *argv[]){
     if(argc != MaxArgs){
         usage();
     }
-
     srcpath = argv[0];
-    //srcfd = getfd(srcpath, SourceFile);
 
     buffersize = argv[1];
     ngramsize = getnumber(buffersize);
@@ -263,52 +243,7 @@ main(int argc, char *argv[]){
 		errx(EXIT_FAILURE, "second parameter should be bigger than 0");
 	}
 
-    //printf("%p value", (void *)srcfd);
-
-    // en este punto tenemos el fichero de origen abierto 
-    // y el tamaño del buffer
-
     printgrams(srcpath, ngramsize);
-    //fread lee dle
-
-
-
-    //fclose(srcfd);
-
-
-	/*
-    // declaración del array circular 
-	Circulararray ca;
-    ca.size = ngramsize;
-    ca.array = (int *)malloc(sizeof(int)* ca.size); // cambiar a char 
-    ca.front = -1;
-    ca.end = -1;
-
-    enqueue(&ca,2);
-    enqueue(&ca,1);
-    enqueue(&ca,6);
-    //enqueue(&ca,-1);
-    //enqueue(&ca,-2);
-    //dequeue(&q);
-    dequeue(&ca);
-    dequeue(&ca);
-
-
-    //enqueue(&q,-3);
-    display(&ca);
-
-    free(ca.array);*/
- 
-
-    // hay que abrir el fichero en modo lectura 
-    // escribir por la salida estándar [valores]
-    // fopen (path, "r")
-    // fclose(path)
-
-    // fread no actualiza errno 
-    // mirar feof y ferror para ver los valores que da
-    // fwrite
-    // ¿revisar fflush y fgets?
-
+    
     exit(EXIT_SUCCESS);
 }
