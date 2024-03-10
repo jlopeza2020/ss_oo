@@ -2,6 +2,15 @@
 #include <stdio.h>
 #include <err.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+enum {
+	SourceFile,
+	DestinationFile,
+	MaxArgs,
+};
 
 struct Circulararray{ 
 
@@ -44,6 +53,49 @@ getnumber(char *str)
 		errx(EXIT_FAILURE, "is not a complete number");
 	}
 	return val;
+}
+
+FILE *
+getfd(char *path, int tipefile)
+{
+	int isaccessible;
+	struct stat sb;
+	FILE *fd;
+
+	if (tipefile == SourceFile) {
+
+		// permite comprobar si tenemos permisos para leer un fichero
+		errno = 0;
+		isaccessible = access(path, R_OK);
+		if (isaccessible == -1) {
+			err(EXIT_FAILURE, "%s", path);
+		}
+		// permite comprobar si es un fichero normal: no un enlace simbólico, etc.
+		if (lstat(path, &sb) == -1) {
+			err(EXIT_FAILURE, "lstat");
+		}
+		if ((sb.st_mode & S_IFMT) != S_IFREG) {
+			errx(EXIT_FAILURE, "%s is not a regular file", path);
+		}
+		// usar open en modo lectura 
+		//fd = open(path, O_RDONLY);
+        fd = fopen(path, "r");
+
+		if (fd == NULL) {
+			err(EXIT_FAILURE, "fopen");
+		}
+	} else if (tipefile == DestinationFile) {
+
+		// usar open en modo escritura y sino crear el fichero 
+		// con los permisos escritos en el tercer parámetro 
+		//fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+		fd = fopen(path, "w");
+        if (fd == NULL) {
+			err(EXIT_FAILURE, "fopen");
+		}
+	}
+
+	return fd;
 }
 
 int 
@@ -116,24 +168,57 @@ display(Circulararray *q)
     printf("%d\n", q->array[q->end]);
 }
 
+
+void 
+printgrams(char *srcpath, long size){
+
+    FILE *srcfd;
+    
+    srcfd = getfd(srcpath, SourceFile);
+    
+
+    fclose(srcfd);
+
+}
+
 int
 main(int argc, char *argv[]){
 
-    argc--;
-	argv++;
-
+    char *srcpath;
+    char *buffersize;
     long ngramsize;
 
-    if(argc != 2){
+    argc--;
+	argv++;
+    
+    if(argc != MaxArgs){
         usage();
     }
-    ngramsize = getnumber(argv[1]);
 
+    srcpath = argv[0];
+    //srcfd = getfd(srcpath, SourceFile);
+
+    buffersize = argv[1];
+    ngramsize = getnumber(buffersize);
     if (ngramsize <= 0) {
 		errx(EXIT_FAILURE, "second parameter should be bigger than 0");
 	}
 
-	// declaración del array circular 
+    //printf("%p value", (void *)srcfd);
+
+    // en este punto tenemos el fichero de origen abierto 
+    // y el tamaño del buffer
+
+    printgrams(srcpath, ngramsize);
+    //fread lee dle
+
+
+
+    //fclose(srcfd);
+
+
+	/*
+    // declaración del array circular 
 	Circulararray ca;
     ca.size = ngramsize;
     ca.array = (int *)malloc(sizeof(int)* ca.size); // cambiar a char 
@@ -153,9 +238,8 @@ main(int argc, char *argv[]){
     //enqueue(&q,-3);
     display(&ca);
 
-    free(ca.array);
-
-
+    free(ca.array);*/
+ 
 
     // hay que abrir el fichero en modo lectura 
     // escribir por la salida estándar [valores]
