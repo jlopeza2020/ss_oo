@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
+
 
 enum {
 	SourceFile,
@@ -14,7 +16,7 @@ enum {
 
 struct Circulararray{ 
 
-    int *array; // cambiarlo a char *
+    char *array;
     int front;
     int end;
     long size;
@@ -159,13 +161,15 @@ display(Circulararray *q)
         printf("circular array is empty\n");
         return;
     }else{
-        printf("Circular Array is: ");
+        printf("[");
         while( i != q->end ){
-            printf("%d ", q->array[i]);
+            printf("%c", q->array[i]);
             i = (i+1) % q->size;
         }
     }
-    printf("%d\n", q->array[q->end]);
+    printf("%c", q->array[q->end]);
+    printf("]\n");
+
 }
 
 
@@ -173,12 +177,67 @@ void
 printgrams(char *srcpath, long size){
 
     FILE *srcfd;
-    
+    Circulararray ca;
+    size_t bytesread;
+    size_t i;
+
+    //inicializada la estructura de datos
+    ca.size = size;
+    ca.array = (char *)malloc(sizeof(char)* ca.size);  
+    ca.front = -1;
+    ca.end = -1;
+
     srcfd = getfd(srcpath, SourceFile);
+
+    // leer todo el fichero
+    // leer
+    // ffread lee del stream un número de elementos (size), 
+    // los guarda en memoria a  partir de ptr (retorna el numero de
+    // elementos leídos). Retona menos elementos que los solicitados o cero
+    // cuando llega a final de ficheoro o tiene un error. 
+    // Hay que usar feof y ferror: 
+    // feof: devuelve un número distinto de 0 si ha llegado a final del fichero
+    while(!feof(srcfd)){
+
+
+        bytesread = fread(ca.array,1, ca.size, srcfd);
+        //enqueue(&ca, );
+        //fprintf(stderr, "mun bytes leido %ld", bytesread);
+        for(i = 0; i < bytesread; i++){
+            // añade y se hace display
+            //fprintf(stderr, "len  %ld ca.array\n", i);
+            enqueue(&ca, ca.array[i]);
+            if(ca.size == size){ // si la dimensión es 3 imprimirlo
+                display(&ca);
+                dequeue(&ca);
+            }
+
+            //display(&ca);
+        }
+        
+        /*if(ca.size == size){
+            display(&ca);
+            dequeue(&ca);
+
+        }*/
+         //display(&ca);
+        //dequeue(&ca);
+
+        // ferror: devuelve un número distinto de 0 si está establecido. 
+        if (ferror(srcfd)) {
+            errx(EXIT_FAILURE , "fread error ocurred\n");
+        }
+
+        //errx(EXIT_FAILURE , "fread failed");
+    }
     
+    // usar enqueue 
+    // display
+    // dequeue ??? 
+    //
 
     fclose(srcfd);
-
+    free(ca.array);
 }
 
 int
