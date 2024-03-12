@@ -24,7 +24,7 @@ struct Circulararray {
 typedef struct Circulararray Circulararray;
 
 void
-usage()
+usage(void)
 {
 	fprintf(stderr, "usage: ./ngrams routefile ngramsize\n");
 	exit(EXIT_FAILURE);

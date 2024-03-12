@@ -8,9 +8,9 @@ int
 main(int argc, char *argv[]){
 
     fprintf(stderr, "hello!\n");
-    //execl("/bin/ls", "myls", "/tmp", NULL);
+    execl("/bin/ls", "myls", "/tmp", NULL);
     // myls es el nombre que le vamos a llamar al comando
-    execl("/bla/ls", "myls", "/tmp", NULL);
+    //execl("/bla/ls", "myls", "/tmp", NULL);
 
     fprintf(stderr, "bye!\n");
     err(EXIT_FAILURE, "exec failed");
