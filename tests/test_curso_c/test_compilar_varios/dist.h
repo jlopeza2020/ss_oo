@@ -1,1 +1,0 @@
-int dist(int, int);
