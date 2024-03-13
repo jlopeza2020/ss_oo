@@ -12,6 +12,7 @@ main(int argc, char *argv[])
    if(fd == NULL){
     err(EXIT_FAILURE, "error");
    }
+
   
 
     exit(EXIT_SUCCESS);

@@ -230,7 +230,7 @@ main(int argc, char *argv[])
 	buffersize = argv[1];
 	ngramsize = getnumber(buffersize);
 	if (ngramsize <= 0) {
-		errx(EXIT_FAILURE, "second parameter should be bigger than 0");
+		errx(EXIT_FAILURE, "second parameter should be bigger than 0\n");
 	}
 
 	printgrams(srcpath, ngramsize);
