@@ -79,7 +79,6 @@ getfd(char *path, int tipefile)
 			errx(EXIT_FAILURE, "%s is not a regular file", path);
 		}
 		// usar open en modo lectura 
-		//fd = open(path, O_RDONLY);
 		fd = fopen(path, "r");
 
 		if (fd == NULL) {
@@ -89,7 +88,6 @@ getfd(char *path, int tipefile)
 
 		// usar open en modo escritura y sino crear el fichero 
 		// con los permisos escritos en el tercer parámetro 
-		//fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 		fd = fopen(path, "w");
 		if (fd == NULL) {
 			err(EXIT_FAILURE, "fopen");
@@ -184,14 +182,14 @@ printgrams(char *srcpath, long size)
 	Circulararray ca;
 	char c;
 
+	srcfd = getfd(srcpath, SourceFile);
+
 	//inicializada la estructura de datos
 	ca.size = size;
 	ca.array = (char *)malloc(sizeof(char) * ca.size);
 	ca.front = -1;
 	ca.end = -1;
 	ca.szcounter = 0;
-
-	srcfd = getfd(srcpath, SourceFile);
 
 	// lee hasta final de fichero
 	while (fread(&c, sizeof(char), 1, srcfd) != 0) {
@@ -230,7 +228,8 @@ main(int argc, char *argv[])
 	buffersize = argv[1];
 	ngramsize = getnumber(buffersize);
 	if (ngramsize <= 0) {
-		errx(EXIT_FAILURE, "second parameter should be bigger than 0\n");
+		errx(EXIT_FAILURE,
+		     "second parameter should be bigger than 0\n");
 	}
 
 	printgrams(srcpath, ngramsize);
