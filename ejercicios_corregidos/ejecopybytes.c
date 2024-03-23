@@ -6,16 +6,17 @@
 #include <err.h>
 #include <errno.h>
 
-// enum MaxBuf
-enum 
+enum {
+    MaxBuf = 16*1024*1024  // 16 Megas como tamaño máximo
+};
 
-struct Transfer{
-    long long count 
-    long long bufsize
+struct Transfer {
+    long long count;
+    long long bufsize;
     int fdin;
     int fdout;
+};
 
-}
 typedef struct Transfer Transfer;
 
 void 
@@ -38,63 +39,63 @@ long long
 dotransfer(Transfer *t)
 {
     int toread;
+    ssize_t nr; // Corregido: se cambió el tipo de nr de int a ssize_t
     int done;
     long long total;
     char *buf;
 
     buf = (char *) malloc(t->bufsize);
-    if(buff == NULL){
+    if(buf == NULL){ // Corregido: se corrigió el nombre de la variable buf
         err(EXIT_FAILURE, "out of memory");
     }
-    // comprobar null
 
     total = 0;
     done = 0;
 
     while(!done){
         toread = t->bufsize;
-        if(t-> count != -1 && t-> count -total < t->buffsize){
+        if(t->count != -1 && t->count - total < t->bufsize){
             toread = t->count - total;
         }
-        nr = read(t->fdin,buf,toread); // toread saber los que quiero leer
-        if(nr < 0)
-        {
+        nr = read(t->fdin, buf, toread);
+        if(nr < 0) {
             err(EXIT_FAILURE, "read error");
             break;
         }
-        if(nr == 0) //final fichero 
+        if(nr == 0) // Final del archivo 
             break;
 
-        if(write(t->fdout, buf, nr)!= nr){
+        if(write(t->fdout, buf, nr) != nr){
             break;
         }
         total += nr;
-        done = t-> count != -1 && t-> count == total;
-
+        done = t->count != -1 && t->count == total;
     }
     free(buf);
     return total;
 }
+
 long long 
 parsell(char *str){
     long long ll;
-    char *endprt;
+    char *endptr;
 
     errno = 0;
-    ll = strtoll(str, &endptr,10);
+    ll = strtoll(str, &endptr, 10);
     if(errno != 0 || endptr - str != strlen(str)){
         usage();
     }
     return ll;
 }
+
 void 
-gettransfer(){
-    t -> fdin = 0;
-    t -> fout = 1;
-    t -> count = -1
+gettransfer(Transfer *t, int ntargs, char **targs) { // Se agregaron los argumentos que faltaban
+    t->fdin = 0;
+    t->fdout = 1; // Corregido: se cambió fout a fdout
+    t->count = -1; // Corregido: se agregó punto y coma al final de la línea
 
     if(ntargs == 4){
-        t-> count = parsell(targs[3]);
+        t->count = parsell(targs[3]);
         if(t->count < 0){
             errx(EXIT_FAILURE, "Invalid count value");
         }
@@ -103,8 +104,8 @@ gettransfer(){
     if(ntargs != 3){
         usage();
     }
-    t -> bufsize = parsell(targs[2]);
-    if(t-> bufsize < 1 || t-> bufsize > bufsize)
+    t->bufsize = parsell(targs[2]);
+    if(t->bufsize < 1 || t->bufsize > MaxBuf) // Corregido: se cambió bufsize a t->bufsize
         errx(EXIT_FAILURE, "Invalid buffer size"); 
 
     if (strcmp(targs[0], "-") != 0) {
@@ -119,23 +120,21 @@ gettransfer(){
             err(EXIT_FAILURE, "Cannot open output file");
         }
     }
-
 }
 
 int 
-main(){
+main(int argc, char *argv[]){ // Se agregaron los argumentos que faltaban
     Transfer t;
     if (argc < 4 || argc > 5) {
         usage();
     }
 
-    gettransfer(&t, argc - 1, argv + 1);
+    gettransfer(&t, argc - 1, argv + 1); // Corregido: se pasó la dirección de la estructura Transfer
 
     if (dotransfer(&t) < 0) {
         err(EXIT_FAILURE, "Error in transferring bytes");
     }
     closetransfer(&t);
 
-    exit(EXIT_SUCESS);
-
+    exit(EXIT_SUCCESS); // Corregido: se cambió EXIT_SUCESS a EXIT_SUCCESS
 }

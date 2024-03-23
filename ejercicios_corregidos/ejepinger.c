@@ -4,18 +4,19 @@
 #include <sys/wait.h>
 #include <err.h>
 
-void ping(char *addr) {
+void 
+ping(char *addr) {
     switch (fork()) {
         case -1:
             err(EXIT_FAILURE, "fork failed");
         case 0:
             execl("/bin/ping", "myping", "-c1", "-W5", addr, NULL);
             err(EXIT_FAILURE, "exec failed");
-            // Not returning because if execl fails, the child process will terminate
     }
 }
 
-int main(int argc, char *argv[]) {
+int 
+main(int argc, char *argv[]) {
     int i;
     int pid;
     int sts;
