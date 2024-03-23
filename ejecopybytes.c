@@ -1,20 +1,31 @@
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <err.h>
+#include <errno.h>
 
 // enum MaxBuf
+enum 
 
-struct Transfer
-// 
-long long count 
-long long bufsize
-int fdin;
-int fdout;
+struct Transfer{
+    long long count 
+    long long bufsize
+    int fdin;
+    int fdout;
 
-closetransfer{
-    if(t -> fdin != 0)
-    {
-        close(t->fin)
+}
+typedef struct Transfer Transfer;
+
+void 
+closetransfer(Transfer *t) {
+    if (t->fdin != 0) {
+        close(t->fdin);
     }
-    // igula con fout
+    if (t->fdout != 1) {
+        close(t->fdout);
+    }
 }
 
 void 
@@ -46,14 +57,15 @@ dotransfer(Transfer *t)
             toread = t->count - total;
         }
         nr = read(t->fdin,buf,toread); // toread saber los que quiero leer
-        if(nr <0)
+        if(nr < 0)
         {
-            error
-            break
+            err(EXIT_FAILURE, "read error");
+            break;
         }
         if(nr == 0) //final fichero 
+            break;
 
-        if(write(t->fdout, buf, nr )!= nr){
+        if(write(t->fdout, buf, nr)!= nr){
             break;
         }
         total += nr;
@@ -84,7 +96,7 @@ gettransfer(){
     if(ntargs == 4){
         t-> count = parsell(targs[3]);
         if(t->count < 0){
-            errx()
+            errx(EXIT_FAILURE, "Invalid count value");
         }
         ntargs--;
     }
@@ -93,23 +105,37 @@ gettransfer(){
     }
     t -> bufsize = parsell(targs[2]);
     if(t-> bufsize < 1 || t-> bufsize > bufsize)
-        // error 
-    if(strcmp(targs[0], "-") )
-        t->fdin = open(targs[0], O_RDONLY)
-        //COMPROBAR ERROR 
-    IF(  // SALIDA
-        // 0664
-    )
+        errx(EXIT_FAILURE, "Invalid buffer size"); 
+
+    if (strcmp(targs[0], "-") != 0) {
+        t->fdin = open(targs[0], O_RDONLY);
+        if (t->fdin == -1) {
+            err(EXIT_FAILURE, "Cannot open input file");
+        }
+    }
+    if (strcmp(targs[1], "-") != 0) {
+        t->fdout = open(targs[1], O_WRONLY | O_CREAT | O_TRUNC, 0664);
+        if (t->fdout == -1) {
+            err(EXIT_FAILURE, "Cannot open output file");
+        }
+    }
 
 }
 
 int 
 main(){
-    Transfer t; 
-    gettransfer
-    if(dotransfer(&t) < 0){
-        errx(EXIT_FAILURE, "    ")
+    Transfer t;
+    if (argc < 4 || argc > 5) {
+        usage();
     }
-    closetransfer(&t)
+
+    gettransfer(&t, argc - 1, argv + 1);
+
+    if (dotransfer(&t) < 0) {
+        err(EXIT_FAILURE, "Error in transferring bytes");
+    }
+    closetransfer(&t);
+
+    exit(EXIT_SUCESS);
 
 }
