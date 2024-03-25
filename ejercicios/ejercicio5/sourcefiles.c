@@ -66,6 +66,21 @@ char *getcompletepath(char *path, char *dname){
     return fullpath;
 }
 
+int
+isfile(char *name, char *extension){
+
+    char *value;
+
+    value = strrchr(name, '.');
+
+    if(value != NULL){
+        if(strcmp(value, extension) == 0){
+            return 1; // exito: son iguales
+        }
+    }
+    return 0;
+}
+
 void 
 recursive(char *path){
 
@@ -74,61 +89,37 @@ recursive(char *path){
     struct stat sb;
     char *fullpath;
 
-    //ssize_t lenpath;
-    //ssize_t lenname;
-    //ssize_t lenfull;
-
     d = opendir(path);
     if (d == NULL) {
         err(EXIT_FAILURE, "opendir failed: %s", path);
     }
 
-    // obtenemos la longitud del path
-    //lenpath = strlen(path);
-
     while ((ent = readdir(d)) != NULL) {
         if (ent->d_name[0] != '.') {
 
-            // longitud del nombre de entrada de directorio 
-            //lenname = strlen(ent->d_name);
-
-            // longitud total: 
-            // path + / + nombre de entrada directorio + \0 
-            //lenfull = lenpath + lenname + 2; 
-
-            // comprobar que el malloc no es muy grande 
-            /*if (lenfull > MaxPath){
-                errx(EXIT_FAILURE, "Invalid path size"); 
-            }
-
-            fullpath = (char *)malloc(sizeof(char) * (lenfull));
-            if (fullpath == NULL) {
-		        errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
-	        }
-
-            strncpy(fullpath, path, lenfull);
-            // después del path añadir '/'
-            fullpath[lenpath] = '/';
-            // strncpy no añade \0 a final de línea
-            fullpath[lenfull - 1] = '\0';
-            strncpy(fullpath + lenpath + 1, ent->d_name, lenfull - lenpath - 1);
-            fullpath[lenfull - 1] = '\0';*/
             fullpath = getcompletepath(path, ent->d_name);
 
-
+            // solo si es directorio o fichero convencional seguirá
+            // con el bucle. Omite los enlaces simbólicos
             if (lstat(fullpath, &sb) < 0) {
                 free(fullpath);
-                // no debería acabar aquí la función
+                // NO DEBERIA SALIR YA 
 			    err(EXIT_FAILURE, "lstat");
 		    }
-            // solo si es directorio o fichero convencional seguirá
-            // con el bucle. Omite los directorios
+
 		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
                 recursive(fullpath);
 		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
 
                 printf("%s\n", fullpath);
-                // comprobar si es .h o .c
+                if (isfile(ent->d_name, ".c")){
+                    fprintf(stderr, "soy fichero .c\n");
+                }
+                if(isfile(ent->d_name, ".h")){
+                    fprintf(stderr, "soy fichero .h\n");
+                    // se cumple que sea un fichero .h o .c y hay que añadirle
+                    // los bytes correspondientes el numero de ficheros
+                }
             }
 
             free(fullpath);
@@ -140,7 +131,8 @@ recursive(char *path){
 int 
 main(int argc, char *argv[]){
 
-    // preguntar si hace falta malloc
+    // preguntar si hace falta malloc porque si
+    // se pasa de tamaño hce una segunda lectura el programa por si solo 
     /*char line[MaxLine];
     
     argc--;
