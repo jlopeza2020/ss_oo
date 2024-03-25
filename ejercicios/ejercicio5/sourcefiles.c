@@ -11,6 +11,7 @@
 enum {
 	ZeroArgs,
     MaxPath = 8*1024, // 8K
+    MaxLine = 256,
 };
 
 struct Sourcefiles{
@@ -72,7 +73,6 @@ isfile(char *name, char *extension){
     char *value;
 
     value = strrchr(name, '.');
-
     if(value != NULL){
         if(strcmp(value, extension) == 0){
             return 1; // exito: son iguales
@@ -82,7 +82,8 @@ isfile(char *name, char *extension){
 }
 
 void 
-recursive(char *path, Sourcefiles *srcinfo){
+//recursive(char *path, Sourcefiles *infosrc){
+processdirectory(char *path, Sourcefiles *infosrc){
 
     DIR *d;
     struct dirent *ent;
@@ -108,22 +109,21 @@ recursive(char *path, Sourcefiles *srcinfo){
 		    }
 
 		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
-                recursive(fullpath, srcinfo);
+                processdirectory(fullpath, infosrc);
+                //processdirectory(infosrc);
+
 		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
 
-                printf("%s\n", fullpath);
+                //printf("%s\n", fullpath);
                 if (isfile(ent->d_name, ".c")){
-                    srcinfo->cfiles++;
-                    srcinfo->totalbytes += sb.st_size;
-                    fprintf(stderr, "soy fichero .c\n");
+                    infosrc->cfiles++;
+                    infosrc->totalbytes += sb.st_size;
+                    //fprintf(stderr, "soy fichero .c\n");
                 }
                 if(isfile(ent->d_name, ".h")){
-                    fprintf(stderr, "soy fichero .h\n");
-                    srcinfo->hfiles++;
-                    srcinfo->totalbytes += sb.st_size;
-
-                    // se cumple que sea un fichero .h o .c y hay que añadirle
-                    // los bytes correspondientes el numero de ficheros
+                    //fprintf(stderr, "soy fichero .h\n");
+                    infosrc->hfiles++;
+                    infosrc->totalbytes += sb.st_size;
                 }
             }
 
@@ -138,46 +138,47 @@ main(int argc, char *argv[]){
 
     // preguntar si hace falta malloc porque si
     // se pasa de tamaño hce una segunda lectura el programa por si solo 
-    /*char line[MaxLine];
-    
+    char line[MaxLine];
+    Sourcefiles infodir;
+
     argc--;
 	argv++;
 
     if (argc != ZeroArgs) {
 		usage();
-	}*/
-    Sourcefiles info;
-
-    if (argc != 2) {
-        errx(EXIT_FAILURE, "Uso: %s dir", argv[0]);
-    }
-
-    info.cfiles = 0;
-    info.hfiles = 0;
-    info.totalbytes = 0;
-
-    recursive(argv[1], &info);
-
-    info.path = argv[1];
-
-    printf("%s\t%ld\t%ld\t%lld\n", info.path, info.cfiles, info.hfiles, info.totalbytes);
+	}
 
 
-    /*while(fgets(line, MaxLine, stdin) != NULL){
+    /*recursive(argv[1], &infosrc);
+
+    infosrc.path = argv[1];
+
+    printf("%s\t%ld\t%ld\t%lld\n", infosrc.path, infosrc.cfiles, infosrc.hfiles, infosrc.totalbytes);
+    */
+
+    while(fgets(line, MaxLine, stdin) != NULL){
         printf("line: %s\n", line);
 
+        line[strcspn(line, "\n")] = 0;
 
-    // se crea una estructura de datos
-    // cada vez que se accede a una entrada de directorio
-    // Tratar los errores y ver el valor final que tiene el proceso
-    // usar funciones que controlen errno
-    
+        infodir.path = line;
+        infodir.cfiles = 0;
+        infodir.hfiles = 0;
+        infodir.totalbytes = 0;
 
+        //path[strcspn(path, "\n")] = 0;
+
+        processdirectory(line, &infodir);
+        printf("%s\t%ld\t%ld\t%lld\n", infodir.path, infodir.cfiles, infodir.hfiles, infodir.totalbytes);
+
+        // se crea una estructura de datos
+        // cada vez que se accede a una entrada de directorio
+        // Tratar los errores y ver el valor final que tiene el proceso
+        // usar funciones que controlen errno
     }
     if(!feof(stdin)){
-        errx(EXIT_FAILURE, "eof not reached");
-    }*/
-
+        errx(EXIT_FAILURE, "eof not reached\n");
+    }
 
     exit(EXIT_SUCCESS);
 }
