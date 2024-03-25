@@ -13,7 +13,7 @@
 
 enum {
 	ZeroArgs,
-    MaxPath = 1024,
+    MaxPath = 8*1024, // 8K
 };
 
 struct Sourcefiles{
@@ -39,9 +39,8 @@ recursive(char *path){
     DIR *d;
     struct dirent *ent;
     struct stat sb;
-    // Usar malloc
-    //char fullpath[MaxPath];
     char *fullpath;
+
     ssize_t lenpath;
     ssize_t lenname;
     ssize_t lenfull;
@@ -53,57 +52,45 @@ recursive(char *path){
 
     // obtenemos la longitud del path
     lenpath = strlen(path);
-    // copiamos como mucho MaxLine de path (origen) a fullpath (destino) 
-    //strncpy(fullpath, path, MaxPath);
-    //fullpath[lenpath] = '/'; // Agregar barra inclinada al final del path
-    //fullpath[MaxPath - 1] = '\0'; // Asegurarse de que el búfer esté terminado con nulo
-
 
     while ((ent = readdir(d)) != NULL) {
         if (ent->d_name[0] != '.') {
 
-            //necesitamos añadirle al path el nombre de la entrada de directorio
+            // longitud del nombre de entrada de directorio 
             lenname = strlen(ent->d_name);
 
-            lenfull = lenpath + lenname; 
+            // longitud total: 
+            // path + / + nombre de entrada directorio + \0 
+            lenfull = lenpath + lenname + 2; 
 
+            // comprobar que el malloc no es muy grande 
             if (lenfull > MaxPath){
                 errx(EXIT_FAILURE, "Invalid path size"); 
-            } // Corregido: se cambió bufsize a t->bufsize
+            }
 
-            fullpath = (char *)malloc(sizeof(char) * (lenfull + 2));
+            fullpath = (char *)malloc(sizeof(char) * (lenfull));
             if (fullpath == NULL) {
 		        errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
 	        }
 
 
-            /*strncpy(fullpath, path, lenfull);
-            fullpath[lenpath] = '/';
-            strncpy()*/
-
-            //strcat(strcpy(fullpath, path), '/');
-            strcpy(fullpath, path);
-
+            strncpy(fullpath, path, lenfull);
             // después del path añadir '/'
             fullpath[lenpath] = '/';
-			strcat(fullpath, ent->d_name);
+            // strncpy no añade \0 a final de línea
+            fullpath[lenfull - 1] = '\0';
+            strncpy(fullpath + lenpath + 1, ent->d_name, lenfull - lenpath - 1);
+            fullpath[lenfull - 1] = '\0';
 
-            //fprintf(stderr, "prev %s\n", fullpath);
-
-
-        
-            //strncpy(fullpath + lenpath + 1, ent->d_name, MaxPath - lenpath - 1);
-            // fullpath[MaxPath - 1] = '\0'; // Asegurarse de que el búfer esté terminado con nulo
-
+			//strcat(fullpath, ent->d_name);
 
             if (lstat(fullpath, &sb) < 0) {
+                free(fullpath);
 			    err(EXIT_FAILURE, "lstat");
 		    }
             // solo si es directorio o fichero convencional seguirá
             // con el bucle 
 		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
-			    //errx(EXIT_FAILURE, "%s is not a regular file", path);
-                // hay que ir añadiendo las barras 
                 recursive(fullpath);
 		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
 
@@ -112,14 +99,11 @@ recursive(char *path){
             }
 
             free(fullpath);
-
         }
     }
-
     closedir(d);
-
-
 }
+
 int 
 main(int argc, char *argv[]){
 
