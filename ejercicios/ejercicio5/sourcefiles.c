@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 enum {
 	ZeroArgs,
@@ -46,14 +47,12 @@ char *getcompletepath(char *path, char *dname){
 
     // comprobar que el malloc no es muy grande 
     if (lenfull > MaxPath){
-        // NO DEBERÍA SALIR YA 
-        errx(EXIT_FAILURE, "Invalid path size"); 
+        perror("Invalid path size");
     }
 
     fullpath = (char *)malloc(sizeof(char) * (lenfull));
     if (fullpath == NULL) {
-        // NO DEBERIA SALIR YA 
-		errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
+        perror("Error: dynamic memory cannot be allocated");
 	}
 
     strncpy(fullpath, path, lenfull);
@@ -91,43 +90,41 @@ processdirectory(char *path, Sourcefiles *infosrc){
 
     d = opendir(path);
     if (d == NULL) {
-        //NO DEBERÍA SALIR YA 
-        err(EXIT_FAILURE, "opendir failed: %s", path);
-    }
+        perror("opendir failed");
+    }else{
 
-    while ((ent = readdir(d)) != NULL) {
-        if (ent->d_name[0] != '.') {
+        while ((ent = readdir(d)) != NULL) {
+            if (ent->d_name[0] != '.') {
 
-            fullpath = getcompletepath(path, ent->d_name);
+                fullpath = getcompletepath(path, ent->d_name);
 
-            // solo si es directorio o fichero convencional seguirá
-            // con el bucle. Omite los enlaces simbólicos
-            if (lstat(fullpath, &sb) < 0) {
+                // solo si es directorio o fichero convencional seguirá
+                // con el bucle. Omite los enlaces simbólicos
+                if (lstat(fullpath, &sb) < 0) {
+                    free(fullpath);
+                    perror("lstat");
+		        }
+
+		        if ((sb.st_mode & S_IFMT) == S_IFDIR) {
+                    processdirectory(fullpath, infosrc);
+
+		        }else if ((sb.st_mode & S_IFMT) == S_IFREG){
+
+                    if (isfile(ent->d_name, ".c")){
+                        infosrc->cfiles++;
+                        infosrc->totalbytes += sb.st_size;
+                    }
+                    if(isfile(ent->d_name, ".h")){
+                        infosrc->hfiles++;
+                        infosrc->totalbytes += sb.st_size;
+                    }
+                }
+
                 free(fullpath);
-                // NO DEBERIA SALIR YA 
-			    err(EXIT_FAILURE, "lstat");
-		    }
-
-		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
-                processdirectory(fullpath, infosrc);
-
-		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
-
-                //printf("%s\n", fullpath);
-                if (isfile(ent->d_name, ".c")){
-                    infosrc->cfiles++;
-                    infosrc->totalbytes += sb.st_size;
-                }
-                if(isfile(ent->d_name, ".h")){
-                    infosrc->hfiles++;
-                    infosrc->totalbytes += sb.st_size;
-                }
             }
-
-            free(fullpath);
         }
+        closedir(d);
     }
-    closedir(d);
 }
 
 int 
@@ -135,8 +132,12 @@ main(int argc, char *argv[]){
 
     // preguntar si hace falta malloc porque si se pasa 
     // de tamaño hace una segunda lectura el programa por si solo 
+    // preguntar tambien por el uso de errno  ¿aplicarlo también a malloc...? 
+
     char line[MaxLine];
     Sourcefiles infodir;
+    
+    errno = 0;
 
     argc--;
 	argv++;
@@ -157,13 +158,10 @@ main(int argc, char *argv[]){
 
         processdirectory(line, &infodir);
         printf("%s\t%ld\t%ld\t%lld\n", infodir.path, infodir.cfiles, infodir.hfiles, infodir.totalbytes);
-
-        // Tratar los errores y ver el valor final que tiene el proceso
-        // usar funciones que controlen errno
     }
     if(!feof(stdin)){
         errx(EXIT_FAILURE, "eof not reached\n");
     }
 
-    exit(EXIT_SUCCESS);
+    exit(errno);
 }
