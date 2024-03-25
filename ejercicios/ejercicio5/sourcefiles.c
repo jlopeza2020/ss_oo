@@ -82,7 +82,6 @@ isfile(char *name, char *extension){
 }
 
 void 
-//recursive(char *path, Sourcefiles *infosrc){
 processdirectory(char *path, Sourcefiles *infosrc){
 
     DIR *d;
@@ -92,6 +91,7 @@ processdirectory(char *path, Sourcefiles *infosrc){
 
     d = opendir(path);
     if (d == NULL) {
+        //NO DEBERÍA SALIR YA 
         err(EXIT_FAILURE, "opendir failed: %s", path);
     }
 
@@ -110,7 +110,6 @@ processdirectory(char *path, Sourcefiles *infosrc){
 
 		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
                 processdirectory(fullpath, infosrc);
-                //processdirectory(infosrc);
 
 		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
 
@@ -118,10 +117,8 @@ processdirectory(char *path, Sourcefiles *infosrc){
                 if (isfile(ent->d_name, ".c")){
                     infosrc->cfiles++;
                     infosrc->totalbytes += sb.st_size;
-                    //fprintf(stderr, "soy fichero .c\n");
                 }
                 if(isfile(ent->d_name, ".h")){
-                    //fprintf(stderr, "soy fichero .h\n");
                     infosrc->hfiles++;
                     infosrc->totalbytes += sb.st_size;
                 }
@@ -136,8 +133,8 @@ processdirectory(char *path, Sourcefiles *infosrc){
 int 
 main(int argc, char *argv[]){
 
-    // preguntar si hace falta malloc porque si
-    // se pasa de tamaño hce una segunda lectura el programa por si solo 
+    // preguntar si hace falta malloc porque si se pasa 
+    // de tamaño hace una segunda lectura el programa por si solo 
     char line[MaxLine];
     Sourcefiles infodir;
 
@@ -148,17 +145,9 @@ main(int argc, char *argv[]){
 		usage();
 	}
 
-
-    /*recursive(argv[1], &infosrc);
-
-    infosrc.path = argv[1];
-
-    printf("%s\t%ld\t%ld\t%lld\n", infosrc.path, infosrc.cfiles, infosrc.hfiles, infosrc.totalbytes);
-    */
-
     while(fgets(line, MaxLine, stdin) != NULL){
-        printf("line: %s\n", line);
 
+        // elimina el salto de línea al final
         line[strcspn(line, "\n")] = 0;
 
         infodir.path = line;
@@ -166,13 +155,9 @@ main(int argc, char *argv[]){
         infodir.hfiles = 0;
         infodir.totalbytes = 0;
 
-        //path[strcspn(path, "\n")] = 0;
-
         processdirectory(line, &infodir);
         printf("%s\t%ld\t%ld\t%lld\n", infodir.path, infodir.cfiles, infodir.hfiles, infodir.totalbytes);
 
-        // se crea una estructura de datos
-        // cada vez que se accede a una entrada de directorio
         // Tratar los errores y ver el valor final que tiene el proceso
         // usar funciones que controlen errno
     }
