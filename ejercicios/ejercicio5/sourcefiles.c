@@ -82,7 +82,7 @@ isfile(char *name, char *extension){
 }
 
 void 
-recursive(char *path){
+recursive(char *path, Sourcefiles *srcinfo){
 
     DIR *d;
     struct dirent *ent;
@@ -108,15 +108,20 @@ recursive(char *path){
 		    }
 
 		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
-                recursive(fullpath);
+                recursive(fullpath, srcinfo);
 		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
 
                 printf("%s\n", fullpath);
                 if (isfile(ent->d_name, ".c")){
+                    srcinfo->cfiles++;
+                    srcinfo->totalbytes += sb.st_size;
                     fprintf(stderr, "soy fichero .c\n");
                 }
                 if(isfile(ent->d_name, ".h")){
                     fprintf(stderr, "soy fichero .h\n");
+                    srcinfo->hfiles++;
+                    srcinfo->totalbytes += sb.st_size;
+
                     // se cumple que sea un fichero .h o .c y hay que añadirle
                     // los bytes correspondientes el numero de ficheros
                 }
@@ -141,13 +146,21 @@ main(int argc, char *argv[]){
     if (argc != ZeroArgs) {
 		usage();
 	}*/
-
+    Sourcefiles info;
 
     if (argc != 2) {
         errx(EXIT_FAILURE, "Uso: %s dir", argv[0]);
     }
 
-    recursive(argv[1]);
+    info.cfiles = 0;
+    info.hfiles = 0;
+    info.totalbytes = 0;
+
+    recursive(argv[1], &info);
+
+    info.path = argv[1];
+
+    printf("%s\t%ld\t%ld\t%lld\n", info.path, info.cfiles, info.hfiles, info.totalbytes);
 
 
     /*while(fgets(line, MaxLine, stdin) != NULL){
