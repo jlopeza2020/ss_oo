@@ -8,9 +8,6 @@
 #include <unistd.h>
 #include <string.h>
 
-
-
-
 enum {
 	ZeroArgs,
     MaxPath = 8*1024, // 8K
@@ -22,7 +19,6 @@ struct Sourcefiles{
     long hfiles;
     long long totalbytes;
 };
-
 typedef struct Sourcefiles Sourcefiles;
 
 void
@@ -32,6 +28,43 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+char *getcompletepath(char *path, char *dname){
+
+    char *fullpath;
+    ssize_t lenpath;
+    ssize_t lenname;
+    ssize_t lenfull;
+
+    // obtenemos la longitud del path
+    lenpath = strlen(path);
+    // longitud del nombre de entrada de directorio 
+    lenname = strlen(dname);
+
+    // path + / + nombre de entrada directorio + \0 
+    lenfull = lenpath + lenname + 2; 
+
+    // comprobar que el malloc no es muy grande 
+    if (lenfull > MaxPath){
+        // NO DEBERÍA SALIR YA 
+        errx(EXIT_FAILURE, "Invalid path size"); 
+    }
+
+    fullpath = (char *)malloc(sizeof(char) * (lenfull));
+    if (fullpath == NULL) {
+        // NO DEBERIA SALIR YA 
+		errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
+	}
+
+    strncpy(fullpath, path, lenfull);
+    // después del path añadir '/'
+    fullpath[lenpath] = '/';
+    // strncpy no añade \0 a final de línea
+    fullpath[lenfull - 1] = '\0';
+    strncpy(fullpath + lenpath + 1, dname, lenfull - lenpath - 1);
+    fullpath[lenfull - 1] = '\0';
+    
+    return fullpath;
+}
 
 void 
 recursive(char *path){
@@ -41,9 +74,9 @@ recursive(char *path){
     struct stat sb;
     char *fullpath;
 
-    ssize_t lenpath;
-    ssize_t lenname;
-    ssize_t lenfull;
+    //ssize_t lenpath;
+    //ssize_t lenname;
+    //ssize_t lenfull;
 
     d = opendir(path);
     if (d == NULL) {
@@ -51,20 +84,20 @@ recursive(char *path){
     }
 
     // obtenemos la longitud del path
-    lenpath = strlen(path);
+    //lenpath = strlen(path);
 
     while ((ent = readdir(d)) != NULL) {
         if (ent->d_name[0] != '.') {
 
             // longitud del nombre de entrada de directorio 
-            lenname = strlen(ent->d_name);
+            //lenname = strlen(ent->d_name);
 
             // longitud total: 
             // path + / + nombre de entrada directorio + \0 
-            lenfull = lenpath + lenname + 2; 
+            //lenfull = lenpath + lenname + 2; 
 
             // comprobar que el malloc no es muy grande 
-            if (lenfull > MaxPath){
+            /*if (lenfull > MaxPath){
                 errx(EXIT_FAILURE, "Invalid path size"); 
             }
 
@@ -73,23 +106,23 @@ recursive(char *path){
 		        errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
 	        }
 
-
             strncpy(fullpath, path, lenfull);
             // después del path añadir '/'
             fullpath[lenpath] = '/';
             // strncpy no añade \0 a final de línea
             fullpath[lenfull - 1] = '\0';
             strncpy(fullpath + lenpath + 1, ent->d_name, lenfull - lenpath - 1);
-            fullpath[lenfull - 1] = '\0';
+            fullpath[lenfull - 1] = '\0';*/
+            fullpath = getcompletepath(path, ent->d_name);
 
-			//strcat(fullpath, ent->d_name);
 
             if (lstat(fullpath, &sb) < 0) {
                 free(fullpath);
+                // no debería acabar aquí la función
 			    err(EXIT_FAILURE, "lstat");
 		    }
             // solo si es directorio o fichero convencional seguirá
-            // con el bucle 
+            // con el bucle. Omite los directorios
 		    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
                 recursive(fullpath);
 		    }else if ((sb.st_mode & S_IFMT) == S_IFREG){
@@ -131,7 +164,8 @@ main(int argc, char *argv[]){
 
     // se crea una estructura de datos
     // cada vez que se accede a una entrada de directorio
-
+    // Tratar los errores y ver el valor final que tiene el proceso
+    // usar funciones que controlen errno
     
 
     }
