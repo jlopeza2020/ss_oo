@@ -1,31 +1,35 @@
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
-int count_words(char *line) {
-    int num_words = 0;
-    bool in_word = false;  // Variable para rastrear si estamos dentro de una palabra
+int main(int argc, char *argv[]) {
+    char *token, *subtoken;
+    char *saveptr1, *saveptr2;
 
-    // Iteramos sobre cada carácter de la cadena
-    for (int i = 0; line[i] != '\0'; i++) {
-        // Si el carácter actual no es un separador y no estamos en una palabra,
-        // aumentamos el contador de palabras y marcamos que estamos dentro de una palabra.
-        if ((line[i] != ' ' && line[i] != '\t') && !in_word) {
-            num_words++;
-            in_word = true;
-        } 
-        // Si el carácter actual es un separador y estamos dentro de una palabra,
-        // marcamos que ya no estamos dentro de una palabra.
-        else if ((line[i] == ' ' || line[i] == '\t') && in_word) {
-            in_word = false;
+    
+    argc--;
+	argv++;
+
+    if (argc != 3) {
+        fprintf(stderr, "Usage: ./strtook_r string delim subdelim\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // asignamos el primer argumento al string 1
+    char *str1 = argv[0];
+    for (int j = 1; ; j++, str1 = NULL) {
+        token = strtok_r(str1, argv[1], &saveptr1);
+        if (token == NULL)
+            break;
+        printf("%d: %s\n", j, token);
+
+        for (char *str2 = token; ; str2 = NULL) {
+            subtoken = strtok_r(str2, argv[2], &saveptr2);
+            if (subtoken == NULL)
+                break;
+            printf(" --> %s\n", subtoken);
         }
     }
 
-    return num_words;
-}
-
-int main() {
-    char line[] = "Esto es una cadena de ejemplo uh7y77     tt";
-    int num_words = count_words(line);
-    printf("Número de palabras: %d\n", num_words);
-    return 0;
+    exit(EXIT_SUCCESS);
 }

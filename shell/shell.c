@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "parser.h"
 
 enum {
 	ZeroArgs,
-	MaxLine = 256,
+	MaxLine = 512,
 };
 
 void
@@ -16,51 +16,12 @@ usage(void)
 }
 
 
-// ¿este nombre es correcto?
-int
-getnumwords(char *line){
-
-    int i;
-    int numwords;
-    int inword;
-    
-    //printf("%s\n",line);
-
-    i = 0;
-    numwords = 0;
-    inword = 0; // es falso
-
-    // imprimimos hasta final de la línea 
-    // ya que fgets devuelve la string con un \0
-    while(line[i] != '\0'){
-
-        
-        // imprimimos caracter a carácter 
-        //printf("%c\n", line[i]);
-
-        if((line[i] != ' ' && line[i] != '\t') && !inword){
-            // no almacenamos dichos valores
-            numwords++;
-            inword = 1;
-        }
-
-        if((line[i] == ' ' || line[i] == '\t') && inword){
-            // no almacenamos dichos valores
-            inword = 0;
-        }
-        
-        i++;
-    }
-    return numwords;
-}
-
-    //token = strtok_r(str1, argv[1], &saveptr1);
-
 int 
 main(int argc, char *argv[]){
 
     char line[MaxLine];
     int numwords;
+    CheckInput checkinput;
 
     argc--;
 	argv++;
@@ -78,30 +39,31 @@ main(int argc, char *argv[]){
         if(fgets(line, MaxLine, stdin) == NULL){
             exit(EXIT_SUCCESS);
         }
-        
-        //fgets(line, MaxLine, stdin);
+        /*if (feof(stdin)) {
+            // cerrar todo lo necesario y salir
+            freememory(&checkinput, numwords);
+            exit(EXIT_SUCCESS);
+        }*/
 
         // elimina el salto de línea al final
 		line[strcspn(line, "\n")] = 0;
 
-    
-        // tokenizar la string
         numwords = getnumwords(line);
+        tokenize(&checkinput, line, numwords);
 
-        printf("esta string tiene %d palabras\n", numwords);
+        //printf("%d\n", numwords);
 
-        // if() si la linea introducida es EXIT, salir de la terminal
+        // ya sabemos el número de palabras que 
+        // tiene nuestra linea de la terminal
+        freememory(&checkinput, numwords);
 
-        /*if (feof(stdin)) {
+        if(strcmp(line, "EXIT") == 0){
             // cerrar todo lo necesario y salir
+            //freememory(&checkinput, numwords);
             exit(EXIT_SUCCESS);
-        }*/
-
-    
-
+        }
     }
 
-
-
+    //freememory(&checkinput, numwords);
     exit(EXIT_SUCCESS);
 }
