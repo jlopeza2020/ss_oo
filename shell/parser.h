@@ -1,12 +1,24 @@
 
 enum {
-	MaxWord = 256,
+	MaxWord = 512,
+};
+
+enum {
+	   // todos los strcmp
+    PIPE,
+    STDINRED,
+    STDOUTRED,
+    BACKGROUND,
+    ENV,
+    EQUAL,
+    BUILTINCD,
+    WORD,
 };
 
 struct CheckInput{
 	char **words;
-    /*int numwords;
-	int numpipes;
+    int numwords;
+	/*int numpipes;
     int stdired;
     int stdored;
     int bg;
@@ -21,5 +33,10 @@ typedef struct CheckInput CheckInput;
 // mire si hay builtin...
 
 int getnumwords(char *line);
-void tokenize(CheckInput *checkinput, char *line, int numwords);
-void freememory(CheckInput *checkinput, int numwords);
+void tokenize(CheckInput *checkinput, char *line);
+void freememory(CheckInput *checkinput);
+void parse(CheckInput *checkinput);
+int gettype(char *str, int actualpos, int totalpos);
+void settype(CheckInput *checkinput, int val);
+int isbg(char *str, int actualpos, int totalpos);
+int isenv(char *str);

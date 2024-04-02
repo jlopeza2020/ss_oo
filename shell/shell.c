@@ -20,7 +20,7 @@ int
 main(int argc, char *argv[]){
 
     char line[MaxLine];
-    int numwords;
+    //int numwords;
     CheckInput checkinput;
 
     argc--;
@@ -39,31 +39,28 @@ main(int argc, char *argv[]){
         if(fgets(line, MaxLine, stdin) == NULL){
             exit(EXIT_SUCCESS);
         }
+
+        // elimina el salto de línea al final
+		line[strcspn(line, "\n")] = 0;
+
+        checkinput.numwords = getnumwords(line);
+        tokenize(&checkinput, line);
+        // una vez tokenizado hay que distinguir cada caso
+        parse(&checkinput);
+
+
+        freememory(&checkinput);
+
+        if(strcmp(line, "EXIT") == 0){
+            exit(EXIT_SUCCESS);
+        }
+
         /*if (feof(stdin)) {
             // cerrar todo lo necesario y salir
             freememory(&checkinput, numwords);
             exit(EXIT_SUCCESS);
         }*/
-
-        // elimina el salto de línea al final
-		line[strcspn(line, "\n")] = 0;
-
-        numwords = getnumwords(line);
-        tokenize(&checkinput, line, numwords);
-
-        //printf("%d\n", numwords);
-
-        // ya sabemos el número de palabras que 
-        // tiene nuestra linea de la terminal
-        freememory(&checkinput, numwords);
-
-        if(strcmp(line, "EXIT") == 0){
-            // cerrar todo lo necesario y salir
-            //freememory(&checkinput, numwords);
-            exit(EXIT_SUCCESS);
-        }
     }
 
-    //freememory(&checkinput, numwords);
     exit(EXIT_SUCCESS);
 }
