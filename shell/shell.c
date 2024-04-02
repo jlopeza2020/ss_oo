@@ -49,6 +49,10 @@ main(int argc, char *argv[]){
         parse(&checkinput);
 
 
+
+
+
+
         freememory(&checkinput);
 
         if(strcmp(line, "EXIT") == 0){

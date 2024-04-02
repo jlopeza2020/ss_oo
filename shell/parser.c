@@ -14,7 +14,6 @@ settype(CheckInput *checkinput, int val){
     switch (val) {
 
 	case PIPE:
-		    //copybytesize = -1;
         //checkinput->numpipes++;
         fprintf(stderr, "soy pipe\n");
 
@@ -88,10 +87,35 @@ isenv(char *str){
 }
 
 // comprueba que hay uno y sólo en medio de la palabra
-/*int 
+int 
 isequal(char *str){
-    strcmp(str, "=") == 0
-}*/
+    
+    int i;
+    int len;
+    int times;
+
+    len = strlen(str); 
+
+    // Si primer o último carácter es igual a '=' devuelve falso
+    if ((str[0] == '=') || (str[len -1] == '=')) {
+        return 0;
+    }
+
+    times = 0;
+    for(i = 1; i < len - 1; i++){
+
+        if (str[i] == '=') {
+            times++;
+        }
+
+    }
+    // comprueba que entre el segundo y 
+    // penúltimo carácter haya solo un igual
+    if(times == 1){
+        return 1;
+    }
+    return 0;
+}
 
 int 
 gettype(char *str, int actualpos, int totalpos){
@@ -113,9 +137,9 @@ gettype(char *str, int actualpos, int totalpos){
         return ENV;
     }
 
-    /*if (isequal(str)) {
+    if (isequal(str)) {
         return EQUAL;
-    }*/
+    }
 
     // ZONA DE BUILT-INS
     if (strcmp(str, "cd") == 0) {
@@ -132,20 +156,14 @@ parse(CheckInput *checkinput){
 
     int i;
     int value;
-    // se usa para comprobar si está & al final 
-    //int lastvalue;
 
     for (i = 0; i < checkinput->numwords; i++) {
 
         value = gettype(checkinput->words[i], i, checkinput->numwords);
 
-        // ocmprobar que se cumple la condición para poder fijar el tipo 
-        // background al final
-        
         settype(checkinput, value);
-        //lastvalue = value;
+        
     }
-    //settype(checkinput, lastvalue);
 }
 
 void
@@ -205,7 +223,8 @@ getnumwords(char *line){
     
     i = 0;
     numwords = 0;
-    inword = 0; // es falso
+    // es falso
+    inword = 0; 
     while(line[i] != '\0'){
 
         if((line[i] != ' ' && line[i] != '\t') && !inword){

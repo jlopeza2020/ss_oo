@@ -36,7 +36,11 @@ int getnumwords(char *line);
 void tokenize(CheckInput *checkinput, char *line);
 void freememory(CheckInput *checkinput);
 void parse(CheckInput *checkinput);
+
 int gettype(char *str, int actualpos, int totalpos);
 void settype(CheckInput *checkinput, int val);
+
 int isbg(char *str, int actualpos, int totalpos);
 int isenv(char *str);
+int isequal(char *str);
+
