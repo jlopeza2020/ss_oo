@@ -11,8 +11,8 @@
 
 enum {
 	ZeroArgs,
-	MaxPath = 16 * 1024, // 16K
-	MaxLine = 4 * 1024, // 4K
+	MaxPath = 16 * 1024,	// 16K
+	MaxLine = 4 * 1024,	// 4K
 };
 
 struct Sourcefiles {
@@ -41,10 +41,10 @@ getcompletepath(char *path, char *dname)
 
 	// obtenemos la longitud del path
 	lenpath = strlen(path);
-	// longitud del nombre de entrada de directorio 
+	// obtenemos la longitud del nombre de entrada de directorio 
 	lenname = strlen(dname);
 
-	// path + / + nombre de entrada directorio + \0 
+	// path + '/' + nombre de entrada directorio + '\0' 
 	lenfull = lenpath + lenname + 2;
 
 	// comprobar que el malloc no es muy grande 
@@ -60,7 +60,7 @@ getcompletepath(char *path, char *dname)
 	strncpy(fullpath, path, lenfull);
 	// después del path añadir '/'
 	fullpath[lenpath] = '/';
-	// strncpy no añade \0 a final de línea
+	// strncpy no añade '\0' a final de línea
 	fullpath[lenfull - 1] = '\0';
 	strncpy(fullpath + lenpath + 1, dname, lenfull - lenpath - 1);
 	fullpath[lenfull - 1] = '\0';
@@ -140,7 +140,6 @@ main(int argc, char *argv[])
 	char *newline;
 	Sourcefiles infodir;
 
-
 	errno = 0;
 
 	argc--;
@@ -154,15 +153,12 @@ main(int argc, char *argv[])
 
 		if (line[strlen(line) - 1] == '\n') {
 
-            // elimina el salto de línea al final
-			//line[strcspn(line, "\n")] = 0;
-			newline = strrchr(line, '\n'); 
+			newline = strrchr(line, '\n');
 
-    		if (newline != NULL) {
-				// donde apunta newline poner un /0
-        		*newline  = '\0';
-   		 	}
-
+			if (newline != NULL) {
+				// donde apunta newline poner un '\0'
+				*newline = '\0';
+			}
 			// inicializando la estructura de datos
 			infodir.path = line;
 			infodir.cfiles = 0;
@@ -170,12 +166,12 @@ main(int argc, char *argv[])
 			infodir.totalbytes = 0;
 
 			processdirectory(line, &infodir);
-			printf("%s\t%ld\t%ld\t%lld\n", infodir.path, infodir.cfiles,
-		       infodir.hfiles, infodir.totalbytes);
+			printf("%s\t%ld\t%ld\t%lld\n", infodir.path,
+			       infodir.cfiles, infodir.hfiles,
+			       infodir.totalbytes);
 
-        } else {
-            warnx("Exceeded path size");
-
+		} else {
+			warnx("Exceeded path size");
 		}
 	}
 	if (!feof(stdin)) {
