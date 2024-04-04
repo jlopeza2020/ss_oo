@@ -11,8 +11,8 @@
 
 enum {
 	ZeroArgs,
-	MaxPath = 8 * 1024,	// 8K
-	MaxLine = 256,
+	MaxPath = 16 * 1024, // 16K
+	MaxLine = 4 * 1024, // 4K
 };
 
 struct Sourcefiles {
@@ -136,13 +136,10 @@ processdirectory(char *path, Sourcefiles *infosrc)
 int
 main(int argc, char *argv[])
 {
-
-	// preguntar si hace falta malloc porque si se pasa 
-	// de tamaño hace una segunda lectura el programa por si solo 
-	// preguntar tambien por el uso de errno  ¿aplicarlo también a malloc...? 
-
 	char line[MaxLine];
+	char *newline;
 	Sourcefiles infodir;
+
 
 	errno = 0;
 
@@ -155,17 +152,31 @@ main(int argc, char *argv[])
 
 	while (fgets(line, MaxLine, stdin) != NULL) {
 
-		// elimina el salto de línea al final
-		line[strcspn(line, "\n")] = 0;
+		if (line[strlen(line) - 1] == '\n') {
 
-		infodir.path = line;
-		infodir.cfiles = 0;
-		infodir.hfiles = 0;
-		infodir.totalbytes = 0;
+            // elimina el salto de línea al final
+			//line[strcspn(line, "\n")] = 0;
+			newline = strrchr(line, '\n'); 
 
-		processdirectory(line, &infodir);
-		printf("%s\t%ld\t%ld\t%lld\n", infodir.path, infodir.cfiles,
+    		if (newline != NULL) {
+				// donde apunta newline poner un /0
+        		*newline  = '\0';
+   		 	}
+
+			// inicializando la estructura de datos
+			infodir.path = line;
+			infodir.cfiles = 0;
+			infodir.hfiles = 0;
+			infodir.totalbytes = 0;
+
+			processdirectory(line, &infodir);
+			printf("%s\t%ld\t%ld\t%lld\n", infodir.path, infodir.cfiles,
 		       infodir.hfiles, infodir.totalbytes);
+
+        } else {
+            warnx("Exceeded path size");
+
+		}
 	}
 	if (!feof(stdin)) {
 		errx(EXIT_FAILURE, "eof not reached\n");
