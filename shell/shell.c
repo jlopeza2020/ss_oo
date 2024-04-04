@@ -5,7 +5,7 @@
 
 enum {
 	ZeroArgs,
-	MaxLine = 512,
+	MaxLine = 512, // más grande  // manejar el error si la string es más grande : 2k  
 };
 
 void
@@ -37,10 +37,11 @@ main(int argc, char *argv[])
 	while (1) {
 
 		if (fgets(line, MaxLine, stdin) == NULL) {
+			// break  // comprobar a final si ha llegado con error o final de fichero 
 			exit(EXIT_SUCCESS);
 		}
 		// elimina el salto de línea al final
-		line[strcspn(line, "\n")] = 0;
+		line[strcspn(line, "\n")] = 0;  // pone el último byte \0 es como strchr 
 
 		checkinput.numwords = getnumwords(line);
 		tokenize(&checkinput, line);
