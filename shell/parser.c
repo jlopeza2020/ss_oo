@@ -6,7 +6,7 @@
 // según se fijan cosas habrá que ir mirando los descriptores de
 // fichero y demás 
 // solo imprime el tipo de valor que es 
-void
+/*void
 settype(CommandLine * cl, int val)
 {
 
@@ -49,11 +49,11 @@ settype(CommandLine * cl, int val)
 		fprintf(stderr, "soy palabra\n");
 		break;
 	}
-}
+}*/
 
 
 // Mira previamente si se encuentra al final de todo
-int
+/*int
 isbg(char *str, int actualpos, int totalpos)
 {
 
@@ -63,6 +63,20 @@ isbg(char *str, int actualpos, int totalpos)
 			return 1;
 		}
 	}
+
+	return 0;
+}*/
+
+int
+isbg(CommandLine *cl)
+{
+	//isbg(cl->words[cl->numwords-1], cl->numwords-1, cl->numwords)
+	//si es true return 1
+	//if (actualpos == (cl->numwords - 1)) {
+	if (strcmp(cl->words[cl->numwords-1], "&") == 0) {
+		return 1;
+	}
+	//}
 
 	return 0;
 }
@@ -124,7 +138,8 @@ isequal(char *str)
 	return 0;
 }
 
-int
+// lo uso como trazas
+/*int
 gettype(char *str, int actualpos, int totalpos)
 {
 
@@ -155,8 +170,7 @@ gettype(char *str, int actualpos, int totalpos)
 	// más adelante incluir los opcionales
 
 	return WORD;
-}
-
+}*/
 
 // libera memoria y decrementa los valores
 void 
@@ -183,12 +197,10 @@ void
 casebg(CommandLine * cl){
 
 	// modificar esta función
-	if (isbg(cl->words[cl->numwords-1], cl->numwords-1, cl->numwords)) {
+	if (isbg(cl)) {
 
 		elimstr(cl,cl->numwords-1);
 		cl->bg++;
-		fprintf(stderr, "%d\n", cl->bg);
-
 	}
 }
 
@@ -197,31 +209,28 @@ parse(CommandLine * cl)
 {
 
 	int i;
-	//int value;
 
-	
+	// uso de traza
 	for (i = 0; i < cl->numwords; i++) {
 
-		
 		fprintf(stderr, "%s\n", cl->words[i]);
-		
 	}
 	// 1º background (si ocurre eliminar la palabra y aumento el contador)
 	casebg(cl);
 
+	// uso de traza
 	for (i = 0; i < cl->numwords; i++) {
-
-		
 		fprintf(stderr, "%s\n", cl->words[i]);
-		
-		//value = gettype(cl->words[i], i, cl->numwords);
-
-		//settype(cl, value);
 	}
 
-	// 2º redirecciones 
 
-		// 3º pipes y dividirlo en array de array de strings 
+	// 2º redirecciones 
+	//casered(cl , >);
+	//casered(cl, <);
+	// si te meten de más poder tratarlo como quiera 
+
+	// 3º pipes y dividirlo en array de array de strings 
+
 		// 4º el array de array de strings pueden ser: 
 		// 	- variables de entorno 
 		//  - sustituciones de variables de entorno 
@@ -232,6 +241,9 @@ parse(CommandLine * cl)
 		// 		  de la variable PATH
 
 	//}
+	//value = gettype(cl->words[i], i, cl->numwords);
+
+	//settype(cl, value);
 }
 
 void
@@ -242,7 +254,6 @@ freememory(CommandLine * cl)
 
 	// liberamos el array de strings 
 	for (i = 0; i < cl->numwords; i++) {
-		//fprintf(stderr,"%s\n", CommandLine->words[i]);
 		free(cl->words[i]);
 	}
 	free(cl->words);
@@ -267,7 +278,6 @@ tokenize(CommandLine *cl, char *line)
 		if (cl->words[i] == NULL) {
 			perror("Error: dynamic memory cannot be allocated");
 		}
-
 	}
 
 	i = 0;

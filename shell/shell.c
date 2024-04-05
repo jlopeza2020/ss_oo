@@ -15,6 +15,7 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+// los valores de words y numwords se inicializan más adelante 
 void
 initcl(CommandLine *cl){
 
@@ -33,7 +34,6 @@ main(int argc, char *argv[])
 
 	char line[MaxLine];
 
-	//int numwords;
 	CommandLine cl;
 	// inicializar la estructura
 	initcl(&cl);
@@ -56,16 +56,19 @@ main(int argc, char *argv[])
 		}
 
 		// mirar si el tamaño de fgets se excede del tamaño 
-		// HAY UE MODIFICARLO
+		// HAY QUE MODIFICARLO
 		// elimina el salto de línea al final
 		line[strcspn(line, "\n")] = 0;  // pone el último byte \0 es como strchr 
 
+		
 		cl.numwords = getnumwords(line);
 		tokenize(&cl, line);
 		// una vez tokenizado hay que distinguir cada caso
 		parse(&cl);
 
 		// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
+
+
 
 		freememory(&cl);
 

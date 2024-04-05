@@ -37,14 +37,14 @@ void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);
 void parse(CommandLine *cl);
 
-int gettype(char *str, int actualpos, int totalpos);
-void settype(CommandLine *cl, int val);
+//int gettype(char *str, int actualpos, int totalpos);
+//void settype(CommandLine *cl, int val);
 
-int isbg(char *str, int actualpos, int totalpos);
+//int isbg(char *str, int actualpos, int totalpos);
+int isbg(CommandLine *cl);
 int isenv(char *str);
 int isequal(char *str);
 
 void casebg(CommandLine * cl);
-
 void elimstr(CommandLine * cl, int pos);
 
