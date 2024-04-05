@@ -15,6 +15,18 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+void
+initcl(CommandLine *cl){
+
+    cl->numwords = 0;
+    cl->bg = 0;
+    cl->stdired = 0;
+    cl->stdored = 0;
+	cl->numpipes = 0;
+    cl->env = 0;
+    cl->equal = 0;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -23,6 +35,8 @@ main(int argc, char *argv[])
 
 	//int numwords;
 	CommandLine cl;
+	// inicializar la estructura
+	initcl(&cl);
 
 	argc--;
 	argv++;

@@ -178,37 +178,20 @@ elimstr(CommandLine *cl, int index) {
     cl->numwords--;
 }
 
+// detecta si hay background, elimina dicha palabra de ese array 
 void 
 casebg(CommandLine * cl){
-// decrementar el valor de la string 
-// decrementar el número de palabras 
-// y hacer free de ese valor 
 
 	// modificar esta función
 	if (isbg(cl->words[cl->numwords-1], cl->numwords-1, cl->numwords)) {
 
-		// eliminamos la string en la posición final
 		elimstr(cl,cl->numwords-1);
-		//fprintf(stderr, "hay bg: %s\n",cl->words[cl->numwords -1]);
+		cl->bg++;
+		fprintf(stderr, "%d\n", cl->bg);
 
 	}
-
-
-
-
-
-	/*for (i = 0; i < cl->numwords; i++) {
-
-		
-		fprintf(stderr, "%s\n", cl->words[i]);
-		
-		//value = gettype(cl->words[i], i, cl->numwords);
-
-		//settype(cl, value);
-	}*/
-
-
 }
+
 void
 parse(CommandLine * cl)
 {
@@ -222,9 +205,6 @@ parse(CommandLine * cl)
 		
 		fprintf(stderr, "%s\n", cl->words[i]);
 		
-		//value = gettype(cl->words[i], i, cl->numwords);
-
-		//settype(cl, value);
 	}
 	// 1º background (si ocurre eliminar la palabra y aumento el contador)
 	casebg(cl);
