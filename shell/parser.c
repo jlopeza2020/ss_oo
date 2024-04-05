@@ -5,18 +5,18 @@
 
 // según se fijan cosas habrá que ir mirando los descriptores de
 // fichero y demás 
+// solo imprime el tipo de valor que es 
 void
-settype(CheckInput * checkinput, int val)
+settype(CommandLine * cl, int val)
 {
 
-	// CHECKINPUT DE MOMENTO NO SE USA 
+	// CommandLine DE MOMENTO NO SE USA 
 
 	switch (val) {
 
 	case PIPE:
-		//checkinput->numpipes++;
+		//cl->numpipes++;
 		fprintf(stderr, "soy pipe\n");
-
 		break;
 	case STDINRED:
 		fprintf(stderr, "soy redirección de entrada\n");
@@ -27,6 +27,9 @@ settype(CheckInput * checkinput, int val)
 
 	case BACKGROUND:
 		fprintf(stderr, "ejecuto en background\n");
+
+		// eliminarlo de la string 
+		// aumentar el valor del contador 
 		break;
 
 	case ENV:
@@ -47,6 +50,7 @@ settype(CheckInput * checkinput, int val)
 		break;
 	}
 }
+
 
 // Mira previamente si se encuentra al final de todo
 int
@@ -153,53 +157,134 @@ gettype(char *str, int actualpos, int totalpos)
 	return WORD;
 }
 
+
+// libera memoria y decrementa los valores
+void 
+elimstr(CommandLine *cl, int index) {
+    
+	int i;
+	// indice fuera de lo buscado, no se puede eliminar
+	if (index < 0 || index >= cl->numwords) {
+        return;
+    }
+
+	// eliminar la memoria de la palabra 
+    free(cl->words[index]);
+
+	// desplazar las palabras a la izquierda
+    for (i = index; i < cl->numwords - 1; i++) {
+        cl->words[i] = cl->words[i + 1];
+    }
+    cl->numwords--;
+}
+
+void 
+casebg(CommandLine * cl){
+// decrementar el valor de la string 
+// decrementar el número de palabras 
+// y hacer free de ese valor 
+
+	// modificar esta función
+	if (isbg(cl->words[cl->numwords-1], cl->numwords-1, cl->numwords)) {
+
+		// eliminamos la string en la posición final
+		elimstr(cl,cl->numwords-1);
+		//fprintf(stderr, "hay bg: %s\n",cl->words[cl->numwords -1]);
+
+	}
+
+
+
+
+
+	/*for (i = 0; i < cl->numwords; i++) {
+
+		
+		fprintf(stderr, "%s\n", cl->words[i]);
+		
+		//value = gettype(cl->words[i], i, cl->numwords);
+
+		//settype(cl, value);
+	}*/
+
+
+}
 void
-parse(CheckInput * checkinput)
+parse(CommandLine * cl)
 {
 
 	int i;
-	int value;
+	//int value;
 
-	for (i = 0; i < checkinput->numwords; i++) {
+	
+	for (i = 0; i < cl->numwords; i++) {
 
-		value = gettype(checkinput->words[i], i, checkinput->numwords);
+		
+		fprintf(stderr, "%s\n", cl->words[i]);
+		
+		//value = gettype(cl->words[i], i, cl->numwords);
 
-		settype(checkinput, value);
-
+		//settype(cl, value);
 	}
+	// 1º background (si ocurre eliminar la palabra y aumento el contador)
+	casebg(cl);
+
+	for (i = 0; i < cl->numwords; i++) {
+
+		
+		fprintf(stderr, "%s\n", cl->words[i]);
+		
+		//value = gettype(cl->words[i], i, cl->numwords);
+
+		//settype(cl, value);
+	}
+
+	// 2º redirecciones 
+
+		// 3º pipes y dividirlo en array de array de strings 
+		// 4º el array de array de strings pueden ser: 
+		// 	- variables de entorno 
+		//  - sustituciones de variables de entorno 
+		// 	- comandos
+		// 		* ver si es built-in 
+		// 		* fichero ejecutable en el dir trabajo
+		// 		* fichero ejecutable que se encuentra en alguno de los directorios
+		// 		  de la variable PATH
+
+	//}
 }
 
 void
-freememory(CheckInput * checkinput)
+freememory(CommandLine * cl)
 {
 
 	int i;
 
 	// liberamos el array de strings 
-	for (i = 0; i < checkinput->numwords; i++) {
-		//fprintf(stderr,"%s\n", checkinput->words[i]);
-		free(checkinput->words[i]);
+	for (i = 0; i < cl->numwords; i++) {
+		//fprintf(stderr,"%s\n", CommandLine->words[i]);
+		free(cl->words[i]);
 	}
-	free(checkinput->words);
+	free(cl->words);
 }
 
 void
-tokenize(CheckInput * checkinput, char *line)
+tokenize(CommandLine *cl, char *line)
 {
 
 	int i;
 	char *saveptr;
 	char *token;
 
-	checkinput->words =
-	    (char **)malloc(sizeof(char *) * checkinput->numwords);
-	if (checkinput->words == NULL) {
+	cl->words =
+	    (char **)malloc(sizeof(char *) * cl->numwords);
+	if (cl->words == NULL) {
 		perror("Error: dynamic memory cannot be allocated");
 	}
 	// inicializamos cada elemento del array
-	for (i = 0; i < checkinput->numwords; i++) {
-		checkinput->words[i] = (char *)malloc(sizeof(char) * MaxWord);
-		if (checkinput->words[i] == NULL) {
+	for (i = 0; i < cl->numwords; i++) {
+		cl->words[i] = (char *)malloc(sizeof(char) * MaxWord);
+		if (cl->words[i] == NULL) {
 			perror("Error: dynamic memory cannot be allocated");
 		}
 
@@ -208,13 +293,13 @@ tokenize(CheckInput * checkinput, char *line)
 	i = 0;
 	token = strtok_r(line, " \t", &saveptr);
 	// copiar el valor de token en el array dinámico
-	strcpy(checkinput->words[i], token);
+	strcpy(cl->words[i], token);
 
 	i++;
-	while (token != NULL && i < checkinput->numwords) {
+	while (token != NULL && i < cl->numwords) {
 
 		token = strtok_r(NULL, " \t", &saveptr);
-		strcpy(checkinput->words[i], token);
+		strcpy(cl->words[i], token);
 		i++;
 	}
 }

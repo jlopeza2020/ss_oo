@@ -15,17 +15,17 @@ enum {
     WORD,
 };
 
-struct CheckInput{
+struct CommandLine{
 	char **words;
     int numwords;
-	/*int numpipes;
+    int bg;
     int stdired;
     int stdored;
-    int bg;
+	int numpipes;
     int env;
-    int equal;*/
+    int equal;
 };
-typedef struct CheckInput CheckInput;
+typedef struct CommandLine CommandLine;
 
 // otra estructura para comando 
 // otra para pipes 
@@ -33,14 +33,18 @@ typedef struct CheckInput CheckInput;
 // mire si hay builtin...
 
 int getnumwords(char *line);
-void tokenize(CheckInput *checkinput, char *line);
-void freememory(CheckInput *checkinput);
-void parse(CheckInput *checkinput);
+void tokenize(CommandLine *cl, char *line);
+void freememory(CommandLine *cl);
+void parse(CommandLine *cl);
 
 int gettype(char *str, int actualpos, int totalpos);
-void settype(CheckInput *checkinput, int val);
+void settype(CommandLine *cl, int val);
 
 int isbg(char *str, int actualpos, int totalpos);
 int isenv(char *str);
 int isequal(char *str);
+
+void casebg(CommandLine * cl);
+
+void elimstr(CommandLine * cl, int pos);
 

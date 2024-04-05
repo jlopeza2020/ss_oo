@@ -22,7 +22,7 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 
 	//int numwords;
-	CheckInput checkinput;
+	CommandLine cl;
 
 	argc--;
 	argv++;
@@ -40,15 +40,20 @@ main(int argc, char *argv[])
 			// break  // comprobar a final si ha llegado con error o final de fichero 
 			exit(EXIT_SUCCESS);
 		}
+
+		// mirar si el tamaño de fgets se excede del tamaño 
+		// HAY UE MODIFICARLO
 		// elimina el salto de línea al final
 		line[strcspn(line, "\n")] = 0;  // pone el último byte \0 es como strchr 
 
-		checkinput.numwords = getnumwords(line);
-		tokenize(&checkinput, line);
+		cl.numwords = getnumwords(line);
+		tokenize(&cl, line);
 		// una vez tokenizado hay que distinguir cada caso
-		parse(&checkinput);
+		parse(&cl);
 
-		freememory(&checkinput);
+		// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
+
+		freememory(&cl);
 
 		if (strcmp(line, "EXIT") == 0) {
 			exit(EXIT_SUCCESS);
@@ -56,7 +61,7 @@ main(int argc, char *argv[])
 
 		/*if (feof(stdin)) {
 		   // cerrar todo lo necesario y salir
-		   freememory(&checkinput, numwords);
+		   freememory(&CommandLine, numwords);
 		   exit(EXIT_SUCCESS);
 		   } */
 	}
