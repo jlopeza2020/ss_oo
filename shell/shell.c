@@ -6,7 +6,7 @@
 
 enum {
 	ZeroArgs,
-	MaxLine = 4, // más grande  // manejar el error si la string es más grande : 2k  
+	MaxLine = 4 *1024, // 4k  
 };
 
 void
@@ -34,6 +34,9 @@ main(int argc, char *argv[])
 {
 
 	char line[MaxLine];
+	char *newline;
+	int c;
+
 
 	CommandLine cl;
 	// inicializar la estructura
@@ -57,16 +60,15 @@ main(int argc, char *argv[])
 
 		if (line[strlen(line) - 1] == '\n') {
 
+			newline = strrchr(line, '\n');
 
-		// mirar si el tamaño de fgets se excede del tamaño 
-		// HAY QUE MODIFICARLO
-		// elimina el salto de línea al final
-			line[strcspn(line, "\n")] = 0;  // pone el último byte \0 es como strchr 
+			if (newline != NULL) {
+				// donde apunta newline poner un '\0'
+				*newline = '\0';
+			}
 
-		
 			cl.numwords = getnumwords(line);
 			tokenize(&cl, line);
-			
 			// una vez tokenizado hay que distinguir cada caso
 			parse(&cl);
 
@@ -84,7 +86,9 @@ main(int argc, char *argv[])
 
 		}else {
 			warnx("Exceeded path size");
-			// eliminar lo que hay en todo el buffer
+			// elimina el contenido del buffer de entrada
+            while ((c = getchar()) != '\n' && c != EOF);
+			
 		}
 	}
 	if(!feof(stdin)){

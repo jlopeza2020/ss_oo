@@ -32,6 +32,16 @@ typedef struct CommandLine CommandLine;
 // asigne los descriptores de fichero ... 
 // mire si hay builtin...
 
+// ALMACENARLO EN OTRO .H
+struct Redirections{
+    char *stdinred;
+    int fdstdinred;
+    char *stdoutred;
+    int fdstdoutred;
+};
+typedef struct Redirections Redirections; 
+
+
 int getnumwords(char *line);
 void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);

@@ -160,7 +160,6 @@ elimstr(CommandLine *cl, int index) {
 	if (index < 0 || index >= cl->numwords) {
         return;
     }
-
 	// eliminar la memoria de la palabra 
     free(cl->words[index]);
 
@@ -181,6 +180,32 @@ casebg(CommandLine * cl){
 	}
 }
 
+void 
+casered(CommandLine *cl){
+
+	// buscar al final si están: incrementar su contador 
+	int i; 
+	int pos = cl->numwords - 4;
+
+	for (i=pos; i < cl->numwords; i++){
+
+		if (strcmp(cl->words[i], "<") == 0) {
+			// redirección de entrada
+			// mirar que el siguiente valor no sea > 
+		}
+
+		if (strcmp(cl->words[i], ">") == 0) {
+			// redirección salia
+		}
+
+
+
+	}
+	// almacenarnos en una estructura el path red entrada y salida
+
+	// eliminar dichos valores del string
+}
+
 void
 parse(CommandLine * cl)
 {
@@ -195,15 +220,8 @@ parse(CommandLine * cl)
 	// 1º background (si ocurre eliminar la palabra y aumento el contador)
 	casebg(cl);
 
-	// uso de traza
-	for (i = 0; i < cl->numwords; i++) {
-		fprintf(stderr, "%s\n", cl->words[i]);
-	}
-
-
 	// 2º redirecciones 
-	//casered(cl , >);
-	//casered(cl, <);
+	casered(cl);
 	// si te meten de más poder tratarlo como quiera 
 
 	// 3º pipes y dividirlo en array de array de strings 
@@ -221,6 +239,11 @@ parse(CommandLine * cl)
 	//value = gettype(cl->words[i], i, cl->numwords);
 
 	//settype(cl, value);
+
+	// uso de traza
+	for (i = 0; i < cl->numwords; i++) {
+		fprintf(stderr, "%s\n", cl->words[i]);
+	}
 }
 
 void
