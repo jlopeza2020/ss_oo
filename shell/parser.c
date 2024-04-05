@@ -51,33 +51,12 @@ settype(CommandLine * cl, int val)
 	}
 }*/
 
-
-// Mira previamente si se encuentra al final de todo
-/*int
-isbg(char *str, int actualpos, int totalpos)
-{
-
-	//si es true return 1
-	if (actualpos == (totalpos - 1)) {
-		if (strcmp(str, "&") == 0) {
-			return 1;
-		}
-	}
-
-	return 0;
-}*/
-
 int
 isbg(CommandLine *cl)
 {
-	//isbg(cl->words[cl->numwords-1], cl->numwords-1, cl->numwords)
-	//si es true return 1
-	//if (actualpos == (cl->numwords - 1)) {
 	if (strcmp(cl->words[cl->numwords-1], "&") == 0) {
 		return 1;
 	}
-	//}
-
 	return 0;
 }
 
@@ -192,13 +171,11 @@ elimstr(CommandLine *cl, int index) {
     cl->numwords--;
 }
 
-// detecta si hay background, elimina dicha palabra de ese array 
+// detecta si hay background y si ocurre: elimina dicha palabra de ese array 
 void 
 casebg(CommandLine * cl){
 
-	// modificar esta función
 	if (isbg(cl)) {
-
 		elimstr(cl,cl->numwords-1);
 		cl->bg++;
 	}
