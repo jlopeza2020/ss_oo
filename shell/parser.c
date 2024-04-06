@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <err.h>
+
 #include "parser.h"
 
 // según se fijan cosas habrá que ir mirando los descriptores de
@@ -180,27 +182,93 @@ casebg(CommandLine * cl){
 	}
 }
 
+int isstr(char *word) {
+    // Verifica si el argumento es un puntero nulo
+    if (word == NULL) {
+        return 0; // No es un string
+    }
+
+    // Verifica si la longitud es mayor que cero y si el primer elemento no es nulo
+    if (strlen(word) > 0 && word[0] != '\0') {
+        return 1; // Es un string
+    } else {
+        return 0; // No es un string
+    }
+}
+
+int
+isred(CommandLine *cl, char *typered)
+{
+	
+	
+	
+	if( cl->numwords >= 2){
+
+		if (strcmp(cl->words[cl->numwords-2], typered) == 0) {
+			if(isstr(cl->words[cl->numwords-1])){
+				return 1; // hay red y es una str
+			}
+		}
+	}
+	/*if (strcmp(cl->words[cl->numwords-2], typered) == 0) {
+		if(isstr(cl->words[cl->numwords-1])){
+			return 1; // hay red y es una str
+		}
+	}*/
+
+	// caso en el que solo se encuentre redirección al final
+	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
+		warnx("Missed redirection file\n");
+	}
+
+	return 0;
+}
+
 void 
 casered(CommandLine *cl){
 
 	// buscar al final si están: incrementar su contador 
-	int i; 
-	int pos = cl->numwords - 4;
+	//int i; 
+	//int pos = cl->numwords - 4;
 
-	for (i=pos; i < cl->numwords; i++){
+	//for (i=pos; i < cl->numwords; i++){
 
-		if (strcmp(cl->words[i], "<") == 0) {
+	if (isred(cl, "<")){
+		// almacenar la string en algún lado
+
+		// elimina la string
+		elimstr(cl,cl->numwords-1);
+		// elimina <
+		elimstr(cl,cl->numwords-1);
+		cl->stdired++;
+	}
+	if(isred(cl, ">")){
+
+		// almacenar la string en algún lado
+		
+		// elimina la string
+		elimstr(cl,cl->numwords-1);
+		// elimina >
+		elimstr(cl,cl->numwords-1);
+		cl->stdored++;
+
+	}
+	// almacenarnos en una estructura el path red entrada y salida
+
+	// eliminar dichos valores del string
+		
+		/*if (strcmp(cl->words[i], "<") == 0) {
 			// redirección de entrada
 			// mirar que el siguiente valor no sea > 
 		}
 
 		if (strcmp(cl->words[i], ">") == 0) {
 			// redirección salia
-		}
+		}*/
 
 
 
-	}
+	//}
 	// almacenarnos en una estructura el path red entrada y salida
 
 	// eliminar dichos valores del string

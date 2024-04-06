@@ -52,9 +52,13 @@ void parse(CommandLine *cl);
 
 //int isbg(char *str, int actualpos, int totalpos);
 int isbg(CommandLine *cl);
+int isred(CommandLine *cl, char *typered);
+int isstr(char *word);
+
 int isenv(char *str);
 int isequal(char *str);
 
 void casebg(CommandLine * cl);
+void casered(CommandLine *cl);
 void elimstr(CommandLine * cl, int pos);
 

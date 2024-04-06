@@ -40,7 +40,7 @@ main(int argc, char *argv[])
 
 	CommandLine cl;
 	// inicializar la estructura
-	initcl(&cl);
+	//initcl(&cl);
 
 	argc--;
 	argv++;
@@ -54,12 +54,15 @@ main(int argc, char *argv[])
 
 	while (1) {
 
+		initcl(&cl);
+
 		if (fgets(line, MaxLine, stdin) == NULL) {
 			break;
 		}
 
 		if (line[strlen(line) - 1] == '\n') {
 
+			// Elimina el '\n' de la string
 			newline = strrchr(line, '\n');
 
 			if (newline != NULL) {
@@ -67,14 +70,21 @@ main(int argc, char *argv[])
 				*newline = '\0';
 			}
 
+			// Acaba la ejecución de la shell
+			/*if (strcmp(line, "EXIT") == 0) {
+				exit(EXIT_SUCCESS);
+			}*/
+
+			// Se empieza a procesar todos los datos
+
 			cl.numwords = getnumwords(line);
+			// tokeniza las palabras y las mete en un array de strings
 			tokenize(&cl, line);
 			// una vez tokenizado hay que distinguir cada caso
 			parse(&cl);
 
 		
 			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
-
 
 
 
