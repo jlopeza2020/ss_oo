@@ -4,10 +4,7 @@
 #include <err.h>
 
 #include "parser.h"
-
-// según se fijan cosas habrá que ir mirando los descriptores de
-// fichero y demás 
-// solo imprime el tipo de valor que es 
+ 
 /*void
 settype(CommandLine * cl, int val)
 {
@@ -19,19 +16,6 @@ settype(CommandLine * cl, int val)
 	case PIPE:
 		//cl->numpipes++;
 		fprintf(stderr, "soy pipe\n");
-		break;
-	case STDINRED:
-		fprintf(stderr, "soy redirección de entrada\n");
-		break;
-	case STDOUTRED:
-		fprintf(stderr, "soy redirección de salida\n");
-		break;
-
-	case BACKGROUND:
-		fprintf(stderr, "ejecuto en background\n");
-
-		// eliminarlo de la string 
-		// aumentar el valor del contador 
 		break;
 
 	case ENV:
@@ -52,15 +36,6 @@ settype(CommandLine * cl, int val)
 		break;
 	}
 }*/
-
-int
-isbg(CommandLine *cl)
-{
-	if (strcmp(cl->words[cl->numwords-1], "&") == 0) {
-		return 1;
-	}
-	return 0;
-}
 
 // comprueba que hay uno y sólo al principio de la palabra
 int
@@ -127,15 +102,6 @@ gettype(char *str, int actualpos, int totalpos)
 	if (strcmp(str, "|") == 0) {
 		return PIPE;
 	}
-	if (strcmp(str, "<") == 0) {
-		return STDINRED;
-	}
-	if (strcmp(str, ">") == 0) {
-		return STDOUTRED;
-	}
-	if (isbg(str, actualpos, totalpos)) {
-		return BACKGROUND;
-	}
 
 	if (isenv(str)) {
 		return ENV;
@@ -183,6 +149,15 @@ casebg(CommandLine * cl){
 	}
 }
 
+int
+isbg(CommandLine *cl)
+{
+	if (strcmp(cl->words[cl->numwords-1], "&") == 0) {
+		return 1;
+	}
+	return 0;
+}
+
 int 
 isstr(char *word) {
     // Verifica si el argumento es un puntero nulo
@@ -213,7 +188,6 @@ isred(CommandLine *cl, char *typered)
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
 		warnx("Missed redirection file\n");
 		cl->status = PARSINGERROR;
-		//return 2;
 	}
 
 	return 0;
@@ -230,7 +204,6 @@ handlered(CommandLine *cl, char *file, int value, int status){
 	// elimina <
 	elimstr(cl,cl->numwords-1);
 	value++;
-	// solo hay una redirección de entrada o 5 (los dos)
 	cl->status += status; 
 }
 
@@ -238,29 +211,15 @@ handlered(CommandLine *cl, char *file, int value, int status){
 void 
 casered(CommandLine *cl){
 
-	//int result; 
-
+	// Pueden aparecer en cualquier orden
 	for (int i = 0; i < cl->numwords; i++) {
 		if (isred(cl, "<")){
 			
-			// inicializaar la string
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->inred == NULL) {
 				perror("Error: dynamic memory cannot be allocated");
 			}
 			handlered(cl, cl->inred, cl->stdired++, INPUTRED);
-
-			/*
-			// almacenar la string en algún lado
-			strcpy(cl->inred,cl->words[cl->numwords-1]);
-
-			// elimina la string
-			elimstr(cl,cl->numwords-1);
-			// elimina <
-			elimstr(cl,cl->numwords-1);
-			cl->stdired++;
-			// solo hay una redirección de entrada o 5 (los dos)
-			cl->status += INPUTRED; */
 		}
 
 		if(isred(cl, ">")){
@@ -272,21 +231,32 @@ casered(CommandLine *cl){
 			}
 			handlered(cl, cl->outred, cl->stdored++, OUTPUTRED);
 
-			/*strcpy(cl->outred,cl->words[cl->numwords-1]);
-
-			// elimina la string
-			elimstr(cl,cl->numwords-1);
-			// elimina >
-			elimstr(cl,cl->numwords-1);
-			cl->stdored++;
-			// en este punto puede ser o 3 (solo salida) o 5 (los dos) 
-			cl->status += OUTPUTRED;*/
 		}
 
 		if(cl->status == PARSINGERROR){
 			break;
 		}
 	}
+}
+
+void 
+casepipes(CommandLine * cl){
+
+	int i;
+
+	for (i = 0;  i < cl->numwords; i++){
+
+		if (strcmp(cl->words[i], "|") == 0) {
+
+			cl->numpipes++;
+		}
+
+	}
+
+	// handlepipes
+	// crear un array char *** con numpipes + 1 posiciones
+	// llenarlo con cada parte
+
 }
 
 void
@@ -297,7 +267,7 @@ parse(CommandLine * cl)
 	// uso de traza
 	for (i = 0; i < cl->numwords; i++) {
 
-		fprintf(stderr, "%s\n", cl->words[i]);
+		fprintf(stderr, "%s", cl->words[i]);
 	}
 	// 1º background (si ocurre eliminar la palabra y aumento el contador)
 	casebg(cl);
@@ -305,9 +275,9 @@ parse(CommandLine * cl)
 	// 2º redirecciones 
 	casered(cl);
 
-	// si te meten de más poder tratarlo como quiera 
-
 	// 3º pipes y dividirlo en array de array de strings 
+
+	casepipes(cl);
 
 		// 4º el array de array de strings pueden ser: 
 		// 	- variables de entorno 
@@ -317,12 +287,7 @@ parse(CommandLine * cl)
 		// 		* fichero ejecutable en el dir trabajo
 		// 		* fichero ejecutable que se encuentra en alguno de los directorios
 		// 		  de la variable PATH
-
-	//}
-	//value = gettype(cl->words[i], i, cl->numwords);
-
-	//settype(cl, value);
-
+	
 	// uso de traza
 	for (i = 0; i < cl->numwords; i++) {
 		fprintf(stderr, "%s\n", cl->words[i]);

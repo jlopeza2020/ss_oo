@@ -1,26 +1,14 @@
 
 enum {
-	MaxWord = 4*1024,// 4k  
-};
-
-enum {
-	   // todos los strcmp
-    PIPE,
-    STDINRED,
-    STDOUTRED,
-    BACKGROUND,
-    ENV,
-    EQUAL,
-    BUILTINCD,
-    WORD,
+	MaxWord = 4*1024, // 4k  
 };
 
 // manejar errores parsing
 // en concreto ahora con los errores de redirecciones
 enum {
     PARSINGERROR = 1,
-    INPUTRED = 2,
-    OUTPUTRED = 3,
+    INPUTRED,
+    OUTPUTRED,
     BOTHRED = 5,
 };
 
@@ -64,3 +52,4 @@ void casebg(CommandLine * cl);
 void casered(CommandLine *cl);
 void elimstr(CommandLine * cl, int pos);
 void handlered(CommandLine *cl, char *file, int value, int status);
+void casepipes(CommandLine * cl);
