@@ -200,7 +200,7 @@ isstr(char *word) {
 int
 isred(CommandLine *cl, char *typered)
 {
-	if( cl->numwords >= 2){
+	if(cl->numwords >= 2){
 
 		if (strcmp(cl->words[cl->numwords-2], typered) == 0) {
 			if(isstr(cl->words[cl->numwords-1])){
@@ -212,25 +212,45 @@ isred(CommandLine *cl, char *typered)
 	// caso en el que solo se encuentre redirección al final
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
 		warnx("Missed redirection file\n");
-		return 2;
+		cl->status = PARSINGERROR;
+		//return 2;
 	}
 
 	return 0;
 }
 
+void
+handlered(CommandLine *cl, char *file, int value, int status){
+
+	// almacenar la string en algún lado
+	strcpy(file,cl->words[cl->numwords-1]);
+
+	// elimina la string
+	elimstr(cl,cl->numwords-1);
+	// elimina <
+	elimstr(cl,cl->numwords-1);
+	value++;
+	// solo hay una redirección de entrada o 5 (los dos)
+	cl->status += status; 
+}
+
+
 void 
 casered(CommandLine *cl){
 
-	int result; 
+	//int result; 
 
 	for (int i = 0; i < cl->numwords; i++) {
-		if ((result = isred(cl, "<")) == 1){
-
+		if (isred(cl, "<")){
+			
 			// inicializaar la string
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->inred == NULL) {
 				perror("Error: dynamic memory cannot be allocated");
 			}
+			handlered(cl, cl->inred, cl->stdired++, INPUTRED);
+
+			/*
 			// almacenar la string en algún lado
 			strcpy(cl->inred,cl->words[cl->numwords-1]);
 
@@ -240,23 +260,19 @@ casered(CommandLine *cl){
 			elimstr(cl,cl->numwords-1);
 			cl->stdired++;
 			// solo hay una redirección de entrada o 5 (los dos)
-			cl->status += INPUTRED; 
+			cl->status += INPUTRED; */
+		}
 
-		}else if (result == 2) {
-			// salta a la siguiente iteración 
-			// ya que falta el fichero de redirección 
-        	cl->status = PARSINGERROR;
-			break;
-   		}
-
-		if((result = isred(cl, ">")) == 1){
+		if(isred(cl, ">")){
 
 			// almacenar la string en algún lado
 			cl->outred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->outred == NULL) {
 				perror("Error: dynamic memory cannot be allocated");
 			}
-			strcpy(cl->outred,cl->words[cl->numwords-1]);
+			handlered(cl, cl->outred, cl->stdored++, OUTPUTRED);
+
+			/*strcpy(cl->outred,cl->words[cl->numwords-1]);
 
 			// elimina la string
 			elimstr(cl,cl->numwords-1);
@@ -264,14 +280,12 @@ casered(CommandLine *cl){
 			elimstr(cl,cl->numwords-1);
 			cl->stdored++;
 			// en este punto puede ser o 3 (solo salida) o 5 (los dos) 
-			cl->status += OUTPUTRED;
+			cl->status += OUTPUTRED;*/
+		}
 
-		}else if (result == 2) {
-		// salta a la siguiente iteración 
-		// ya que falta el fichero de redirección 
-        	cl->status = PARSINGERROR; 
+		if(cl->status == PARSINGERROR){
 			break;
-    	}
+		}
 	}
 }
 
@@ -342,6 +356,7 @@ freememory(CommandLine * cl)
 	}
 }
 
+// tokeniza y almacena en un array de strings todos los elementos
 void
 tokenize(CommandLine *cl, char *line)
 {
@@ -364,7 +379,7 @@ tokenize(CommandLine *cl, char *line)
 
 	i = 0;
 	token = strtok_r(line, " \t", &saveptr);
-	// copiar el valor de token en el array dinámico
+	// copiar el valor de token en el array words
 	strcpy(cl->words[i], token);
 
 	i++;
@@ -385,7 +400,7 @@ getnumwords(char *line)
 
 	i = 0;
 	numwords = 0;
-	// es falso
+	// inword se inicializa como falso
 	inword = 0;
 	while (line[i] != '\0') {
 

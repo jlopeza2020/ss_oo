@@ -6,7 +6,7 @@
 
 enum {
 	ZeroArgs,
-	MaxLine = 4 *1024, // 4k  
+	MaxLine = 4*1024, // 4k  
 };
 
 void
@@ -27,15 +27,6 @@ initcl(CommandLine *cl){
 	cl->numpipes = 0;
     cl->env = 0;
     cl->equal = 0;
-
-	/*cl->stdinred = (char *)malloc(sizeof(char) * MaxWord);
-	if (cl->inred == NULL) {
-		perror("Error: dynamic memory cannot be allocated");
-	}
-	cl->outred = (char *)malloc(sizeof(char) * MaxWord);
-	if (cl->stdoutred == NULL) {
-		perror("Error: dynamic memory cannot be allocated");
-	}*/
 	cl->status = 0;
 
 }
@@ -47,12 +38,8 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
-	//int status;
-
 
 	CommandLine cl;
-	// inicializar la estructura
-	//initcl(&cl);
 
 	argc--;
 	argv++;
@@ -67,7 +54,6 @@ main(int argc, char *argv[])
 	while (1) {
 
 		initcl(&cl);
-		//cl.status = 0;
 
 		if (fgets(line, MaxLine, stdin) == NULL) {
 			break;
@@ -83,13 +69,6 @@ main(int argc, char *argv[])
 				*newline = '\0';
 			}
 
-			// Acaba la ejecución de la shell
-			/*if (strcmp(line, "EXIT") == 0) {
-				exit(EXIT_SUCCESS);
-			}*/
-
-			// Se empieza a procesar todos los datos
-
 			cl.numwords = getnumwords(line);
 			// tokeniza las palabras y las mete en un array de strings
 			tokenize(&cl, line);
@@ -103,14 +82,12 @@ main(int argc, char *argv[])
 				continue;
 			}
 
-
-
-
-
 			fprintf(stderr,"sigo ejecutando\n");
 
 			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
 
+
+			// trazas
 			if(cl.status == INPUTRED){
 				fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
 

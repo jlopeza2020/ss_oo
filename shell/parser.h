@@ -1,6 +1,6 @@
 
 enum {
-	MaxWord = 512,
+	MaxWord = 4*1024,// 4k  
 };
 
 enum {
@@ -19,8 +19,8 @@ enum {
 // en concreto ahora con los errores de redirecciones
 enum {
     PARSINGERROR = 1,
-    INPUTRED,
-    OUTPUTRED,
+    INPUTRED = 2,
+    OUTPUTRED = 3,
     BOTHRED = 5,
 };
 
@@ -63,4 +63,4 @@ int isequal(char *str);
 void casebg(CommandLine * cl);
 void casered(CommandLine *cl);
 void elimstr(CommandLine * cl, int pos);
-
+void handlered(CommandLine *cl, char *file, int value, int status);
