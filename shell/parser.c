@@ -172,7 +172,8 @@ elimstr(CommandLine *cl, int index) {
     cl->numwords--;
 }
 
-// detecta si hay background y si ocurre: elimina dicha palabra de ese array 
+// detecta si hay background y si ocurre: 
+// elimina dicha palabra de ese array 
 void 
 casebg(CommandLine * cl){
 
@@ -182,26 +183,23 @@ casebg(CommandLine * cl){
 	}
 }
 
-int isstr(char *word) {
+int 
+isstr(char *word) {
     // Verifica si el argumento es un puntero nulo
     if (word == NULL) {
-        return 0; // No es un string
+        return 0; 
     }
 
-    // Verifica si la longitud es mayor que cero y si el primer elemento no es nulo
     if (strlen(word) > 0 && word[0] != '\0') {
         return 1; // Es un string
     } else {
-        return 0; // No es un string
+        return 0;
     }
 }
 
 int
 isred(CommandLine *cl, char *typered)
 {
-	
-	
-	
 	if( cl->numwords >= 2){
 
 		if (strcmp(cl->words[cl->numwords-2], typered) == 0) {
@@ -210,15 +208,11 @@ isred(CommandLine *cl, char *typered)
 			}
 		}
 	}
-	/*if (strcmp(cl->words[cl->numwords-2], typered) == 0) {
-		if(isstr(cl->words[cl->numwords-1])){
-			return 1; // hay red y es una str
-		}
-	}*/
 
 	// caso en el que solo se encuentre redirección al final
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
 		warnx("Missed redirection file\n");
+		return 2;
 	}
 
 	return 0;
@@ -227,57 +221,63 @@ isred(CommandLine *cl, char *typered)
 void 
 casered(CommandLine *cl){
 
-	// buscar al final si están: incrementar su contador 
-	//int i; 
-	//int pos = cl->numwords - 4;
+	int result; 
 
-	//for (i=pos; i < cl->numwords; i++){
+	for (int i = 0; i < cl->numwords; i++) {
+		if ((result = isred(cl, "<")) == 1){
 
-	if (isred(cl, "<")){
-		// almacenar la string en algún lado
+			// inicializaar la string
+			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
+			if (cl->inred == NULL) {
+				perror("Error: dynamic memory cannot be allocated");
+			}
+			// almacenar la string en algún lado
+			strcpy(cl->inred,cl->words[cl->numwords-1]);
 
-		// elimina la string
-		elimstr(cl,cl->numwords-1);
-		// elimina <
-		elimstr(cl,cl->numwords-1);
-		cl->stdired++;
+			// elimina la string
+			elimstr(cl,cl->numwords-1);
+			// elimina <
+			elimstr(cl,cl->numwords-1);
+			cl->stdired++;
+			// solo hay una redirección de entrada o 5 (los dos)
+			cl->status += INPUTRED; 
+
+		}else if (result == 2) {
+			// salta a la siguiente iteración 
+			// ya que falta el fichero de redirección 
+        	cl->status = PARSINGERROR;
+			break;
+   		}
+
+		if((result = isred(cl, ">")) == 1){
+
+			// almacenar la string en algún lado
+			cl->outred = (char *)malloc(sizeof(char) * MaxWord);
+			if (cl->outred == NULL) {
+				perror("Error: dynamic memory cannot be allocated");
+			}
+			strcpy(cl->outred,cl->words[cl->numwords-1]);
+
+			// elimina la string
+			elimstr(cl,cl->numwords-1);
+			// elimina >
+			elimstr(cl,cl->numwords-1);
+			cl->stdored++;
+			// en este punto puede ser o 3 (solo salida) o 5 (los dos) 
+			cl->status += OUTPUTRED;
+
+		}else if (result == 2) {
+		// salta a la siguiente iteración 
+		// ya que falta el fichero de redirección 
+        	cl->status = PARSINGERROR; 
+			break;
+    	}
 	}
-	if(isred(cl, ">")){
-
-		// almacenar la string en algún lado
-		
-		// elimina la string
-		elimstr(cl,cl->numwords-1);
-		// elimina >
-		elimstr(cl,cl->numwords-1);
-		cl->stdored++;
-
-	}
-	// almacenarnos en una estructura el path red entrada y salida
-
-	// eliminar dichos valores del string
-		
-		/*if (strcmp(cl->words[i], "<") == 0) {
-			// redirección de entrada
-			// mirar que el siguiente valor no sea > 
-		}
-
-		if (strcmp(cl->words[i], ">") == 0) {
-			// redirección salia
-		}*/
-
-
-
-	//}
-	// almacenarnos en una estructura el path red entrada y salida
-
-	// eliminar dichos valores del string
 }
 
 void
 parse(CommandLine * cl)
 {
-
 	int i;
 
 	// uso de traza
@@ -290,6 +290,7 @@ parse(CommandLine * cl)
 
 	// 2º redirecciones 
 	casered(cl);
+
 	// si te meten de más poder tratarlo como quiera 
 
 	// 3º pipes y dividirlo en array de array de strings 
@@ -317,7 +318,6 @@ parse(CommandLine * cl)
 void
 freememory(CommandLine * cl)
 {
-
 	int i;
 
 	// liberamos el array de strings 
@@ -325,12 +325,26 @@ freememory(CommandLine * cl)
 		free(cl->words[i]);
 	}
 	free(cl->words);
+
+	// solo se ha creado el de entrada 
+	if(cl->status == INPUTRED){
+		free(cl->inred);
+	}
+
+	// solo se ha credo el de salida
+	if(cl->status == OUTPUTRED){
+		free(cl->outred);
+	}
+	// se han creado los dos
+	if (cl->status == BOTHRED){
+		free(cl->inred);
+		free(cl->outred);
+	}
 }
 
 void
 tokenize(CommandLine *cl, char *line)
 {
-
 	int i;
 	char *saveptr;
 	char *token;
@@ -365,7 +379,6 @@ tokenize(CommandLine *cl, char *line)
 int
 getnumwords(char *line)
 {
-
 	int i;
 	int numwords;
 	int inword;

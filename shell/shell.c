@@ -16,7 +16,7 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-// los valores de words y numwords se inicializan más adelante 
+// los valores de words
 void
 initcl(CommandLine *cl){
 
@@ -27,6 +27,17 @@ initcl(CommandLine *cl){
 	cl->numpipes = 0;
     cl->env = 0;
     cl->equal = 0;
+
+	/*cl->stdinred = (char *)malloc(sizeof(char) * MaxWord);
+	if (cl->inred == NULL) {
+		perror("Error: dynamic memory cannot be allocated");
+	}
+	cl->outred = (char *)malloc(sizeof(char) * MaxWord);
+	if (cl->stdoutred == NULL) {
+		perror("Error: dynamic memory cannot be allocated");
+	}*/
+	cl->status = 0;
+
 }
 
 int
@@ -36,6 +47,7 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
+	//int status;
 
 
 	CommandLine cl;
@@ -55,6 +67,7 @@ main(int argc, char *argv[])
 	while (1) {
 
 		initcl(&cl);
+		//cl.status = 0;
 
 		if (fgets(line, MaxLine, stdin) == NULL) {
 			break;
@@ -82,14 +95,38 @@ main(int argc, char *argv[])
 			tokenize(&cl, line);
 			// una vez tokenizado hay que distinguir cada caso
 			parse(&cl);
+			// paro de ejecutar porque en el parsing ha habido algun error
+			// en concreto solo hay redirección y no fichero
+			if(cl.status==PARSINGERROR){
+				freememory(&cl);
+				//fprintf(stderr,"red errr\n");
+				continue;
+			}
 
-		
+
+
+
+
+			fprintf(stderr,"sigo ejecutando\n");
+
 			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
 
+			if(cl.status == INPUTRED){
+				fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
 
+			}
+			if(cl.status == OUTPUTRED){
+				fprintf(stderr,"fichero de salida: %s\n", cl.outred);
+
+			}
+			if(cl.status == BOTHRED){
+				fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
+				fprintf(stderr,"fichero de salida: %s\n", cl.outred);
+
+			}
 
 			freememory(&cl);
-
+		
 			if (strcmp(line, "EXIT") == 0) {
 				exit(EXIT_SUCCESS);
 			}

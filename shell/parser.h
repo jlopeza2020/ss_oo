@@ -15,15 +15,27 @@ enum {
     WORD,
 };
 
+// manejar errores parsing
+// en concreto ahora con los errores de redirecciones
+enum {
+    PARSINGERROR = 1,
+    INPUTRED,
+    OUTPUTRED,
+    BOTHRED = 5,
+};
+
 struct CommandLine{
 	char **words;
     int numwords;
     int bg;
     int stdired;
+    char *inred;
     int stdored;
+    char *outred;
 	int numpipes;
     int env;
     int equal;
+    int status;
 };
 typedef struct CommandLine CommandLine;
 
@@ -31,16 +43,6 @@ typedef struct CommandLine CommandLine;
 // otra para pipes 
 // asigne los descriptores de fichero ... 
 // mire si hay builtin...
-
-// ALMACENARLO EN OTRO .H
-struct Redirections{
-    char *stdinred;
-    int fdstdinred;
-    char *stdoutred;
-    int fdstdoutred;
-};
-typedef struct Redirections Redirections; 
-
 
 int getnumwords(char *line);
 void tokenize(CommandLine *cl, char *line);
