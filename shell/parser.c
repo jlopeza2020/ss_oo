@@ -239,23 +239,117 @@ casered(CommandLine *cl){
 	}
 }
 
-void 
-casepipes(CommandLine * cl){
+void
+handlepipes(CommandLine * cl){
 
 	int i;
-
-	for (i = 0;  i < cl->numwords; i++){
-
-		if (strcmp(cl->words[i], "|") == 0) {
-
-			cl->numpipes++;
+	int j;
+	int posaas;
+	int posas;
+	int poss;
+	
+	// inicializar los valores del char ***
+	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numpipes+1));
+	if (cl->commands == NULL) {
+		perror("Error: dynamic memory cannot be allocated");
+	}
+	// inicializamos cada elemento del array de array de strings
+	for (i = 0; i < cl->numwords; i++) {
+		for(j = 0; j < cl->numwords; j++){
+			cl->commands[i] = (char **)malloc(sizeof(char *) * MaxWord);
+			cl->commands[i][j] = (char *)malloc(sizeof(char) * MaxWord);
+			if (cl->commands[i] == NULL || cl->commands[i][j] == NULL) {
+				perror("Error: dynamic memory cannot be allocated");
+			}
 		}
+	}
+
+	// handlepipes
+	posaas = 0;
+	posas = 0;
+	poss = 0;
+	//i = 0;
+
+	// mientras no se hayan encontrado todos los pipes
+	// seguir asignando
+	while (posaas < cl->numpipes){
+		
+
+		if(strcmp(cl->words[poss], "|") != 0){
+
+			// vamos guardando el valor
+			strcpy(cl->commands[posaas][posas], cl->words[poss]);
+
+
+		}else{
+
+			elimstr(cl, poss);
+			posaas++;
+			posas = 0;
+		}
+		// si encontramos un pipe eliminar la palabra 
+		//i++;
+		poss++;
 
 	}
 
 	// handlepipes
 	// crear un array char *** con numpipes + 1 posiciones
 	// llenarlo con cada parte
+
+}
+void 
+casepipes(CommandLine * cl){
+
+	
+	int i;
+	int numcommands;
+    int numsubcommands;
+
+	// obtener el número de pipes y de comandos que habrá
+	for (i = 0;  i < cl->numwords; i++){
+
+		if (strcmp(cl->words[i], "|") == 0) {
+			cl->numpipes++;
+		}
+	}
+
+	if(cl->numpipes > 0){
+
+
+		cl->numcommands = (int *)malloc(sizeof(int) * (cl->numpipes+1));
+
+		if(cl->numcommands == NULL){
+			perror("Error: dynamic memory cannot be allocated");
+
+		}
+
+    	// contar el número de comandos y sub commandos tiene cada comando
+		// almacenarlo de un array de ints
+		numcommands = 0;
+    	numsubcommands = 0;
+    	for (i = 0; i < cl->numwords; i++) {
+        	if (strcmp(cl->words[i], "|") == 0) {
+				cl->numcommands[numcommands] = numsubcommands;
+            	//printf("Comando %d tiene %d subcomandos.\n", num_comandos, cl->numcommands[num_comandos]);
+            	numcommands++;
+            	numsubcommands = 0;
+        	} else {
+            	numsubcommands++;
+        	}
+    	}
+		// imprimir el último comando
+		cl->numcommands[numcommands] = numsubcommands;
+    	//printf("Comando %d tiene %d subcomandos.\n", num_comandos, cl->numcommands[num_comandos]);
+	//}
+
+
+		// traza
+		for(i = 0; i <= numcommands; i++){
+			printf("%d\n", cl->numcommands[i]);
+		}
+		//handlepipes(cl);
+	}
 
 }
 
@@ -298,6 +392,7 @@ void
 freememory(CommandLine * cl)
 {
 	int i;
+	//int j;
 
 	// liberamos el array de strings 
 	for (i = 0; i < cl->numwords; i++) {
@@ -319,6 +414,24 @@ freememory(CommandLine * cl)
 		free(cl->inred);
 		free(cl->outred);
 	}
+
+	
+	if(cl->numpipes > 0){
+
+		/*for (i = 0; i < cl->numwords; i++) {
+			free(cl->numcommands[i]);
+		}*/
+		free(cl->numcommands);
+		/*for (i = 0; i < cl->numwords; i++) {
+			for(j = 0; j < cl->numwords; j++){
+				free(cl->commands[i][j]);
+			}
+			free(cl->commands[i]);
+		}
+		free(cl->commands);*/
+	}
+
+
 }
 
 // tokeniza y almacena en un array de strings todos los elementos

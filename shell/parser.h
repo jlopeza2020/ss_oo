@@ -13,7 +13,9 @@ enum {
 };
 
 struct CommandLine{
-	char **words;
+	char ***commands; // eje: [[cat, /tmp/a], [wc, -c]]
+    int *numcommands; // eje: [2,2]
+    char **words; // eje: [cat, /tmp/a, |, wc -c, >, x, <, y, &]
     int numwords;
     int bg;
     int stdired;
@@ -53,3 +55,4 @@ void casered(CommandLine *cl);
 void elimstr(CommandLine * cl, int pos);
 void handlered(CommandLine *cl, char *file, int value, int status);
 void casepipes(CommandLine * cl);
+void handlepipes(CommandLine *cl);
