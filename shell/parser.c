@@ -244,27 +244,36 @@ handlepipes(CommandLine * cl){
 
 	int i;
 	int j;
-	int posaas;
-	int posas;
-	int poss;
-	
+	//int numelem;
+	//int posaas;
+	//int posas;
+	//int poss;
+	//fprintf(stderr, "el array tiene : %d\n", numelem);
+
 	// inicializar los valores del char ***
-	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numpipes+1));
+	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numcommands));
 	if (cl->commands == NULL) {
 		perror("Error: dynamic memory cannot be allocated");
 	}
-	// inicializamos cada elemento del array de array de strings
-	for (i = 0; i < cl->numwords; i++) {
-		for(j = 0; j < cl->numwords; j++){
-			cl->commands[i] = (char **)malloc(sizeof(char *) * MaxWord);
+
+	for(i = 0; i < cl->numcommands; i++){
+
+		cl->commands[i] = (char **)malloc(sizeof(char *) * cl->numsubcommands[i]);
+
+		if(cl->commands[i] == NULL){
+			perror("Error: dynamic memory cannot be allocated");
+		}
+		for(j = 0; j < cl->numsubcommands[i]; j++){
 			cl->commands[i][j] = (char *)malloc(sizeof(char) * MaxWord);
-			if (cl->commands[i] == NULL || cl->commands[i][j] == NULL) {
+			if (cl->commands[i][j] == NULL) {
 				perror("Error: dynamic memory cannot be allocated");
 			}
 		}
+
 	}
 
-	// handlepipes
+
+	/*// handlepipes
 	posaas = 0;
 	posas = 0;
 	poss = 0;
@@ -291,21 +300,56 @@ handlepipes(CommandLine * cl){
 		//i++;
 		poss++;
 
-	}
+	}*/
 
 	// handlepipes
 	// crear un array char *** con numpipes + 1 posiciones
 	// llenarlo con cada parte
+	
+}
 
+void 
+setnumcommands(CommandLine *cl){
+
+	int i;
+	int numcommands;
+    int numsubcommands;
+
+	cl->numsubcommands = (int *)malloc(sizeof(int) * (cl->numpipes+1));
+
+	if(cl->numsubcommands == NULL){
+		perror("Error: dynamic memory cannot be allocated");
+
+	}
+
+    // contar el número de comandos y sub commandos tiene cada comando
+	// almacenarlo de un array de ints para poder crear un char ***
+	numcommands = 0;
+    numsubcommands = 0;
+
+    for (i = 0; i < cl->numwords; i++) {
+        	
+		if (strcmp(cl->words[i], "|") == 0) {
+			cl->numsubcommands[numcommands] = numsubcommands;
+            numcommands++;
+            numsubcommands = 0;
+        } else {
+            numsubcommands++;
+        }
+    }
+	cl->numsubcommands[numcommands] = numsubcommands;
+	cl->numcommands = numcommands + 1;
+
+	// traza
+	for (i= 0; i < cl->numcommands; i++){
+		fprintf(stderr, "numsubcommands: %d\n", cl->numsubcommands[i]);
+	}
 }
 void 
 casepipes(CommandLine * cl){
 
 	
 	int i;
-	int numcommands;
-    int numsubcommands;
-
 	// obtener el número de pipes y de comandos que habrá
 	for (i = 0;  i < cl->numwords; i++){
 
@@ -316,39 +360,8 @@ casepipes(CommandLine * cl){
 
 	if(cl->numpipes > 0){
 
-
-		cl->numcommands = (int *)malloc(sizeof(int) * (cl->numpipes+1));
-
-		if(cl->numcommands == NULL){
-			perror("Error: dynamic memory cannot be allocated");
-
-		}
-
-    	// contar el número de comandos y sub commandos tiene cada comando
-		// almacenarlo de un array de ints
-		numcommands = 0;
-    	numsubcommands = 0;
-    	for (i = 0; i < cl->numwords; i++) {
-        	if (strcmp(cl->words[i], "|") == 0) {
-				cl->numcommands[numcommands] = numsubcommands;
-            	//printf("Comando %d tiene %d subcomandos.\n", num_comandos, cl->numcommands[num_comandos]);
-            	numcommands++;
-            	numsubcommands = 0;
-        	} else {
-            	numsubcommands++;
-        	}
-    	}
-		// imprimir el último comando
-		cl->numcommands[numcommands] = numsubcommands;
-    	//printf("Comando %d tiene %d subcomandos.\n", num_comandos, cl->numcommands[num_comandos]);
-	//}
-
-
-		// traza
-		for(i = 0; i <= numcommands; i++){
-			printf("%d\n", cl->numcommands[i]);
-		}
-		//handlepipes(cl);
+		setnumcommands(cl);
+		handlepipes(cl);
 	}
 
 }
@@ -418,17 +431,27 @@ freememory(CommandLine * cl)
 	
 	if(cl->numpipes > 0){
 
-		/*for (i = 0; i < cl->numwords; i++) {
-			free(cl->numcommands[i]);
-		}*/
-		free(cl->numcommands);
-		/*for (i = 0; i < cl->numwords; i++) {
-			for(j = 0; j < cl->numwords; j++){
-				free(cl->commands[i][j]);
-			}
-			free(cl->commands[i]);
-		}
-		free(cl->commands);*/
+		 // Free each subcommand
+    	for (i = 0; i < cl->numcommands; i++) {
+        	//if (cl->commands[i] != NULL) {
+            	// Free each word
+            for (int j = 0; j < cl->numsubcommands[i]; j++) {
+                	//if (cl->commands[i][j] != NULL) {
+                free(cl->commands[i][j]);
+                    	//cl->commands[i][j] = NULL;
+                	//}
+            }
+            free(cl->commands[i]);
+            	//cl->commands[i] = NULL;
+        	//}
+    	}
+
+    	// Free the commands array itself
+    	free(cl->commands);
+    	//cl->commands = NULL;
+
+		free(cl->numsubcommands);
+
 	}
 
 

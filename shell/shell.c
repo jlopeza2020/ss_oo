@@ -29,6 +29,8 @@ initcl(CommandLine *cl){
     cl->equal = 0;
 	cl->status = 0;
 
+	cl->numcommands = 0;
+
 }
 
 int
