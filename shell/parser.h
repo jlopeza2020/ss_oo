@@ -57,6 +57,8 @@ void casebg(CommandLine * cl);
 void casered(CommandLine *cl);
 void elimstr(CommandLine * cl, int pos);
 void handlered(CommandLine *cl, char *file, int value, int status);
+
 void casepipes(CommandLine * cl);
 void handlepipes(CommandLine *cl);
 void setnumcommnads(CommandLine *cl);
+void setcommands(CommandLine *cl);

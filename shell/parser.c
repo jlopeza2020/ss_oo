@@ -239,40 +239,59 @@ casered(CommandLine *cl){
 	}
 }
 
+
+// fijar los valores de cl->words en cl->commands
 void
-handlepipes(CommandLine * cl){
+setcommands(CommandLine *cl){
 
-	int i;
-	int j;
-	//int numelem;
-	//int posaas;
-	//int posas;
-	//int poss;
-	//fprintf(stderr, "el array tiene : %d\n", numelem);
+	
+	int i; 
+	int posc;
+	int possubc;
 
-	// inicializar los valores del char ***
-	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numcommands));
-	if (cl->commands == NULL) {
-		perror("Error: dynamic memory cannot be allocated");
-	}
+	int j; 
+	int k;
 
-	for(i = 0; i < cl->numcommands; i++){
+	//for(j = 0; j < cl->numcommands; j++){
+	//	for(k = 0; k < cl->numsubcommands[j]; k++){
+	posc = 0;
+	possubc = 0;
+	for(i = 0; i < cl->numwords; i++){
 
-		cl->commands[i] = (char **)malloc(sizeof(char *) * cl->numsubcommands[i]);
+		if(strcmp(cl->words[i], "|") != 0){
 
-		if(cl->commands[i] == NULL){
-			perror("Error: dynamic memory cannot be allocated");
-		}
-		for(j = 0; j < cl->numsubcommands[i]; j++){
-			cl->commands[i][j] = (char *)malloc(sizeof(char) * MaxWord);
-			if (cl->commands[i][j] == NULL) {
-				perror("Error: dynamic memory cannot be allocated");
+			// posición comando no ha superado al total de comandos
+			if(posc < cl->numcommands){
+				// posicion subcommandos no ha superado al total de la dim subcommando
+				if(possubc < cl->numsubcommands[posc]){
+					strcpy(cl->commands[posc][possubc], cl->words[i]);
+					possubc++;
+				}
+				
+
 			}
+		}else{
+			// hemos llegado a un pipe: 
+			// 	- hay que aumentar posición del comando 
+			// 	- hay que reiniciar la posición del subcomando
+			posc++;
+			possubc = 0;
 		}
+	}
+		//}
+	//}
 
+
+	// traza 
+	for(j = 0; j < cl->numcommands; j++){
+		for(k = 0; k < cl->numsubcommands[j]; k++){
+
+		fprintf(stderr,"soy el subcommando: %s\n", cl->commands[j][k]);		
+		}
 	}
 
-
+}
+	
 	/*// handlepipes
 	posaas = 0;
 	posas = 0;
@@ -281,6 +300,8 @@ handlepipes(CommandLine * cl){
 
 	// mientras no se hayan encontrado todos los pipes
 	// seguir asignando
+
+
 	while (posaas < cl->numpipes){
 		
 
@@ -306,6 +327,40 @@ handlepipes(CommandLine * cl){
 	// crear un array char *** con numpipes + 1 posiciones
 	// llenarlo con cada parte
 	
+
+
+//}
+
+
+void
+handlepipes(CommandLine * cl){
+
+	int i;
+	int j;
+
+	// inicializar los valores del char ***: FUNCIONAN
+	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numcommands));
+	if (cl->commands == NULL) {
+		perror("Error: dynamic memory cannot be allocated");
+	}
+
+	for(i = 0; i < cl->numcommands; i++){
+
+		cl->commands[i] = (char **)malloc(sizeof(char *) * cl->numsubcommands[i]);
+
+		if(cl->commands[i] == NULL){
+			perror("Error: dynamic memory cannot be allocated");
+		}
+		for(j = 0; j < cl->numsubcommands[i]; j++){
+			cl->commands[i][j] = (char *)malloc(sizeof(char) * MaxWord);
+			if (cl->commands[i][j] == NULL) {
+				perror("Error: dynamic memory cannot be allocated");
+			}
+		}
+
+	}
+
+	setcommands(cl);
 }
 
 void 
