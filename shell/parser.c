@@ -2,41 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
-
 #include "parser.h"
  
-/*void
-settype(CommandLine * cl, int val)
-{
-
-	// CommandLine DE MOMENTO NO SE USA 
-
-	switch (val) {
-
-	case PIPE:
-		//cl->numpipes++;
-		fprintf(stderr, "soy pipe\n");
-		break;
-
-	case ENV:
-		fprintf(stderr, "soy variable de entorno\n");
-		break;
-
-	case EQUAL:
-		fprintf(stderr, "soy igual\n");
-		break;
-
-	case BUILTINCD:
-		// se activará un booleano diciendo que la string es un builtnin
-		fprintf(stderr, "soy cd\n");
-		break;
-
-	default:
-		fprintf(stderr, "soy palabra\n");
-		break;
-	}
-}*/
-
 // comprueba que hay uno y sólo al principio de la palabra
 int
 isenv(char *str)
@@ -93,31 +60,6 @@ isequal(char *str)
 	}
 	return 0;
 }
-
-// lo uso como trazas
-/*int
-gettype(char *str, int actualpos, int totalpos)
-{
-
-	if (strcmp(str, "|") == 0) {
-		return PIPE;
-	}
-
-	if (isenv(str)) {
-		return ENV;
-	}
-
-	if (isequal(str)) {
-		return EQUAL;
-	}
-	// ZONA DE BUILT-INS
-	if (strcmp(str, "cd") == 0) {
-		return BUILTINCD;
-	}
-	// más adelante incluir los opcionales
-
-	return WORD;
-}*/
 
 // libera memoria y decrementa los valores
 void 
@@ -207,7 +149,6 @@ handlered(CommandLine *cl, char *file, int value, int status){
 	cl->status += status; 
 }
 
-
 void 
 casered(CommandLine *cl){
 
@@ -239,7 +180,6 @@ casered(CommandLine *cl){
 	}
 }
 
-
 // fijar los valores de cl->words en cl->commands
 void
 setcommands(CommandLine *cl){
@@ -252,8 +192,6 @@ setcommands(CommandLine *cl){
 	int j; 
 	int k;
 
-	//for(j = 0; j < cl->numcommands; j++){
-	//	for(k = 0; k < cl->numsubcommands[j]; k++){
 	posc = 0;
 	possubc = 0;
 	for(i = 0; i < cl->numwords; i++){
@@ -267,8 +205,6 @@ setcommands(CommandLine *cl){
 					strcpy(cl->commands[posc][possubc], cl->words[i]);
 					possubc++;
 				}
-				
-
 			}
 		}else{
 			// hemos llegado a un pipe: 
@@ -278,9 +214,6 @@ setcommands(CommandLine *cl){
 			possubc = 0;
 		}
 	}
-		//}
-	//}
-
 
 	// traza 
 	for(j = 0; j < cl->numcommands; j++){
@@ -292,46 +225,6 @@ setcommands(CommandLine *cl){
 
 }
 	
-	/*// handlepipes
-	posaas = 0;
-	posas = 0;
-	poss = 0;
-	//i = 0;
-
-	// mientras no se hayan encontrado todos los pipes
-	// seguir asignando
-
-
-	while (posaas < cl->numpipes){
-		
-
-		if(strcmp(cl->words[poss], "|") != 0){
-
-			// vamos guardando el valor
-			strcpy(cl->commands[posaas][posas], cl->words[poss]);
-
-
-		}else{
-
-			elimstr(cl, poss);
-			posaas++;
-			posas = 0;
-		}
-		// si encontramos un pipe eliminar la palabra 
-		//i++;
-		poss++;
-
-	}*/
-
-	// handlepipes
-	// crear un array char *** con numpipes + 1 posiciones
-	// llenarlo con cada parte
-	
-
-
-//}
-
-
 void
 handlepipes(CommandLine * cl){
 
@@ -363,6 +256,8 @@ handlepipes(CommandLine * cl){
 	setcommands(cl);
 }
 
+// contar el número de comandos y sub commandos tiene cada comando
+// almacenarlo de un array de ints para poder crear un char ***
 void 
 setnumcommands(CommandLine *cl){
 
@@ -377,8 +272,6 @@ setnumcommands(CommandLine *cl){
 
 	}
 
-    // contar el número de comandos y sub commandos tiene cada comando
-	// almacenarlo de un array de ints para poder crear un char ***
 	numcommands = 0;
     numsubcommands = 0;
 
@@ -395,17 +288,13 @@ setnumcommands(CommandLine *cl){
 	cl->numsubcommands[numcommands] = numsubcommands;
 	cl->numcommands = numcommands + 1;
 
-	// traza
-	for (i= 0; i < cl->numcommands; i++){
-		fprintf(stderr, "numsubcommands: %d\n", cl->numsubcommands[i]);
-	}
 }
 void 
 casepipes(CommandLine * cl){
 
 	
 	int i;
-	// obtener el número de pipes y de comandos que habrá
+
 	for (i = 0;  i < cl->numwords; i++){
 
 		if (strcmp(cl->words[i], "|") == 0) {
@@ -418,19 +307,11 @@ casepipes(CommandLine * cl){
 		setnumcommands(cl);
 		handlepipes(cl);
 	}
-
 }
 
 void
 parse(CommandLine * cl)
 {
-	int i;
-
-	// uso de traza
-	for (i = 0; i < cl->numwords; i++) {
-
-		fprintf(stderr, "%s", cl->words[i]);
-	}
 	// 1º background (si ocurre eliminar la palabra y aumento el contador)
 	casebg(cl);
 
@@ -438,7 +319,6 @@ parse(CommandLine * cl)
 	casered(cl);
 
 	// 3º pipes y dividirlo en array de array de strings 
-
 	casepipes(cl);
 
 		// 4º el array de array de strings pueden ser: 
@@ -449,11 +329,9 @@ parse(CommandLine * cl)
 		// 		* fichero ejecutable en el dir trabajo
 		// 		* fichero ejecutable que se encuentra en alguno de los directorios
 		// 		  de la variable PATH
-	
-	// uso de traza
-	for (i = 0; i < cl->numwords; i++) {
-		fprintf(stderr, "%s\n", cl->words[i]);
-	}
+
+		//isenv(str)) 
+		//(isequal(str)) 
 }
 
 void
@@ -483,33 +361,22 @@ freememory(CommandLine * cl)
 		free(cl->outred);
 	}
 
-	
 	if(cl->numpipes > 0){
 
-		 // Free each subcommand
+		//libera cada subcomando
     	for (i = 0; i < cl->numcommands; i++) {
-        	//if (cl->commands[i] != NULL) {
-            	// Free each word
+
             for (int j = 0; j < cl->numsubcommands[i]; j++) {
-                	//if (cl->commands[i][j] != NULL) {
                 free(cl->commands[i][j]);
-                    	//cl->commands[i][j] = NULL;
-                	//}
             }
+			// libera comando
             free(cl->commands[i]);
-            	//cl->commands[i] = NULL;
-        	//}
     	}
 
-    	// Free the commands array itself
+    	// libera la estructura completa
     	free(cl->commands);
-    	//cl->commands = NULL;
-
 		free(cl->numsubcommands);
-
 	}
-
-
 }
 
 // tokeniza y almacena en un array de strings todos los elementos

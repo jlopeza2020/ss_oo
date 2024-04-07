@@ -21,6 +21,7 @@ void
 initcl(CommandLine *cl){
 
     cl->numwords = 0;
+	cl->numcommands = 0;
     cl->bg = 0;
     cl->stdired = 0;
     cl->stdored = 0;
@@ -28,9 +29,6 @@ initcl(CommandLine *cl){
     cl->env = 0;
     cl->equal = 0;
 	cl->status = 0;
-
-	cl->numcommands = 0;
-
 }
 
 int
