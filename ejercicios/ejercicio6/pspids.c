@@ -2,9 +2,14 @@
 #include <errno.h>
 #include <err.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 enum {
 	TwoArgs = 2,
+	MaxLine = 4*1024,
 };
 void
 usage(void)
@@ -39,12 +44,58 @@ getnumber(char *str)
 	return val;
 }
 
+// lo que hace el hijo es ejecutar ps y escribir su salida 
+// en vez por la estandar, por la entrada (fd[1]) del pipe
+void 
+executeps(int *fd){
+
+	// cerramos el extremo de lectura
+	close(fd[0]);
+
+	// escribir el contenido de la ejecución 
+	// en la entrada de escritura del pipe
+	dup2(fd[1], 1);
+	close(fd[1]);
+
+	execl("/bin/ps", "ps","-eo", "%p %U %x %c", NULL);
+	err(EXIT_FAILURE, "exec failed");
+}
+
+void
+printlines(int *fd, long long pid0, long long pid1){
+
+	char line[MaxLine];
+	FILE *pipe_read;
+
+	// fgets lee de la entrada estándar por eso
+	// hay que cerrar el descriptor de escritura
+	close(fd[1]);
+	
+	// hay que revisar lo de crear fichero
+	pipe_read = fdopen(fd[0], "r");
+    if (pipe_read == NULL) {
+        perror("fdopen");
+
+    }
+    while (fgets(line, MaxLine, pipe_read) != NULL) {
+        printf("%s", line);
+		// tratar si la línea es mayor de la que tengo
+		// hacer el parsing correspondiente 
+    }
+
+	fclose(pipe_read);
+	close(fd[0]);
+
+}
+
 int 
 main(int argc, char *argv[]){
     
     long long pid0;
     long long pid1;
-    
+	int fd[2]; // fd[0] es de lectura y fd[1] es de escritura
+    int status;
+
     argc--;
 	argv++;
 
@@ -63,8 +114,26 @@ main(int argc, char *argv[]){
         usage();
     }
 
-    // ejecutar el programa 
-    // usar: fork, exec, pipe...
+	// se crea antes que el fork para que lo herede el proceso hijo
+	if(pipe(fd) < 0){
+		err(EXIT_FAILURE, "cannot make a pipe");
+	}
+
+	switch (fork()) { // crea el proceso hijo
+        case -1:
+            err(EXIT_FAILURE, "cannot fork");
+        case 0:
+            executeps(fd);
+            exit(EXIT_SUCCESS);
+        default:
+			printlines(fd, pid0, pid1);
+			// esperamos a que acabe el hijo
+            if (wait(&status) < 0) {
+                status = EXIT_FAILURE;
+            }
+    }
+	
+	
 
     exit(EXIT_SUCCESS);
 }
