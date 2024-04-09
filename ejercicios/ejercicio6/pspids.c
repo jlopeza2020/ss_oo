@@ -9,8 +9,8 @@
 
 enum {
 	TwoArgs = 2,
-	MaxLine = 4*1024,
-	MaxPsLine = 16*1024,
+	MaxLine = 4 * 1024,
+	MaxPsLine = 16 * 1024,
 };
 
 void
@@ -48,8 +48,9 @@ getnumber(char *str)
 
 // lo que hace el hijo es ejecutar ps y escribir su salida 
 // en vez por la estandar, por la entrada (fd[1]) del pipe
-void 
-executeps(int *fd){
+void
+executeps(int *fd)
+{
 
 	// cerramos el extremo de lectura
 	close(fd[0]);
@@ -59,120 +60,106 @@ executeps(int *fd){
 	dup2(fd[1], 1);
 	close(fd[1]);
 
-	execl("/bin/ps", "ps","-eo", "%p %U %x %c", NULL);
+	execl("/bin/ps", "ps", "-eo", "%p %U %x %c", NULL);
 	err(EXIT_FAILURE, "exec failed");
 }
 
 void
-printlines(int *fd, long long pid0, long long pid1){
+printlines(int *fd, long long pid0, long long pid1)
+{
 
 	char line[MaxLine];
+	char auxline[MaxLine];
 	FILE *readpipe;
 	char *token;
 	char *saveptr;
-	long long counter; 
+	long long counter;
 	long long pidvalue;
-
 
 	// fgets lee de la entrada estándar por eso
 	// hay que cerrar el descriptor de escritura
 	close(fd[1]);
-	
+
 	// hay que revisar lo de crear fichero
 	readpipe = fdopen(fd[0], "r");
-    if (readpipe == NULL) {
-        err(EXIT_FAILURE , "can't fdopen open");
-    }
-    
+	if (readpipe == NULL) {
+		err(EXIT_FAILURE, "can't fdopen open");
+	}
+
 	counter = 0;
 	while (fgets(line, MaxLine, readpipe) != NULL) {
-        //printf("%s", line);
-	
+
+		// hacemos una copia de la línea para facilitar el tokenizado
+		strcpy(auxline, line);
 		if (line[strlen(line) - 1] == '\n') {
-			
+
 			// imprime el header
-			if(counter == 0){
-				printf("%s\n", line);
+			if (counter == 0) {
+				printf("%s", line);
 				counter++;
 
-			}else{
-				token = strtok_r(line, " ", &saveptr);
+			} else {
+				token = strtok_r(auxline, " ", &saveptr);
 				pidvalue = getnumber(token);
-				if(pidvalue >= pid0 && pidvalue <= pid1){
-					printf("%s\n", line);
+				if (pidvalue >= pid0 && pidvalue <= pid1) {
+					printf("%s", line);
 				}
 			}
 
-			// hacer el parsing
-			//token = strtok_r(line, " ", &saveptr);
-			//printf("%ld\n", strlen(token));
-
-			/*strcpy(pidval, token);
-			pidvalue = getnumber(pidval);
-			//printf("%s\n", token);
-			if(pidvalue >= pid0 && pidvalue <= pid1){
-				printf("%s\n", line);
-			}*/
-
-		}else{
+		} else {
 			warnx("Exceeded path size");
 		}
 	}
-
-
-   // }
 
 	fclose(readpipe);
 	close(fd[0]);
 
 }
 
-int 
-main(int argc, char *argv[]){
-    
-    long long pid0;
-    long long pid1;
-	int fd[2]; // fd[0] es de lectura y fd[1] es de escritura
-    int status;
+int
+main(int argc, char *argv[])
+{
 
-    argc--;
+	long long pid0;
+	long long pid1;
+	int fd[2];		// fd[0] es de lectura y fd[1] es de escritura
+	int status;
+
+	argc--;
 	argv++;
 
-    if (argc != TwoArgs) {
+	if (argc != TwoArgs) {
 		usage();
 	}
-    pid0 = getnumber(argv[0]);
-    pid1 = getnumber(argv[1]);
+	pid0 = getnumber(argv[0]);
+	pid1 = getnumber(argv[1]);
 
-    if(pid0 <= 0 || pid1 <= 0){
-        fprintf(stderr, "error: PIDs should be positive numbers\n");
-        usage();
-    }
-    if(pid1 < pid0){
-        fprintf(stderr, "error: PID1 should be greater or equal than PID0\n");
-        usage();
-    }
-
+	if (pid0 <= 0 || pid1 <= 0) {
+		fprintf(stderr, "error: PIDs should be positive numbers\n");
+		usage();
+	}
+	if (pid1 < pid0) {
+		fprintf(stderr,
+			"error: PID1 should be greater or equal than PID0\n");
+		usage();
+	}
 	// se crea antes que el fork para que lo herede el proceso hijo
-	if(pipe(fd) < 0){
+	if (pipe(fd) < 0) {
 		err(EXIT_FAILURE, "cannot make a pipe");
 	}
 
-	switch (fork()) { // crea el proceso hijo
-        case -1:
-            err(EXIT_FAILURE, "cannot fork");
-        case 0:
-            executeps(fd);
-            exit(EXIT_SUCCESS);
-        default:
-			printlines(fd, pid0, pid1);
-			// esperamos a que acabe el hijo
-            if (wait(&status) < 0) {
-                status = EXIT_FAILURE;
-            }
-    }
-	
-	
-
-    exit(EXIT_SUCCESS);
+	switch (fork()) {	// crea el proceso hijo
+	case -1:
+		err(EXIT_FAILURE, "cannot fork");
+	case 0:
+		executeps(fd);
+		exit(EXIT_SUCCESS);
+	default:
+		printlines(fd, pid0, pid1);
+		// esperamos a que acabe el hijo
+		if (wait(&status) < 0) {
+			status = EXIT_FAILURE;
+		}
+	}
+	exit(EXIT_SUCCESS);
 }
