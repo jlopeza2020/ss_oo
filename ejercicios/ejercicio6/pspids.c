@@ -5,12 +5,14 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include <string.h>
 
 enum {
 	TwoArgs = 2,
 	MaxLine = 4*1024,
+	MaxPsLine = 16*1024,
 };
+
 void
 usage(void)
 {
@@ -65,25 +67,62 @@ void
 printlines(int *fd, long long pid0, long long pid1){
 
 	char line[MaxLine];
-	FILE *pipe_read;
+	FILE *readpipe;
+	char *token;
+	char *saveptr;
+	long long counter; 
+	long long pidvalue;
+
 
 	// fgets lee de la entrada estándar por eso
 	// hay que cerrar el descriptor de escritura
 	close(fd[1]);
 	
 	// hay que revisar lo de crear fichero
-	pipe_read = fdopen(fd[0], "r");
-    if (pipe_read == NULL) {
-        perror("fdopen");
-
+	readpipe = fdopen(fd[0], "r");
+    if (readpipe == NULL) {
+        err(EXIT_FAILURE , "can't fdopen open");
     }
-    while (fgets(line, MaxLine, pipe_read) != NULL) {
-        printf("%s", line);
-		// tratar si la línea es mayor de la que tengo
-		// hacer el parsing correspondiente 
-    }
+    
+	counter = 0;
+	while (fgets(line, MaxLine, readpipe) != NULL) {
+        //printf("%s", line);
+	
+		if (line[strlen(line) - 1] == '\n') {
+			
+			// imprime el header
+			if(counter == 0){
+				printf("%s\n", line);
+				counter++;
 
-	fclose(pipe_read);
+			}else{
+				token = strtok_r(line, " ", &saveptr);
+				pidvalue = getnumber(token);
+				if(pidvalue >= pid0 && pidvalue <= pid1){
+					printf("%s\n", line);
+				}
+			}
+
+			// hacer el parsing
+			//token = strtok_r(line, " ", &saveptr);
+			//printf("%ld\n", strlen(token));
+
+			/*strcpy(pidval, token);
+			pidvalue = getnumber(pidval);
+			//printf("%s\n", token);
+			if(pidvalue >= pid0 && pidvalue <= pid1){
+				printf("%s\n", line);
+			}*/
+
+		}else{
+			warnx("Exceeded path size");
+		}
+	}
+
+
+   // }
+
+	fclose(readpipe);
 	close(fd[0]);
 
 }
