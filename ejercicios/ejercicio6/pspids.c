@@ -37,11 +37,11 @@ getnumber(char *str)
 		err(EXIT_FAILURE, "strtol");
 	}
 	if (endptr == str) {
-		errx(EXIT_FAILURE, "No digits were found");
+		errx(EXIT_FAILURE, "No digits were found in %s", str);
 	}
 	// Ahora es necesario comprobar si la string ha sido un número o no
 	if (*endptr != '\0') {
-		errx(EXIT_FAILURE, "is not a complete number");
+		errx(EXIT_FAILURE, "%s is not a complete number", str);
 	}
 	return val;
 }
@@ -51,7 +51,6 @@ getnumber(char *str)
 void
 executeps(int *fd)
 {
-
 	// cerramos el extremo de lectura
 	close(fd[0]);
 
@@ -80,7 +79,6 @@ printlines(int *fd, long long pid0, long long pid1)
 	// hay que cerrar el descriptor de escritura
 	close(fd[1]);
 
-	// hay que revisar lo de crear fichero
 	readpipe = fdopen(fd[0], "r");
 	if (readpipe == NULL) {
 		err(EXIT_FAILURE, "can't fdopen open");
@@ -116,16 +114,16 @@ printlines(int *fd, long long pid0, long long pid1)
 
 	fclose(readpipe);
 	close(fd[0]);
-
 }
 
 int
 main(int argc, char *argv[])
 {
-
 	long long pid0;
 	long long pid1;
-	int fd[2];		// fd[0] es de lectura y fd[1] es de escritura
+
+	// fd[0] es de lectura y fd[1] es de escritura
+	int fd[2];
 	int status;
 
 	argc--;
@@ -151,10 +149,11 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, "cannot make a pipe");
 	}
 
-	switch (fork()) {	// crea el proceso hijo
+	switch (fork()) {
 	case -1:
 		err(EXIT_FAILURE, "cannot fork");
 	case 0:
+		//ejecuta el hijo
 		executeps(fd);
 		exit(EXIT_SUCCESS);
 	default:
