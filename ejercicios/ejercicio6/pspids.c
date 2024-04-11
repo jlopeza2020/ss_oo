@@ -110,7 +110,7 @@ printlines(int *fd, long long pid0, long long pid1)
 			warnx("Exceeded path size");
 		}
 	}
-	if(ferror(readpipe)){
+	if (ferror(readpipe)) {
 		errx(EXIT_FAILURE, "read error");
 	}
 
