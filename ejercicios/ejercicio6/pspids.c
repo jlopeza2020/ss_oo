@@ -121,12 +121,12 @@ main(int argc, char *argv[])
 {
 	long long pid0;
 	long long pid1;
+
 	// fd[0] es de lectura y fd[1] es de escritura
 	int fd[2];
 	int status;
 	pid_t pid;
 	pid_t waitpid;
-
 
 	argc--;
 	argv++;
@@ -158,26 +158,16 @@ main(int argc, char *argv[])
 	case 0:
 		//ejecuta el hijo
 		executeps(fd);
-		exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
 	default:
 		printlines(fd, pid0, pid1);
 		// esperamos a que acabe el hijo
-		// hacer un bucle para
-		while((waitpid = wait(&status)) != -1){
-			fprintf(stderr,"my pid %d\n\n", pid);
-			if(pid == waitpid){
-				fprintf(stderr, "soy por el que espero\n");
-				if(!WIFEXITED(status)){
-					fprintf(stderr,"NO");
+		while ((waitpid = wait(&status)) != -1) {
+			if (pid == waitpid) {
+				if (!WIFEXITED(status)) {
 					exit(EXIT_FAILURE);
 				}
 			}
-			/*if(!WIFEXITED(status)){
-				fprintf(stderr,"NO");
-			}*/
-			
-		 // si es el pid que interesa 
-		 // si ha salido
 		}
 	}
 	exit(EXIT_SUCCESS);
