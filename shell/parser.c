@@ -3,7 +3,9 @@
 #include <string.h>
 #include <err.h>
 #include "parser.h"
- 
+#include "structs.h"
+
+/*
 // comprueba que hay uno y sólo al principio de la palabra
 int
 isenv(char *str)
@@ -60,7 +62,7 @@ isequal(char *str)
 	}
 	return 0;
 }
-
+*/
 // libera memoria y decrementa los valores
 void 
 elimstr(CommandLine *cl, int index) {
@@ -312,26 +314,9 @@ casepipes(CommandLine * cl){
 void
 parse(CommandLine * cl)
 {
-	// 1º background (si ocurre eliminar la palabra y aumento el contador)
 	casebg(cl);
-
-	// 2º redirecciones 
 	casered(cl);
-
-	// 3º pipes y dividirlo en array de array de strings 
 	casepipes(cl);
-
-		// 4º el array de array de strings pueden ser: 
-		// 	- variables de entorno 
-		//  - sustituciones de variables de entorno 
-		// 	- comandos
-		// 		* ver si es built-in 
-		// 		* fichero ejecutable en el dir trabajo
-		// 		* fichero ejecutable que se encuentra en alguno de los directorios
-		// 		  de la variable PATH
-
-		//isenv(str)) 
-		//(isequal(str)) 
 }
 
 void
@@ -375,6 +360,7 @@ freememory(CommandLine * cl)
 
     	// libera la estructura completa
     	free(cl->commands);
+		// libero el array de ints
 		free(cl->numsubcommands);
 	}
 }

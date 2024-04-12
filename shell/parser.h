@@ -1,3 +1,4 @@
+//#include "structs.h"
 
 enum {
 	MaxWord = 4*1024, // 4k  
@@ -12,14 +13,13 @@ enum {
     BOTHRED = 5,
 };
 
-struct CommandLine{
+/*struct CommandLine{
 
     char **words; // eje: [cat, /tmp/a, |, wc -c, >, x, <, y, &]
     int numwords; // eje: 10
     char ***commands; // eje: [[cat, /tmp/a], [wc, -c]]
     int *numsubcommands; // eje: [2,2]
     int numcommands; // eje: 2
-    
     int bg;
     int stdired;
     char *inred; // eje: y
@@ -30,7 +30,7 @@ struct CommandLine{
     int equal;
     int status;
 };
-typedef struct CommandLine CommandLine;
+typedef struct CommandLine CommandLine;*/
 
 // otra estructura para comando 
 // otra para pipes 
@@ -50,8 +50,8 @@ int isbg(CommandLine *cl);
 int isred(CommandLine *cl, char *typered);
 int isstr(char *word);
 
-int isenv(char *str);
-int isequal(char *str);
+//int isenv(char *str);
+//int isequal(char *str);
 
 void casebg(CommandLine * cl);
 void casered(CommandLine *cl);

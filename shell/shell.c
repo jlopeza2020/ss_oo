@@ -3,6 +3,8 @@
 #include <string.h>
 #include <err.h>
 #include "parser.h"
+#include "executor.h"
+#include "structs.h"
 
 enum {
 	ZeroArgs,
@@ -85,7 +87,7 @@ main(int argc, char *argv[])
 			fprintf(stderr,"sigo ejecutando\n");
 
 			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
-
+			executecommands(&cl);
 
 			// trazas
 			if(cl.status == INPUTRED){

@@ -121,10 +121,12 @@ main(int argc, char *argv[])
 {
 	long long pid0;
 	long long pid1;
-
 	// fd[0] es de lectura y fd[1] es de escritura
 	int fd[2];
 	int status;
+	pid_t pid;
+	pid_t waitpid;
+
 
 	argc--;
 	argv++;
@@ -149,7 +151,8 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, "cannot make a pipe");
 	}
 
-	switch (fork()) {
+	pid = fork();
+	switch (pid) {
 	case -1:
 		err(EXIT_FAILURE, "cannot fork");
 	case 0:
@@ -159,8 +162,22 @@ main(int argc, char *argv[])
 	default:
 		printlines(fd, pid0, pid1);
 		// esperamos a que acabe el hijo
-		if (wait(&status) < 0) {
-			status = EXIT_FAILURE;
+		// hacer un bucle para
+		while((waitpid = wait(&status)) != -1){
+			fprintf(stderr,"my pid %d\n\n", pid);
+			if(pid == waitpid){
+				fprintf(stderr, "soy por el que espero\n");
+				if(!WIFEXITED(status)){
+					fprintf(stderr,"NO");
+					exit(EXIT_FAILURE);
+				}
+			}
+			/*if(!WIFEXITED(status)){
+				fprintf(stderr,"NO");
+			}*/
+			
+		 // si es el pid que interesa 
+		 // si ha salido
 		}
 	}
 	exit(EXIT_SUCCESS);
