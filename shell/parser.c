@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
-#include "parser.h"
 #include "structs.h"
+#include "parser.h"
 
 /*
 // comprueba que hay uno y sólo al principio de la palabra

@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
+#include "structs.h"
 #include "parser.h"
 #include "executor.h"
-#include "structs.h"
 
 enum {
 	ZeroArgs,

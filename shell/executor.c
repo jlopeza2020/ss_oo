@@ -1,6 +1,6 @@
 #include <string.h>
-#include "executor.h"
 #include "structs.h"
+#include "executor.h"
 
 // comprueba que hay uno y sólo al principio de la palabra
 int
