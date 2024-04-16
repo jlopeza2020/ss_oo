@@ -2,8 +2,8 @@ enum{
     ZeroArgs,
     NThreads = 100,
     NPush = 100,
-    NPop  = 40,
-    ArraySize = 1,
+    NPop  = 100,
+    ArraySize = 50,
 };
 
 struct Stack {
@@ -20,7 +20,6 @@ struct Valor {
     int id;
 };
 typedef struct Valor Valor;
-
 
 void createstack(Stack *st, long long totalsize);
 int isempty(Stack *st);
