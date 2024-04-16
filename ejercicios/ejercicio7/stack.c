@@ -35,27 +35,15 @@ isemptystack(Stack *st){
     return value;
 }
 
-// preguntar si está bien o meter la declaración dentro de la región crítica
 // no poner locks y unlock porque genera interbloqueos
 static int
 isempty(Stack *st){
-    //int value;
-
-    //pthread_mutex_lock(&st->mutex);
-    //value = (st->postop == -1);
-    //pthread_mutex_unlock(&st->mutex);
-
     return (st->postop == -1);
 }
 
 static int 
 isfull(Stack *st){
-
-    //int value;
-    //pthread_mutex_lock(&st->mutex);
-    //value = (st->postop == (st->totalsize -1));
-    //pthread_mutex_unlock(&st->mutex);
-
+    
     return (st->postop == (st->totalsize-1));
 }
 

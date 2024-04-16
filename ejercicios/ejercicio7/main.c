@@ -21,10 +21,7 @@ destroystack(void){
     free(stack->array);
     pthread_mutex_destroy(&stack->mutex);
     free(stack);
-
-    // preguntar si hay que liberar la propia estructura
 }
-
 
 // las operaciones que hace el thread
 void *
@@ -66,7 +63,7 @@ main(int argc, char *argv[]) {
     
     pthread_t threads[NThreads];
     int ids[NThreads];
-
+    Valor *val;
     int i;
 
     argc--;
@@ -99,9 +96,15 @@ main(int argc, char *argv[]) {
     // en cuenta hacer pop hasta que se igualen los valores
     // cuando se destruya la pila
 
-    //free(stack->array);
-    //pthread_mutex_destroy(&stack->mutex);
-    //free(stack);
+    while(!isemptystack(stack)){
+        val = (Valor*)pop(stack);
+
+        if(val){
+            fprintf(stderr,"Remaining: id=%d, v=%d\n", val->id, val->v);
+            free(val);
+        }
+    }
+
     destroystack();
 
     exit(EXIT_SUCCESS);

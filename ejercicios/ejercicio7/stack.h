@@ -1,9 +1,9 @@
 enum{
     ZeroArgs,
     NThreads = 10,
-    NPush = 10,
+    NPush = 5,
     NPop  = 10,
-    ArraySize = 10,
+    ArraySize = 1,
 };
 
 struct Stack {
