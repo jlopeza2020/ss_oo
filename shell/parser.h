@@ -1,8 +1,8 @@
 //#include "structs.h"
 
-enum {
-	MaxWord = 4*1024, // 4k  
-};
+//enum {
+//	MaxWord = 4*1024, // 4k  
+//};
 
 // manejar errores parsing
 // en concreto ahora con los errores de redirecciones

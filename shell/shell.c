@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
-#include "structs.h"
+#include "common.h"
 #include "parser.h"
 #include "executor.h"
 
@@ -84,7 +84,7 @@ main(int argc, char *argv[])
 				continue;
 			}
 
-			fprintf(stderr,"sigo ejecutando\n");
+			//fprintf(stderr,"sigo ejecutando\n");
 
 			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
 			executecommands(&cl);
@@ -111,7 +111,7 @@ main(int argc, char *argv[])
 			}
 
 		}else {
-			warnx("Exceeded path size");
+			fprintf(stderr,"Exceeded path size\n");
 			// elimina el contenido del buffer de entrada
             while ((c = getchar()) != '\n' && c != EOF);
 			

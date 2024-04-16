@@ -1,3 +1,7 @@
+enum {
+	MaxWord = 4*1024, // 4k  
+};
+
 struct CommandLine{
 
     char **words; // eje: [cat, /tmp/a, |, wc -c, >, x, <, y, &]
@@ -13,6 +17,6 @@ struct CommandLine{
 	int numpipes;
     int env;
     int equal;
-    int status;
+    int status; // si es error, si hay redirección entrada, salida o las 2
 };
 typedef struct CommandLine CommandLine;

@@ -1,8 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <err.h>
-#include "structs.h"
+#include "common.h"
 #include "parser.h"
 
 /*
@@ -130,7 +129,8 @@ isred(CommandLine *cl, char *typered)
 
 	// caso en el que solo se encuentre redirección al final
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
-		warnx("Missed redirection file\n");
+		fprintf(stderr,"Missed redirection file\n");
+
 		cl->status = PARSINGERROR;
 	}
 
@@ -191,8 +191,8 @@ setcommands(CommandLine *cl){
 	int posc;
 	int possubc;
 
-	int j; 
-	int k;
+	//int j; 
+	//int k;
 
 	posc = 0;
 	possubc = 0;
@@ -218,12 +218,12 @@ setcommands(CommandLine *cl){
 	}
 
 	// traza 
-	for(j = 0; j < cl->numcommands; j++){
+	/*for(j = 0; j < cl->numcommands; j++){
 		for(k = 0; k < cl->numsubcommands[j]; k++){
 
 		fprintf(stderr,"soy el subcommando: %s\n", cl->commands[j][k]);		
 		}
-	}
+	}*/
 
 }
 	
