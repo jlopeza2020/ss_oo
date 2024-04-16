@@ -5,7 +5,7 @@
 #include "stack.h"
 
 // PREGUNTAR y si no se puede hacer
-// ¿cómo pasarle el id al threead y la pila?
+// ¿cómo pasarle el id al thread y la pila?
 //Stack stack;
 Stack *stack;
 
@@ -95,6 +95,7 @@ main(int argc, char *argv[]) {
     // si ocurre el caso de más push que pop, hay que tener
     // en cuenta hacer pop hasta que se igualen los valores
     // cuando se destruya la pila
+    printf(" Hay %lld elementos\n", size(stack));
 
     while(!isemptystack(stack)){
         val = (Valor*)pop(stack);

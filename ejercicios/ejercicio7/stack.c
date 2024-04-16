@@ -43,7 +43,6 @@ isempty(Stack *st){
 
 static int 
 isfull(Stack *st){
-    
     return (st->postop == (st->totalsize-1));
 }
 
@@ -54,9 +53,6 @@ push(Stack *st, void *item){
         st->totalsize *= 2;
         // preguntar si tiene valor de retorno
         st->array = (void**)realloc(st->array, sizeof(void*)*st->totalsize);
-        /*if (st->array == NULL) {
-            errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
-        }*/
     }
     st->postop++;
     st->array[st->postop] = item;

@@ -1,8 +1,8 @@
 enum{
     ZeroArgs,
     NThreads = 10,
-    NPush = 5,
-    NPop  = 10,
+    NPush = 10,
+    NPop  = 5,
     ArraySize = 1,
 };
 
