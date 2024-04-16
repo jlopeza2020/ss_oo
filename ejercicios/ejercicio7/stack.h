@@ -1,16 +1,16 @@
 enum{
     ZeroArgs,
-    NThreads = 100,
-    NPush = 100,
-    NPop  = 100,
-    ArraySize = 50,
+    NThreads = 10,
+    NPush = 10,
+    NPop  = 10,
+    ArraySize = 10,
 };
 
 struct Stack {
     void **array;
     long long totalsize; // tamaño total del array
     long long postop;  // posición de la cima de la pila
-    //pthread_mutex_t mutex;
+    pthread_mutex_t mutex;
 };
 typedef struct Stack Stack;
 
@@ -21,9 +21,15 @@ struct Valor {
 };
 typedef struct Valor Valor;
 
-void createstack(Stack *st, long long totalsize);
-int isempty(Stack *st);
+/*struct ThreadArgs{
+    Stack stack;
+    int id;
+}
+typedef struct ThreadArgs ThreadArgs;*/
+
+Stack *createstack(long long totalsize);
+int isemptystack(Stack *st);
 void push(Stack *st, void *item);
 void* pop(Stack *st);
-int size(Stack *st);
+long long  size(Stack *st);
 
