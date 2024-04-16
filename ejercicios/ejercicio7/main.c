@@ -45,8 +45,8 @@ destroystack(Stack *st){
 int main(int argc, char *argv[]) {
     
     Stack stack;
-    Valor val1;
-    Valor val2;
+    //Valor val2;
+    Valor *val;
     argc--;
 	argv++;
 
@@ -55,17 +55,44 @@ int main(int argc, char *argv[]) {
 	}
 
     createstack(&stack,ArraySize);
-    val1.id = 2;
+
+    for (int i = 0; i < 5; i++) {
+        val = (Valor*)malloc(sizeof(Valor));
+
+        val->v = i;
+        val->id = 3;
+        push(&stack, val);
+
+        //free(val);
+    }
+
+    /*val1.id = 2;
     val1.v  = 1;
     push(&stack, &val1);
 
     val2.id = 3;
     val2.v  = 2;
-    push(&stack, &val2);
+    push(&stack, &val2);*/
 
     /*val3.id = 773;
     val3.v  = 24;
     push(&stack, &val3);*/
+
+    for (int i = 0; i < 10; i++) {
+        //val = (Valor*)pop(&stack);
+        val = (Valor*)pop(&stack);
+
+    
+        if(val){
+            fprintf(stderr,"My pop: id=%d, v=%d\n", val->id, val->v);
+            free(val);
+        }
+        // aquí llegarían cuando sean NULL
+    }
+
+    // si ocurre el caso de más push que pop, hay que tener
+    // en cuenta hacer pop hasta que se igualen los valores
+    // cuando se destruya la pila
 
     /*Valor *value = (Valor*)pop(&stack);
     
