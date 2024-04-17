@@ -6,7 +6,6 @@
 
 // PREGUNTAR y si no se puede hacer
 // ¿cómo pasarle el id al thread y la pila?
-//Stack stack;
 Stack *stack;
 
 void
@@ -16,6 +15,7 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+// se puede hacer pública
 static void 
 destroystack(void){
     free(stack->array);
@@ -61,7 +61,11 @@ threadfunction(void *arg){
 int 
 main(int argc, char *argv[]) {
     
+    //Stack stack;
     pthread_t threads[NThreads];
+    /// hacerlo con malloc
+    // hacer una struct que se le inserte la pila
+    // no poner la pila como global
     int ids[NThreads];
     Valor *val;
     int i;

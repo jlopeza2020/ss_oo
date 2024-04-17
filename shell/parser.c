@@ -387,6 +387,7 @@ tokenize(CommandLine *cl, char *line)
 	}
 
 	i = 0;
+	// cambiar el tokenizado !!!!
 	token = strtok_r(line, " \t", &saveptr);
 	// copiar el valor de token en el array words
 	strcpy(cl->words[i], token);

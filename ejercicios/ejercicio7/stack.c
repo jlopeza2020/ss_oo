@@ -23,6 +23,7 @@ createstack(long long arraysize){
     return st;
 }
 
+// coge el cierre llamarla isempty
 int 
 isemptystack(Stack *st){
 
@@ -36,6 +37,7 @@ isemptystack(Stack *st){
 }
 
 // no poner locks y unlock porque genera interbloqueos
+// llamarla _isempty no coge el cierre 
 static int
 isempty(Stack *st){
     return (st->postop == -1);

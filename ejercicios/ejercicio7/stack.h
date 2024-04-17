@@ -21,11 +21,13 @@ struct Valor {
 };
 typedef struct Valor Valor;
 
+// creo un malloc  
 /*struct ThreadArgs{
-    Stack stack;
+    Stack *stack;
     int id;
 }
 typedef struct ThreadArgs ThreadArgs;*/
+// el propio thread hace free 
 
 Stack *createstack(long long totalsize);
 int isemptystack(Stack *st);
