@@ -1,8 +1,8 @@
 enum{
     ZeroArgs,
     NThreads = 10,
-    NPush = 10,
-    NPop  = 5,
+    NPush = 50,
+    NPop  = 20,
     ArraySize = 1,
 };
 
@@ -20,13 +20,11 @@ struct Valor {
 };
 typedef struct Valor Valor;
 
-// creo un malloc  
 struct ThreadArgs{
     Stack *stack;
     int id;
 };
 typedef struct ThreadArgs ThreadArgs;
-// el propio thread hace free 
 
 Stack *createstack(long long totalsize);
 int isempty(Stack *st);
