@@ -25,7 +25,7 @@ createstack(long long arraysize){
 
 // coge el cierre llamarla isempty
 int 
-isemptystack(Stack *st){
+isempty(Stack *st){
 
     int value;
 
@@ -39,7 +39,7 @@ isemptystack(Stack *st){
 // no poner locks y unlock porque genera interbloqueos
 // llamarla _isempty no coge el cierre 
 static int
-isempty(Stack *st){
+_isempty(Stack *st){
     return (st->postop == -1);
 }
 
@@ -67,7 +67,7 @@ pop(Stack *st){
     void *popelement;
 
     pthread_mutex_lock(&st->mutex);
-    if(isempty(st)){
+    if(_isempty(st)){
         pthread_mutex_unlock(&st->mutex);
         return NULL;
     }
@@ -89,8 +89,6 @@ size(Stack *st){
     return size;
 }
 
-
-// se puede hacer pública
 void 
 freestack(Stack *stack){
     free(stack->array);

@@ -29,7 +29,7 @@ typedef struct ThreadArgs ThreadArgs;
 // el propio thread hace free 
 
 Stack *createstack(long long totalsize);
-int isemptystack(Stack *st);
+int isempty(Stack *st);
 void push(Stack *st, void *item);
 void* pop(Stack *st);
 long long  size(Stack *st);
