@@ -11,164 +11,162 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-void 
-handlerror(Stack *st, ThreadArgs **args, int i, char *message){
+void
+handlerror(Stack *st, ThreadArgs **args, int i, char *message)
+{
 
-    int j;
+	int j;
 
-    for (j = 0; j < i; j++) {
-        // libero todos los ThreadArgs que se han creado hasta el momento
-        free(args[j]);
-    }
-    // también libero la pila creada
-    freestack(st);
-    errx(EXIT_FAILURE, "%s", message);
+	for (j = 0; j < i; j++) {
+		// libero todos los ThreadArgs que se han creado hasta el momento
+		free(args[j]);
+	}
+	// también libero la pila creada
+	freestack(st);
+	errx(EXIT_FAILURE, "%s", message);
 }
 
 void *
-threadfunction(void *arg){
+threadfunction(void *arg)
+{
 
-    ThreadArgs *args;
-    Stack *stack;
-    int id;
-    Valor *val;
-    long long counter;
+	ThreadArgs *args;
+	Stack *stack;
+	int id;
+	Valor *val;
+	long long counter;
 
-    args = (ThreadArgs *)arg;
+	args = (ThreadArgs *)arg;
 
-    // como argumentos: pila y id del thread
-    stack = args->stack; 
-    id = args->id; 
+	// como argumentos: pila y id del thread
+	stack = args->stack;
+	id = args->id;
 
-    for (int i = 0; i < NPush; i++) {
-        // reservo memoria para la struct Valor (id y v)
-        val = (Valor*)malloc(sizeof(Valor));
-        if (val == NULL) {
-		    free(args);
-            errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
-	    }
-        // asigno valores a la estructura Valor 
-        val->v = i;
-        val->id = id;
-        push(stack, val);
-    }
+	for (int i = 0; i < NPush; i++) {
+		// reservo memoria para la struct Valor (id y v)
+		val = (Valor *)malloc(sizeof(Valor));
+		if (val == NULL) {
+			free(args);
+			errx(EXIT_FAILURE,
+			     "Error: dynamic memory cannot be allocated");
+		}
+		// asigno valores a la estructura Valor 
+		val->v = i;
+		val->id = id;
+		push(stack, val);
+	}
 
-    counter = 0;
-    for (int i = 0; i < NPop; i++) {
-        val = (Valor*)pop(stack);
-        // significa si el valor no es NULL
-        if(val){
-            // si id del pop (val) y el id del thread son diferentes:
-            // aumenta el contador
-            if(val->id != id){
-                counter++;
-            }
-            // libero el valor de la struct Valor porque ya no lo necesito
-            free(val);
-        }
-    }
-    if(counter != 0){
-        printf("Id %d: there are %lld incorrect pops\n", id, counter);
-    }
-    // libero la memoria de la struct ThreadArgs
-    free(args);
+	counter = 0;
+	for (int i = 0; i < NPop; i++) {
+		val = (Valor *)pop(stack);
+		// significa si el valor no es NULL
+		if (val) {
+			// si id del pop (val) y el id del thread son diferentes:
+			// aumenta el contador
+			if (val->id != id) {
+				counter++;
+			}
+			// libero el valor de la struct Valor porque ya no lo necesito
+			free(val);
+		}
+	}
+	if (counter != 0) {
+		printf("Id %d: there are %lld incorrect pops\n", id, counter);
+	}
+	// libero la memoria de la struct ThreadArgs
+	free(args);
 
-    return NULL; // ???
+	return NULL;		// ???
 }
 
-int 
-main(int argc, char *argv[]){
-    
-    pthread_t threads[NThreads];
-    ThreadArgs *args[NThreads];
-    Stack *stack;
-    Valor *val;
-    int i;
-    long long expectedsize;
-    int lastid;
-    int lastvalue;
+int
+main(int argc, char *argv[])
+{
 
-    argc--;
+	pthread_t threads[NThreads];
+	ThreadArgs *args[NThreads];
+	Stack *stack;
+	Valor *val;
+	int i;
+	long long expectedsize;
+	int lastid;
+	int lastvalue;
+
+	argc--;
 	argv++;
 
 	if (argc != ZeroArgs) {
 		usage();
 	}
+	// Crea y asigna memoria para la pila
+	stack = createstack(ArraySize);
+	if (stack == NULL) {
+		errx(EXIT_FAILURE, "Error creating stack");
+	}
 
-    // Crea y asigna memoria para la pila
-    stack = createstack(ArraySize);
-    if (stack == NULL) {
-        errx(EXIT_FAILURE, "Error creating stack");
-    }
+	for (i = 0; i < NThreads; i++) {
 
-    for (i = 0; i < NThreads; i++) {
-        
-        // Asigna memoria para cada argumentos del thread
-        args[i] = (ThreadArgs *)malloc(sizeof(ThreadArgs));
-        if (args[i] == NULL) {
-            handlerror(stack, args, i, "Error: dynamic memory cannot be allocated");
-        }
+		// Asigna memoria para cada argumentos del thread
+		args[i] = (ThreadArgs *)malloc(sizeof(ThreadArgs));
+		if (args[i] == NULL) {
+			handlerror(stack, args, i,
+				   "Error: dynamic memory cannot be allocated");
+		}
 
-        args[i]->stack = stack;
-        args[i]->id = i;
+		args[i]->stack = stack;
+		args[i]->id = i;
 
-        // creo el thread y manejo error si hay fallo
-        if(pthread_create(&threads[i], NULL, threadfunction,(void*)args[i]) != 0){
-            handlerror(stack, args, i, "Error: creating thread");
-        }
-    }
+		// creo el thread y manejo error si hay fallo
+		if (pthread_create
+		    (&threads[i], NULL, threadfunction, (void *)args[i]) != 0) {
+			handlerror(stack, args, i, "Error: creating thread");
+		}
+	}
 
-    for(i = 0; i < NThreads; i++){
-        // muere el thread y manejo error si hay fallo
-        if(pthread_join(threads[i], NULL) != 0){
-            handlerror(stack, args, i, "Error: joining thread");
-        }
-    }
+	for (i = 0; i < NThreads; i++) {
+		// muere el thread y manejo error si hay fallo
+		if (pthread_join(threads[i], NULL) != 0) {
+			handlerror(stack, args, i, "Error: joining thread");
+		}
+	}
 
-    // trazas
-    printf(" Hay %lld elementos\n", size(stack));
-    expectedsize = NThreads*NPush - NThreads*NPop;
-    printf(" Se espera %lld e\n", expectedsize);
+	// trazas
+	fprintf(stderr, " Hay %lld elementos\n", size(stack));
+	expectedsize = NThreads * NPush - NThreads * NPop;
+	fprintf(stderr, " Se espera %lld elementos\n", expectedsize);
 
-    lastid = -1;
-    if(expectedsize == size(stack)){
-        // comprobar que los valores con el mismo id salen de forma decreciente
-        while(!isempty(stack)){
-            val = (Valor*)pop(stack);
-            // Preguntar
-            /*if(val->id != lastid && lastid != -1 && lastvalue != 0){
-                printf("Values with different ids are not ordered correctly\n");
-                free(val);
-                continue;
-            }*/ 
-            // comprueba que valores con el mismo id salen en orden decreciente. 
-            if(val->id == lastid && val->v > lastvalue){
-                //printf("Values with different ids are not ordered correctly\n");
-                printf("Values with the same id are not in decreasing order\n");
-                free(val);
-                continue;
-            }
-            lastid = val->id;
-            lastvalue = val->v;
-            printf("Popped value: id=%d, v=%d\n", val->id, val->v);
-            free(val);
+	lastid = -1;
+	lastvalue = -1;
+	if (expectedsize == size(stack)) {
+		// comprobar que los valores con el mismo id salen de forma decreciente
+		while (!isempty(stack)) {
+			val = (Valor *)pop(stack);
+			// comprueba que valores con el mismo id salen en orden decreciente. 
+			if (val->id == lastid && val->v > lastvalue) {
+				fprintf(stderr,
+					"Error: Values with the same id are not in decreasing order\n");
+				free(val);
+				continue;
+			}
+			lastid = val->id;
+			lastvalue = val->v;
+			printf("Popped value: id=%d, v=%d\n", val->id, val->v);
+			free(val);
+		}
 
-            //free(val);
-        }
+	} else {
+		fprintf(stderr,
+			"Error: Expected values are not the same as in the stack\n");
+		// al no ser los valores esperados los mismos que los que hay en la pila
+		// hay que liberar la memoria  para que no haya un problema al acabar la 
+		// ejecución pero no se comprobará los valores 
+		while (!isempty(stack)) {
+			val = (Valor *)pop(stack);
+			free(val);
+		}
+	}
 
-    }else{
-        // al no ser los valores esperados los mismos que los que hay en la pila
-        // hay que liberar la memoria  para que no haya un problema al acabar la 
-        // ejecución pero no se comprobará los valores 
-        while(!isempty(stack)){
-            val = (Valor*)pop(stack);
-            if(val){
-                free(val);
-            }
-        }
-    }
+	freestack(stack);
 
-    freestack(stack);
-
-    exit(EXIT_SUCCESS);
+	exit(EXIT_SUCCESS);
 }
