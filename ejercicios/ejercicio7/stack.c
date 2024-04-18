@@ -88,3 +88,12 @@ size(Stack *st){
     
     return size;
 }
+
+
+// se puede hacer pública
+void 
+freestack(Stack *stack){
+    free(stack->array);
+    pthread_mutex_destroy(&stack->mutex);
+    free(stack);
+}

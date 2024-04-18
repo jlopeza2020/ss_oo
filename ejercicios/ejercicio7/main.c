@@ -6,7 +6,7 @@
 
 // PREGUNTAR y si no se puede hacer
 // ¿cómo pasarle el id al thread y la pila?
-Stack *stack;
+//Stack *stack;
 
 void
 usage(void)
@@ -16,12 +16,12 @@ usage(void)
 }
 
 // se puede hacer pública
-static void 
+/*static void 
 destroystack(void){
     free(stack->array);
     pthread_mutex_destroy(&stack->mutex);
     free(stack);
-}
+}*/
 
 // las operaciones que hace el thread
 void *
@@ -30,13 +30,19 @@ threadfunction(void *arg){
     int id;
     Valor *val;
 
-    id = *((int*)arg);
+    //id = *((int*)arg);
+    ThreadArgs *args = (ThreadArgs *)arg; // Cast arg to ThreadArgs pointer
+
+    Stack *stack = args->stack; // Access the stack pointer from ThreadArgs
+    id = args->id; // Access the thread ID from ThreadArgs
+
 
     for (int i = 0; i < NPush; i++) {
         val = (Valor*)malloc(sizeof(Valor));
         // comprobar si malloc ha ido bien o no 
         if (val == NULL) {
-		    errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
+		    free(args);
+            errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
 	    }
 
         val->v = i;
@@ -51,22 +57,28 @@ threadfunction(void *arg){
         if(val){
             fprintf(stderr,"My popy4: id=%d, v=%d\n", val->id, val->v);
             free(val);
+            // free(args);
+
         }
         // aquí llegarían cuando sean NULL
     }
-
+    free(args);
     return NULL;
 }
 
 int 
 main(int argc, char *argv[]) {
     
-    //Stack stack;
     pthread_t threads[NThreads];
+    // Hacer un malloc de un array de ThreadArgs
+    // se le pasa a todos la misma pila y a cada uno un identificador
+    // dentro del thread es quien hace free de todo eso
+    ThreadArgs *args;
+    Stack *stack;
     /// hacerlo con malloc
     // hacer una struct que se le inserte la pila
     // no poner la pila como global
-    int ids[NThreads];
+    //int ids[NThreads];
     Valor *val;
     int i;
 
@@ -77,21 +89,42 @@ main(int argc, char *argv[]) {
 		usage();
 	}
 
-    // stack es global ??? 
     stack = createstack(ArraySize);
+    if (stack == NULL) {
+        errx(EXIT_FAILURE, "Error creating stack");
+    }
+
+    args = (ThreadArgs *)malloc(sizeof(ThreadArgs)*NThreads);
+
+    if (args == NULL) {
+	    errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
+	}
+
 
     for (i = 0; i < NThreads; i++) {
-        ids[i] = i;
+        
+        //args[i] = (ThreadArgs *)malloc(sizeof(ThreadArgs));
+        
+        /*if (args[i] == NULL) {
+		    errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
+	    }*/
 
-        if(pthread_create(&threads[i], NULL, threadfunction,(void*)&ids[i]) != 0){
-            destroystack();
+        args[i].stack = stack;
+        args[i].id = i;
+
+        //ids[i] = i;
+
+        if(pthread_create(&threads[i], NULL, threadfunction,(void*)&args[i]) != 0){
+            free(args);
+            freestack(stack);
             errx(EXIT_FAILURE, "Error: creating thread");
         }
     }
 
     for(i = 0; i < NThreads; i++){
         if(pthread_join(threads[i], NULL) != 0){
-            destroystack();
+            free(args);
+            freestack(stack);
             errx(EXIT_FAILURE, "Error: joining thread");
         }
     }
@@ -110,7 +143,9 @@ main(int argc, char *argv[]) {
         }
     }
 
-    destroystack();
+    //free(args);
+    freestack(stack);
+    //free(args);
 
     exit(EXIT_SUCCESS);
 }

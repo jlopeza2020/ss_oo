@@ -41,6 +41,7 @@ main(int argc, char *argv[])
 	char *newline;
 	int c;
 
+	// cambiar la inicialización a un CommandLine * ???
 	CommandLine cl;
 
 	argc--;

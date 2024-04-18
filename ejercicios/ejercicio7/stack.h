@@ -14,7 +14,6 @@ struct Stack {
 };
 typedef struct Stack Stack;
 
-// revisar si declararla aquí o en el main 
 struct Valor {
 	int v;
     int id;
@@ -22,11 +21,11 @@ struct Valor {
 typedef struct Valor Valor;
 
 // creo un malloc  
-/*struct ThreadArgs{
+struct ThreadArgs{
     Stack *stack;
     int id;
-}
-typedef struct ThreadArgs ThreadArgs;*/
+};
+typedef struct ThreadArgs ThreadArgs;
 // el propio thread hace free 
 
 Stack *createstack(long long totalsize);
@@ -34,4 +33,5 @@ int isemptystack(Stack *st);
 void push(Stack *st, void *item);
 void* pop(Stack *st);
 long long  size(Stack *st);
+void freestack(Stack *stack);
 
