@@ -12,5 +12,6 @@ int isempty(Stack *st);
 void push(Stack *st, void *item);
 void *pop(Stack *st);
 long long size(Stack *st);
+
 // aquí no debe de haber ningún hilo usando la pila 
 void freestack(Stack *stack);

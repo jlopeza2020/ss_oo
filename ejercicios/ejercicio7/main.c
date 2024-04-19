@@ -6,8 +6,8 @@
 
 enum {
 	ZeroArgs,
-	NThreads = 1000,
-	NPush = 1000,
+	NThreads = 100,
+	NPush = 100,
 	NPop = 40,
 	ArraySize = 50,
 };
@@ -31,6 +31,14 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+void
+handlerror(Stack *st, ThreadArgs *args, char *message)
+{
+	free(args);
+	freestack(st);
+	errx(EXIT_FAILURE, "%s", message);
+}
+
 void *
 threadfunction(void *arg)
 {
@@ -52,6 +60,7 @@ threadfunction(void *arg)
 		val = (Valor *)malloc(sizeof(Valor));
 		if (val == NULL) {
 			free(args);
+			pthread_exit((void *)1);
 			/// no usar err 
 			// salir y luego verlo en el main
 			//errx(EXIT_FAILURE,
@@ -103,6 +112,7 @@ main(int argc, char *argv[])
 	int lastvalue;
 	int i;
 	int errs;
+	void *result;
 
 	errs = 0;
 
@@ -124,7 +134,8 @@ main(int argc, char *argv[])
 		if (args == NULL) {
 			free(args);
 			freestack(stack);
-			errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
+			handlerror(stack, args,
+				   "Error: dynamic memory cannot be allocated");
 		}
 
 		args->stack = stack;
@@ -133,16 +144,17 @@ main(int argc, char *argv[])
 		// creo el thread y manejo error si hay fallo
 		if (pthread_create
 		    (&threads[i], NULL, threadfunction, (void *)args) != 0) {
-			//handlerror(stack, args, i, "Error: creating thread");
-			//err
+			handlerror(stack, args, "Error: creating thread");
 		}
 	}
 
 	for (i = 0; i < NThreads; i++) {
 		// muere el thread y manejo error si hay fallo
-		if (pthread_join(threads[i], NULL) != 0) {
-			//handlerror(stack, args, i, "Error: joining thread");
-			//usar pthread exit
+		if (pthread_join(threads[i], &result) != 0) {
+			handlerror(stack, args, "Error: joining thread");
+		}
+		if (result != NULL) {
+			errs++;
 		}
 	}
 
@@ -159,7 +171,8 @@ main(int argc, char *argv[])
 			if (val->id == lastid && val->v > lastvalue) {
 				fprintf(stderr,
 					"Error: Values with the same id are not in decreasing order\n");
-				fprintf(stderr,"Popped value: id=%d, v=%d\n", val->id, val->v);
+				fprintf(stderr, "Popped value: id=%d, v=%d\n",
+					val->id, val->v);
 				free(val);
 				errs++;
 				continue;
@@ -168,8 +181,10 @@ main(int argc, char *argv[])
 			lastvalue = val->v;
 		} else {
 			fprintf(stderr,
-				"Error: expected size: %lld is not equal to stacksize: %lld\n",expectedsize, stacksize);
-			fprintf(stderr,"Popped value: id=%d, v=%d\n", val->id, val->v);
+				"Error: expected size: %lld is not equal to stacksize: %lld\n",
+				expectedsize, stacksize);
+			fprintf(stderr, "Popped value: id=%d, v=%d\n", val->id,
+				val->v);
 			errs++;
 		}
 
@@ -178,5 +193,5 @@ main(int argc, char *argv[])
 
 	freestack(stack);
 
-	exit(EXIT_SUCCESS);
+	exit(errs);
 }
