@@ -58,8 +58,7 @@ push(Stack *st, void *item)
 
 		if (st->array == NULL) {
 			pthread_mutex_unlock(&st->mutex);
-			errx(EXIT_FAILURE,
-			     "Error: dynamic memory cannot be allocated");
+			pthread_exit((void *)1);
 		}
 	}
 	st->postop++;
