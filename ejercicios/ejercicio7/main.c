@@ -14,7 +14,6 @@ usage(void)
 void
 handlerror(Stack *st, ThreadArgs **args, int i, char *message)
 {
-
 	int j;
 
 	for (j = 0; j < i; j++) {
@@ -33,6 +32,7 @@ threadfunction(void *arg)
 	ThreadArgs *args;
 	Stack *stack;
 	int id;
+	int i;
 	Valor *val;
 	long long counter;
 
@@ -42,7 +42,7 @@ threadfunction(void *arg)
 	stack = args->stack;
 	id = args->id;
 
-	for (int i = 0; i < NPush; i++) {
+	for (i = 0; i < NPush; i++) {
 		// reservo memoria para la struct Valor (id y v)
 		val = (Valor *)malloc(sizeof(Valor));
 		if (val == NULL) {
@@ -57,7 +57,7 @@ threadfunction(void *arg)
 	}
 
 	counter = 0;
-	for (int i = 0; i < NPop; i++) {
+	for (i = 0; i < NPop; i++) {
 		val = (Valor *)pop(stack);
 		// significa si el valor no es NULL
 		if (val) {
@@ -79,6 +79,10 @@ threadfunction(void *arg)
 	return NULL;		// ???
 }
 
+// - los valores de mis threads y de los id van a ir desde 0 a N-1
+//              siendo N el número total de Threads
+// - También, he decidido inicializar el valor de la cima (postop) a -1 
+//              suponiendo que la pila está vacía cuando dicho valor vale -1
 int
 main(int argc, char *argv[])
 {
@@ -87,11 +91,11 @@ main(int argc, char *argv[])
 	ThreadArgs *args[NThreads];
 	Stack *stack;
 	Valor *val;
-	int i;
 	long long expectedsize;
 	long long stacksize;
 	int lastid;
 	int lastvalue;
+	int i;
 
 	argc--;
 	argv++;
@@ -106,7 +110,6 @@ main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < NThreads; i++) {
-
 		// Asigna memoria para cada argumentos del thread
 		args[i] = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 		if (args[i] == NULL) {
@@ -136,39 +139,27 @@ main(int argc, char *argv[])
 
 	lastid = -1;
 	lastvalue = -1;
-	//if (expectedsize == size(stack)) {
 	while (!isempty(stack)) {
 		val = (Valor *)pop(stack);
 
-		if(expectedsize == stacksize){
+		if (expectedsize == stacksize) {
 			// comprueba que valores con el mismo id salen en orden decreciente. 
 			if (val->id == lastid && val->v > lastvalue) {
-				fprintf(stderr,"Error: Values with the same id are not in decreasing order\n");
+				fprintf(stderr,
+					"Error: Values with the same id are not in decreasing order\n");
 				free(val);
 				continue;
 			}
 			lastid = val->id;
 			lastvalue = val->v;
 			printf("Popped value: id=%d, v=%d\n", val->id, val->v);
-			//free(val);
-		}else{
-			fprintf(stderr,"Error: Expected values are not the same as in the stack\n");
+		} else {
+			fprintf(stderr,
+				"Error: Expected values are not the same as in the stack\n");
 		}
 
 		free(val);
 	}
-
-	//} else {
-	//	fprintf(stderr,
-	//		"Error: Expected values are not the same as in the stack\n");
-		// al no ser los valores esperados los mismos que los que hay en la pila
-		// hay que liberar la memoria  para que no haya un problema al acabar la 
-		// ejecución pero no se comprobará los valores 
-	//	while (!isempty(stack)) {
-		//	val = (Valor *)pop(stack);
-	//		free(val);
-	//	}
-	//}
 
 	freestack(stack);
 
