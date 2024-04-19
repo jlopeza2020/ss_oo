@@ -39,6 +39,51 @@ handlerror(Stack *st, ThreadArgs *args, char *message)
 	errx(EXIT_FAILURE, "%s", message);
 }
 
+void  
+emptystack(Stack *stack, int *errs){
+
+	Valor *val;
+	long long expectedsize;
+	long long stacksize;
+	int lastid;
+	int lastvalue;
+
+	expectedsize = NThreads * NPush - NThreads * NPop;
+	stacksize = size(stack);
+
+	lastid = -1;
+	lastvalue = -1;
+	while (!isempty(stack)) {
+		val = (Valor *)pop(stack);
+
+		if (expectedsize == stacksize) {
+			// comprueba que valores con el mismo id salen en orden decreciente. 
+			if (val->id == lastid && val->v > lastvalue) {
+				fprintf(stderr,
+					"Error: Values with the same id are not in decreasing order\n");
+				fprintf(stderr, "Popped value: id=%d, v=%d\n",
+					val->id, val->v);
+				free(val);
+				*errs = *errs +1;
+				continue;
+			}
+			lastid = val->id;
+			lastvalue = val->v;
+		} else {
+			fprintf(stderr,
+				"Error: expected size: %lld is not equal to stacksize: %lld\n",
+				expectedsize, stacksize);
+			fprintf(stderr, "Popped value: id=%d, v=%d\n", val->id,
+				val->v);
+			*errs = *errs +1;
+		}
+
+		free(val);
+	}
+	
+	freestack(stack);
+}
+
 void *
 threadfunction(void *arg)
 {
@@ -56,17 +101,13 @@ threadfunction(void *arg)
 	id = args->id;
 
 	for (i = 0; i < NPush; i++) {
-		// reservo memoria para la struct Valor (id y v)
+		// reservo memoria para (id y v)
 		val = (Valor *)malloc(sizeof(Valor));
 		if (val == NULL) {
 			free(args);
+			// no uso exit porque sino para la ejecución de todos los threads
 			pthread_exit((void *)1);
-			/// no usar err 
-			// salir y luego verlo en el main
-			//errx(EXIT_FAILURE,
-			//     "Error: dynamic memory cannot be allocated");
 		}
-		// asigno valores a la estructura Valor 
 		val->v = i;
 		val->id = id;
 		push(stack, val);
@@ -75,21 +116,20 @@ threadfunction(void *arg)
 	counter = 0;
 	for (i = 0; i < NPop; i++) {
 		val = (Valor *)pop(stack);
-		// significa si el valor no es NULL
+		// significa: val no es NULL
 		if (val) {
-			// si id del pop (val) y el id del thread son diferentes:
-			// aumenta el contador
+			// val->id obtenido del pop y id del arg del thread
 			if (val->id != id) {
 				counter++;
 			}
-			// libero el valor de la struct Valor porque ya no lo necesito
+			// libero Valor 
 			free(val);
 		}
 	}
 	if (counter != 0) {
 		printf("Id %d: there are %lld incorrect pops\n", id, counter);
 	}
-	// libero la memoria de la struct ThreadArgs
+	// libero ThreadArgs
 	free(args);
 
 	return NULL;
@@ -105,11 +145,11 @@ main(int argc, char *argv[])
 	pthread_t threads[NThreads];
 	ThreadArgs *args;
 	Stack *stack;
-	Valor *val;
+	/*Valor *val;
 	long long expectedsize;
 	long long stacksize;
 	int lastid;
-	int lastvalue;
+	int lastvalue;*/
 	int i;
 	int errs;
 	void *result;
@@ -132,8 +172,6 @@ main(int argc, char *argv[])
 		// Asigna memoria para cada argumentos del thread
 		args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 		if (args == NULL) {
-			free(args);
-			freestack(stack);
 			handlerror(stack, args,
 				   "Error: dynamic memory cannot be allocated");
 		}
@@ -153,12 +191,15 @@ main(int argc, char *argv[])
 		if (pthread_join(threads[i], &result) != 0) {
 			handlerror(stack, args, "Error: joining thread");
 		}
+		// si algún thread ha salido con error
 		if (result != NULL) {
 			errs++;
 		}
 	}
 
-	expectedsize = NThreads * NPush - NThreads * NPop;
+	emptystack(stack, &errs);
+
+	/*expectedsize = NThreads * NPush - NThreads * NPop;
 	stacksize = size(stack);
 
 	lastid = -1;
@@ -191,7 +232,7 @@ main(int argc, char *argv[])
 		free(val);
 	}
 
-	freestack(stack);
+	freestack(stack);*/
 
 	exit(errs);
 }
