@@ -4,6 +4,26 @@
 #include <err.h>
 #include "stack.h"
 
+enum {
+	ZeroArgs,
+	NThreads = 1000,
+	NPush = 1000,
+	NPop = 40,
+	ArraySize = 50,
+};
+
+struct Valor {
+	int v;
+	int id;
+};
+typedef struct Valor Valor;
+
+struct ThreadArgs {
+	Stack *stack;
+	int id;
+};
+typedef struct ThreadArgs ThreadArgs;
+
 void
 usage(void)
 {
@@ -11,24 +31,9 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-void
-handlerror(Stack *st, ThreadArgs **args, int i, char *message)
-{
-	int j;
-
-	for (j = 0; j < i; j++) {
-		// libero todos los ThreadArgs que se han creado hasta el momento
-		free(args[j]);
-	}
-	// también libero la pila creada
-	freestack(st);
-	errx(EXIT_FAILURE, "%s", message);
-}
-
 void *
 threadfunction(void *arg)
 {
-
 	ThreadArgs *args;
 	Stack *stack;
 	int id;
@@ -47,8 +52,10 @@ threadfunction(void *arg)
 		val = (Valor *)malloc(sizeof(Valor));
 		if (val == NULL) {
 			free(args);
-			errx(EXIT_FAILURE,
-			     "Error: dynamic memory cannot be allocated");
+			/// no usar err 
+			// salir y luego verlo en el main
+			//errx(EXIT_FAILURE,
+			//     "Error: dynamic memory cannot be allocated");
 		}
 		// asigno valores a la estructura Valor 
 		val->v = i;
@@ -76,7 +83,7 @@ threadfunction(void *arg)
 	// libero la memoria de la struct ThreadArgs
 	free(args);
 
-	return NULL;		// ???
+	return NULL;
 }
 
 // - los valores de mis threads y de los id van a ir desde 0 a N-1
@@ -86,9 +93,8 @@ threadfunction(void *arg)
 int
 main(int argc, char *argv[])
 {
-
 	pthread_t threads[NThreads];
-	ThreadArgs *args[NThreads];
+	ThreadArgs *args;
 	Stack *stack;
 	Valor *val;
 	long long expectedsize;
@@ -96,6 +102,9 @@ main(int argc, char *argv[])
 	int lastid;
 	int lastvalue;
 	int i;
+	int errs;
+
+	errs = 0;
 
 	argc--;
 	argv++;
@@ -111,26 +120,29 @@ main(int argc, char *argv[])
 
 	for (i = 0; i < NThreads; i++) {
 		// Asigna memoria para cada argumentos del thread
-		args[i] = (ThreadArgs *)malloc(sizeof(ThreadArgs));
-		if (args[i] == NULL) {
-			handlerror(stack, args, i,
-				   "Error: dynamic memory cannot be allocated");
+		args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
+		if (args == NULL) {
+			free(args);
+			freestack(stack);
+			errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated\n");
 		}
 
-		args[i]->stack = stack;
-		args[i]->id = i;
+		args->stack = stack;
+		args->id = i;
 
 		// creo el thread y manejo error si hay fallo
 		if (pthread_create
-		    (&threads[i], NULL, threadfunction, (void *)args[i]) != 0) {
-			handlerror(stack, args, i, "Error: creating thread");
+		    (&threads[i], NULL, threadfunction, (void *)args) != 0) {
+			//handlerror(stack, args, i, "Error: creating thread");
+			//err
 		}
 	}
 
 	for (i = 0; i < NThreads; i++) {
 		// muere el thread y manejo error si hay fallo
 		if (pthread_join(threads[i], NULL) != 0) {
-			handlerror(stack, args, i, "Error: joining thread");
+			//handlerror(stack, args, i, "Error: joining thread");
+			//usar pthread exit
 		}
 	}
 
@@ -147,15 +159,18 @@ main(int argc, char *argv[])
 			if (val->id == lastid && val->v > lastvalue) {
 				fprintf(stderr,
 					"Error: Values with the same id are not in decreasing order\n");
+				fprintf(stderr,"Popped value: id=%d, v=%d\n", val->id, val->v);
 				free(val);
+				errs++;
 				continue;
 			}
 			lastid = val->id;
 			lastvalue = val->v;
-			printf("Popped value: id=%d, v=%d\n", val->id, val->v);
 		} else {
 			fprintf(stderr,
-				"Error: Expected values are not the same as in the stack\n");
+				"Error: expected size: %lld is not equal to stacksize: %lld\n",expectedsize, stacksize);
+			fprintf(stderr,"Popped value: id=%d, v=%d\n", val->id, val->v);
+			errs++;
 		}
 
 		free(val);
