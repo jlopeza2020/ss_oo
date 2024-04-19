@@ -89,6 +89,7 @@ main(int argc, char *argv[])
 	Valor *val;
 	int i;
 	long long expectedsize;
+	long long stacksize;
 	int lastid;
 	int lastvalue;
 
@@ -130,41 +131,44 @@ main(int argc, char *argv[])
 		}
 	}
 
-	// trazas
-	fprintf(stderr, " Hay %lld elementos\n", size(stack));
 	expectedsize = NThreads * NPush - NThreads * NPop;
-	fprintf(stderr, " Se espera %lld elementos\n", expectedsize);
+	stacksize = size(stack);
 
 	lastid = -1;
 	lastvalue = -1;
-	if (expectedsize == size(stack)) {
-		// comprobar que los valores con el mismo id salen de forma decreciente
-		while (!isempty(stack)) {
-			val = (Valor *)pop(stack);
+	//if (expectedsize == size(stack)) {
+	while (!isempty(stack)) {
+		val = (Valor *)pop(stack);
+
+		if(expectedsize == stacksize){
 			// comprueba que valores con el mismo id salen en orden decreciente. 
 			if (val->id == lastid && val->v > lastvalue) {
-				fprintf(stderr,
-					"Error: Values with the same id are not in decreasing order\n");
+				fprintf(stderr,"Error: Values with the same id are not in decreasing order\n");
 				free(val);
 				continue;
 			}
 			lastid = val->id;
 			lastvalue = val->v;
 			printf("Popped value: id=%d, v=%d\n", val->id, val->v);
-			free(val);
+			//free(val);
+		}else{
+			fprintf(stderr,"Error: Expected values are not the same as in the stack\n");
 		}
 
-	} else {
-		fprintf(stderr,
-			"Error: Expected values are not the same as in the stack\n");
+		free(val);
+	}
+
+	//} else {
+	//	fprintf(stderr,
+	//		"Error: Expected values are not the same as in the stack\n");
 		// al no ser los valores esperados los mismos que los que hay en la pila
 		// hay que liberar la memoria  para que no haya un problema al acabar la 
 		// ejecución pero no se comprobará los valores 
-		while (!isempty(stack)) {
-			val = (Valor *)pop(stack);
-			free(val);
-		}
-	}
+	//	while (!isempty(stack)) {
+		//	val = (Valor *)pop(stack);
+	//		free(val);
+	//	}
+	//}
 
 	freestack(stack);
 
