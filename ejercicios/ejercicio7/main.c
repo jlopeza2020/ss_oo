@@ -39,8 +39,9 @@ handlerror(Stack *st, ThreadArgs *args, char *message)
 	errx(EXIT_FAILURE, "%s", message);
 }
 
-void  
-emptystack(Stack *stack, int *errs){
+void
+emptystack(Stack *stack, int *errs)
+{
 
 	Valor *val;
 	long long expectedsize;
@@ -64,7 +65,7 @@ emptystack(Stack *stack, int *errs){
 				fprintf(stderr, "Popped value: id=%d, v=%d\n",
 					val->id, val->v);
 				free(val);
-				*errs = *errs +1;
+				*errs = *errs + 1;
 				continue;
 			}
 			lastid = val->id;
@@ -75,12 +76,12 @@ emptystack(Stack *stack, int *errs){
 				expectedsize, stacksize);
 			fprintf(stderr, "Popped value: id=%d, v=%d\n", val->id,
 				val->v);
-			*errs = *errs +1;
+			*errs = *errs + 1;
 		}
 
 		free(val);
 	}
-	
+
 	freestack(stack);
 }
 
@@ -105,7 +106,7 @@ threadfunction(void *arg)
 		val = (Valor *)malloc(sizeof(Valor));
 		if (val == NULL) {
 			free(args);
-			// no uso exit porque sino para la ejecución de todos los threads
+			// no uso exit porque sino, para la ejecución de todos los threads
 			pthread_exit((void *)1);
 		}
 		val->v = i;
@@ -145,11 +146,6 @@ main(int argc, char *argv[])
 	pthread_t threads[NThreads];
 	ThreadArgs *args;
 	Stack *stack;
-	/*Valor *val;
-	long long expectedsize;
-	long long stacksize;
-	int lastid;
-	int lastvalue;*/
 	int i;
 	int errs;
 	void *result;
@@ -169,7 +165,7 @@ main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < NThreads; i++) {
-		// Asigna memoria para cada argumentos del thread
+		// Asigna memoria para cada argumento del thread
 		args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 		if (args == NULL) {
 			handlerror(stack, args,
@@ -191,48 +187,13 @@ main(int argc, char *argv[])
 		if (pthread_join(threads[i], &result) != 0) {
 			handlerror(stack, args, "Error: joining thread");
 		}
-		// si algún thread ha salido con error
+		// Algún thread ha salido con error
 		if (result != NULL) {
 			errs++;
 		}
 	}
 
 	emptystack(stack, &errs);
-
-	/*expectedsize = NThreads * NPush - NThreads * NPop;
-	stacksize = size(stack);
-
-	lastid = -1;
-	lastvalue = -1;
-	while (!isempty(stack)) {
-		val = (Valor *)pop(stack);
-
-		if (expectedsize == stacksize) {
-			// comprueba que valores con el mismo id salen en orden decreciente. 
-			if (val->id == lastid && val->v > lastvalue) {
-				fprintf(stderr,
-					"Error: Values with the same id are not in decreasing order\n");
-				fprintf(stderr, "Popped value: id=%d, v=%d\n",
-					val->id, val->v);
-				free(val);
-				errs++;
-				continue;
-			}
-			lastid = val->id;
-			lastvalue = val->v;
-		} else {
-			fprintf(stderr,
-				"Error: expected size: %lld is not equal to stacksize: %lld\n",
-				expectedsize, stacksize);
-			fprintf(stderr, "Popped value: id=%d, v=%d\n", val->id,
-				val->v);
-			errs++;
-		}
-
-		free(val);
-	}
-
-	freestack(stack);*/
 
 	exit(errs);
 }
