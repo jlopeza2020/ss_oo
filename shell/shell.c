@@ -76,9 +76,9 @@ main(int argc, char *argv[])
 			cl.numwords = getnumwords(line);
 			fprintf(stderr, "hay %d palabras\n", cl.numwords);
 			// tokeniza las palabras y las mete en un array de strings
-			/*tokenize(&cl, line);
+			tokenize(&cl, line);
 			// una vez tokenizado hay que distinguir cada caso
-			parse(&cl);
+			/*parse(&cl);
 			// paro de ejecutar porque en el parsing ha habido algun error
 			// en concreto solo hay redirección y no fichero
 			if(cl.status==PARSINGERROR){

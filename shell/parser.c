@@ -388,6 +388,8 @@ tokenize(CommandLine *cl, char *line)
 
 	i = 0;
 	// cambiar el tokenizado !!!!
+	// tener en cuenta los del | > y < si están pegadas
+	// mirar dentro de los tokens y comprobar si no es NULL en valos buscado
 	token = strtok_r(line, " \t", &saveptr);
 	// copiar el valor de token en el array words
 	strcpy(cl->words[i], token);
@@ -415,8 +417,10 @@ getnumwords(char *line)
 	inword = 0;
 	while (line[i] != '\0') {
 
-		//if ((line[i] != ' ' && line[i] != '\t') && !inword) {
-		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|') {
+		// si el carácter actual no es ninguno  de los que buscamos
+		// y no estamos dentro de una palabra, aumentamos el número de palabra
+		// y decimios que nos encontramos dentro de una palabra
+		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|' && line[i] != '<' && line[i] != '>') {
 
 			if(!inword){
 				numwords++;
@@ -424,15 +428,18 @@ getnumwords(char *line)
 			}
 
 		}
-
-		if ((line[i] == ' ' || line[i] == '\t' || line[i] == '|') ) {
+		// si el caracter es espacio o tabulador y si ha estado 
+		// dentro de una palabra, ponemos que acabamos de salir de ella  
+		if (line[i] == ' ' || line[i] == '\t') {
 			if(inword){
 				inword = 0;
 
 			}
 		}
-
-		if(line[i] == '|'){
+		
+		// si a lo largo de la linea hay algún caracter que buscamos:
+		// inicializamos una palabra nueva 
+		if(line[i] == '|' || line[i] == '<' || line[i] == '>'){
 			numwords++;
 			inword = 0;
 		}
