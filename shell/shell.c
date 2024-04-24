@@ -41,7 +41,7 @@ main(int argc, char *argv[])
 	char *newline;
 	int c;
 
-	// cambiar la inicialización a un CommandLine * ???
+	// así está bien
 	CommandLine cl;
 
 	argc--;
@@ -62,6 +62,7 @@ main(int argc, char *argv[])
 			break;
 		}
 
+		// si la linea es inferior al máximo 
 		if (line[strlen(line) - 1] == '\n') {
 
 			// Elimina el '\n' de la string
@@ -73,8 +74,9 @@ main(int argc, char *argv[])
 			}
 
 			cl.numwords = getnumwords(line);
+			fprintf(stderr, "hay %d palabras\n", cl.numwords);
 			// tokeniza las palabras y las mete en un array de strings
-			tokenize(&cl, line);
+			/*tokenize(&cl, line);
 			// una vez tokenizado hay que distinguir cada caso
 			parse(&cl);
 			// paro de ejecutar porque en el parsing ha habido algun error
@@ -109,7 +111,7 @@ main(int argc, char *argv[])
 		
 			if (strcmp(line, "EXIT") == 0) {
 				exit(EXIT_SUCCESS);
-			}
+			}*/
 
 		}else {
 			fprintf(stderr,"Exceeded path size\n");

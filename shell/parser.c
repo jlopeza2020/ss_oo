@@ -411,15 +411,29 @@ getnumwords(char *line)
 	i = 0;
 	numwords = 0;
 	// inword se inicializa como falso
+	// indica si nos encontramos dentro de una palabra
 	inword = 0;
 	while (line[i] != '\0') {
 
-		if ((line[i] != ' ' && line[i] != '\t') && !inword) {
-			numwords++;
-			inword = 1;
+		//if ((line[i] != ' ' && line[i] != '\t') && !inword) {
+		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|') {
+
+			if(!inword){
+				numwords++;
+				inword = 1;
+			}
+
 		}
 
-		if ((line[i] == ' ' || line[i] == '\t') && inword) {
+		if ((line[i] == ' ' || line[i] == '\t' || line[i] == '|') ) {
+			if(inword){
+				inword = 0;
+
+			}
+		}
+
+		if(line[i] == '|'){
+			numwords++;
 			inword = 0;
 		}
 
