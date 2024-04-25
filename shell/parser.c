@@ -368,100 +368,45 @@ freememory(CommandLine * cl)
 
 void 
 handlespecialchars(CommandLine *cl, char *word, int *pos) {
-    int word_index = 0;
-    int token_index = 0;
+    int wpos;
+    int tpos;
 
-    while (word[word_index] != '\0') {
-        // Si el caracter actual es '|', termina el token actual y avanza al siguiente
-        if (word[word_index] == '|') {
-            // Si el token actual no está vacío, termina el token
-            if (token_index > 0) {
-                cl->words[*pos][token_index] = '\0';
-                *pos = *pos + 1; // Incrementa el contador de tokens
-                token_index = 0; // Reinicia el índice del token para el siguiente token
+	wpos = 0;
+	tpos = 0;
+
+    while (word[wpos] != '\0') {
+        // Si el caracter actual es '|', se acaba el token actual y avanza al siguiente
+        if (word[wpos] == '|') {
+            // Si el token actual no está vacío, hay que 
+			// acabar la palabra con '\0'
+            if (tpos > 0) {
+                cl->words[*pos][tpos] = '\0';
+				// pasamos a la siguiente posición del array en el que insertar los tokens 
+                *pos = *pos + 1;
+				// se reinicio la posición para el siguiente token
+                tpos = 0; 
             }
             // Agrega el delimitador '|' como un token adicional
             strcpy(cl->words[*pos], "|");
             *pos = *pos + 1;
         } else {
             // Si no es un delimitador, agrega el caracter al token actual
-            cl->words[*pos][token_index++] = word[word_index];
+            cl->words[*pos][tpos] = word[wpos];
+			// se pasa a la siguiente posición del token actual
+			tpos++;
         }
         // Avanza al siguiente caracter de la palabra
-        word_index++;
+        wpos++;
     }
-
     // Termina el último token si la palabra no termina con '|'
-    if (token_index > 0) {
-        cl->words[*pos][token_index] = '\0';
-        *pos = *pos + 1; // Incrementa el contador de tokens para el último token
+    if (tpos > 0) {
+        cl->words[*pos][tpos] = '\0';
+		// incrementa el valor de la posición del array ya que lo
+		// que faltaba por acabar conforma otro subtoken
+        *pos = *pos + 1;
     }
 }
 
-
-/*void 
-handlespecialchars(CommandLine *cl, char *word, int *pos){
-
-
-	char *saveptr;
-	char *token;
-	
-	token = strtok_r(word, "|" , &saveptr);
-	fprintf(stderr, "token: %s\n", token);
-	fprintf(stderr, "saveptr: %s\n", saveptr);
-	strcpy(cl->words[*pos], token);
-
-	while (token != NULL && *pos < cl->numwords) {
-
-		*pos = *pos+1;
-		strcpy(cl->words[*pos], "|");
-
-		token = strtok_r(NULL, "|", &saveptr);
-		strcpy(cl->words[*pos], token);
-		*pos = *pos+1;
-		fprintf(stderr, "token2: %s\n", token);
-		fprintf(stderr, "saveptr2: %s\n", saveptr);
-	}
-
-
-	long long init;
-	long long end;
-	int i;
-	// hay dentro de la palabra un |
-
-	init = 0;
-	end = 0;
-
-	while (word[end] != '\0') {
-
-		fprintf(stderr, " %c\n", word[end]);
-
-		if(word[end] == '|'){
-
-			for(i=init; i < end; i++){
-				//strcat(dest, origen) siempre pone el '/0'
-				//strcat(cl->words[*pos], word[i]);
-				cl->words[*pos][i] = word[i];
-				fprintf(stderr, "%c\n", cl->words[*pos][i] );
-
-			}
-			cl->words[*pos][end] = '\0';
-			init = end;
-
-			*pos = *pos + 1;
-			strcpy(cl->words[*pos], "|");
-			*pos = *pos + 1;
-
-		}
-		end++;
-	}*/
-	/*token = strtok_r(word, "|", &saveptr);
-	if(saveptr !=  NULL){
-		fprintf(stderr, "hay un | en %s\n", token);
-	}*/
-
-	// CAMBIAR LA FORMA DE PLANTEARLO
-//}
 // tokeniza y almacena en un array de strings todos los elementos
 void
 tokenize(CommandLine *cl, char *line)
