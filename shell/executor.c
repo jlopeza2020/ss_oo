@@ -5,7 +5,7 @@
 #include "executor.h"
 
 // comprueba que hay uno y sólo al principio de la palabra
-int
+/*int
 isenv(char *str)
 {
 
@@ -27,7 +27,7 @@ isenv(char *str)
 
 	// la cadena comienza con '$' y solo aparece una vez
 	return 1;
-}
+}*/
 
 // comprueba que hay uno y sólo en medio de la palabra
 int
@@ -83,7 +83,7 @@ setequal(char *str){
 
 }
 
-void
+/*void
 setenvvar(char *str){
 
 	char *value;
@@ -102,10 +102,10 @@ setenvvar(char *str){
 		// acabar la ejecución aquí
 	}
 
-}
+}*/
 
 // sustituciones de $ y = 
-void
+/*void
 configvariables(CommandLine *cl){
 	int i;
 	int j;
@@ -149,12 +149,12 @@ configvariables(CommandLine *cl){
 			fprintf(stderr, "\n");
 		}
 	}
-}
+}*/
 
 void
 executecommands(CommandLine *cl){
     
-	configvariables(cl);
+	//configvariables(cl);
 
 	// Apartir de aquí podemos hacer:
 	// 	mirar el primer elemento de cada array y ver si se trata de: 

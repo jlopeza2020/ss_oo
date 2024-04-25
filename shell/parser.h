@@ -41,11 +41,15 @@ int getnumwords(char *line);
 void handlespecialchars(CommandLine *cl, char *word, int *pos);
 void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);
+
+
 void parse(CommandLine *cl);
 
-//int gettype(char *str, int actualpos, int totalpos);
-//void settype(CommandLine *cl, int val);
+void setenvvar(char *Str);
+int isenv(char *str);
+void elimfirstchar(char *word);
 
+void caseenv(CommandLine *cl);
 //int isbg(char *str, int actualpos, int totalpos);
 int isbg(CommandLine *cl);
 int isred(CommandLine *cl, char *typered);

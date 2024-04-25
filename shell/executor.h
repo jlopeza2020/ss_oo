@@ -10,10 +10,10 @@ enum {
 	CD,  
 };
 
-int isenv(char *str);
+//int isenv(char *str);
 int isequal(char *str);
 void executecommands(CommandLine *cl);
-void configvariables(CommandLine *cl);
+//void configvariables(CommandLine *cl);
 
 void setequal(char *str);
-void setenvvar(char *Str);
+//void setenvvar(char *Str);

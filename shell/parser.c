@@ -4,7 +4,6 @@
 #include "common.h"
 #include "parser.h"
 
-/*
 // comprueba que hay uno y sólo al principio de la palabra
 int
 isenv(char *str)
@@ -30,38 +29,60 @@ isenv(char *str)
 	return 1;
 }
 
-// comprueba que hay uno y sólo en medio de la palabra
-int
-isequal(char *str)
-{
+void 
+elimfirstchar(char *word) {
+	int i;
+    int len;
+	
+	len = strlen(word);
+    
+    // Mover cada carácter un índice a la izquierda
+    for (i = 0; i < len; i++) {
+        word[i] = word[i + 1];
+    }
+}
+
+void
+setenvvar(char *str){
+
+	char *value;
+
+	elimfirstchar(str);
+	fprintf(stderr, " name: %s \n", str);
+
+	value = getenv(str);
+	if (value != NULL) {
+		fprintf(stderr, " value: %s \n", value);
+		strcpy(str, value);
+		// sustituir el valor de value en str para hacer
+		// la ejecución de los comandos 
+	}else{
+		fprintf(stderr, "error: var %s does not exist\n", str);
+		// acabar la ejecución aquí ARREGLARLO
+	}
+
+}
+// sustitución de $ 
+// Solo funciona para $cualquiercosa (menos |, >,<)
+// si le introduces $cualquier$cosa no lo identifica 
+// como si fueran 2 variables de entorno
+void
+caseenv(CommandLine *cl){
 
 	int i;
-	int len;
-	int times;
 
-	len = strlen(str);
-
-	// Si primer o último carácter es igual a '=' devuelve falso
-	if ((str[0] == '=') || (str[len - 1] == '=')) {
-		return 0;
-	}
-
-	times = 0;
-	for (i = 1; i < len - 1; i++) {
-
-		if (str[i] == '=') {
-			times++;
+	for(i = 0; i < cl->numwords; i++){
+		fprintf(stderr, "%s ", cl->words[i]);
+		// ir comprobando si cada palabra son variables de entorno 
+		if(isenv(cl->words[i])){
+			fprintf(stderr, "soy una variable de entorno\n");
+			// hacer la sustitución correspondiente
+			setenvvar(cl->words[i]);
 		}
-
 	}
-	// comprueba que entre el segundo y 
-	// penúltimo carácter haya solo un igual
-	if (times == 1) {
-		return 1;
-	}
-	return 0;
+	fprintf(stderr, "\n");
 }
-*/
+
 // libera memoria y decrementa los valores
 void 
 elimstr(CommandLine *cl, int index) {
@@ -314,10 +335,14 @@ casepipes(CommandLine * cl){
 void
 parse(CommandLine * cl)
 {
-	//caseenv 
-	casebg(cl);
-	casered(cl);
-	casepipes(cl);
+	// 1º: $
+	caseenv(cl);
+	// 2º: &
+	//casebg(cl);
+	// 3º: > o <
+	//casered(cl);
+	// 4º: | 
+	//casepipes(cl);
 }
 
 void
@@ -450,29 +475,21 @@ tokenize(CommandLine *cl, char *line)
 
 	i = 0;
 
-	// mirar dentro de los tokens y comprobar si no es NULL en valos buscado
 	token = strtok_r(line, " \t" , &saveptr);
 	strcpy(aux, token);
 
-	// copiar el valor de token en el array words
+	// tokeniza la palabra usando '|', '<', '>'
 	handlespecialchars(cl, aux, &i);
 
-	fprintf(stderr, "valor de i: %d\n", i);
-
-	//strcpy(cl->words[i], token);
-	//i++;
 	while (token != NULL && i < cl->numwords) {
 
 		token = strtok_r(NULL, " \t", &saveptr);
 		strcpy(aux, token);
+		// tokeniza la palabra usando '|', '<', '>'
 		handlespecialchars(cl, aux, &i);
-
-		//strcpy(cl->words[i], token);
-		//i++;
 	}
 	free(aux);
 }
-
 
 int
 getnumwords(char *line)
@@ -488,7 +505,7 @@ getnumwords(char *line)
 	inword = 0;
 	while (line[i] != '\0') {
 
-		// si el carácter actual no es ninguno  de los que buscamos
+		// si el carácter actual no es ninguno de los que buscamos
 		// y no estamos dentro de una palabra, aumentamos el número de palabra
 		// y decimios que nos encontramos dentro de una palabra
 		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|' && line[i] != '<' && line[i] != '>') {
