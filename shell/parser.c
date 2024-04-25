@@ -314,6 +314,7 @@ casepipes(CommandLine * cl){
 void
 parse(CommandLine * cl)
 {
+	//caseenv 
 	casebg(cl);
 	casered(cl);
 	casepipes(cl);
@@ -365,6 +366,22 @@ freememory(CommandLine * cl)
 	}
 }
 
+void 
+handlespecialchars(CommandLine *cl, char *word, int *pos){
+
+	char *saveptr;
+	char *token;
+
+	// hay dentro de la palabra un |
+	fprintf(stderr, " %s\n", word);
+
+	token = strtok_r(word, "|", &saveptr);
+	if(saveptr !=  NULL){
+		fprintf(stderr, "hay un | en %s\n", token);
+	}
+
+	// CAMBIAR LA FORMA DE PLANTEARLO
+}
 // tokeniza y almacena en un array de strings todos los elementos
 void
 tokenize(CommandLine *cl, char *line)
@@ -372,7 +389,9 @@ tokenize(CommandLine *cl, char *line)
 	int i;
 	char *saveptr;
 	char *token;
+	char *aux;
 
+	aux = (char *)malloc(sizeof(char) * MaxWord);
 	cl->words =
 	    (char **)malloc(sizeof(char *) * cl->numwords);
 	if (cl->words == NULL) {
@@ -390,17 +409,22 @@ tokenize(CommandLine *cl, char *line)
 	// cambiar el tokenizado !!!!
 	// tener en cuenta los del | > y < si están pegadas
 	// mirar dentro de los tokens y comprobar si no es NULL en valos buscado
-	token = strtok_r(line, " \t", &saveptr);
-	// copiar el valor de token en el array words
-	strcpy(cl->words[i], token);
+	token = strtok_r(line, " \t" , &saveptr);
+	strcpy(aux, token);
 
-	i++;
+	// copiar el valor de token en el array words
+	handlespecialchars(cl, aux, &i);
+
+	//strcpy(cl->words[i], token);
+	//fprintf(stderr, "hay en %s\n", saveptr);
+	/*i++;
 	while (token != NULL && i < cl->numwords) {
 
 		token = strtok_r(NULL, " \t", &saveptr);
 		strcpy(cl->words[i], token);
 		i++;
-	}
+	}*/
+	free(aux);
 }
 
 int
