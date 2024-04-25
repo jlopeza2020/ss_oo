@@ -40,6 +40,7 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
+	int i;
 
 	// así está bien
 	CommandLine cl;
@@ -78,7 +79,7 @@ main(int argc, char *argv[])
 			// tokeniza las palabras y las mete en un array de strings
 			tokenize(&cl, line);
 			// una vez tokenizado hay que distinguir cada caso
-			/*parse(&cl);
+			//parse(&cl);
 			// paro de ejecutar porque en el parsing ha habido algun error
 			// en concreto solo hay redirección y no fichero
 			if(cl.status==PARSINGERROR){
@@ -87,10 +88,13 @@ main(int argc, char *argv[])
 				continue;
 			}
 
+			for(i = 0; i < cl.numwords; i++){
+				fprintf(stderr, "Palabra: %s\n", cl.words[i]);
+			}
 			//fprintf(stderr,"sigo ejecutando\n");
 
 			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
-			executecommands(&cl);
+			//executecommands(&cl);
 
 			// trazas
 			if(cl.status == INPUTRED){
@@ -111,7 +115,7 @@ main(int argc, char *argv[])
 		
 			if (strcmp(line, "EXIT") == 0) {
 				exit(EXIT_SUCCESS);
-			}*/
+			}
 
 		}else {
 			fprintf(stderr,"Exceeded path size\n");

@@ -38,6 +38,7 @@ typedef struct CommandLine CommandLine;*/
 // mire si hay builtin...
 
 int getnumwords(char *line);
+void handlespecialchars(CommandLine *cl, char *word, int *pos);
 void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);
 void parse(CommandLine *cl);
