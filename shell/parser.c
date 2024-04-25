@@ -425,48 +425,6 @@ handlespecialchars(CommandLine *cl, char *word, int *pos) {
     }
 }
 
-/*void 
-handlespecialchars(CommandLine *cl, char *word, int *pos) {
-    int wpos;
-    int tpos;
-
-	wpos = 0;
-	tpos = 0;
-
-    while (word[wpos] != '\0') {
-        // Si el caracter actual es '|', se acaba el token actual y avanza al siguiente
-        // hacer swithc case
-		if (word[wpos] == '|') {
-            // Si el token actual no está vacío, hay que 
-			// acabar la palabra con '\0'
-            if (tpos > 0) {
-                cl->words[*pos][tpos] = '\0';
-				// pasamos a la siguiente posición del array en el que insertar los tokens 
-                *pos = *pos + 1;
-				// se reinicio la posición para el siguiente token
-                tpos = 0; 
-            }
-            // Agrega el delimitador '|' como un token adicional
-            strcpy(cl->words[*pos], "|");
-            *pos = *pos + 1;
-        }else {
-            // Si no es un delimitador, agrega el caracter al token actual
-            cl->words[*pos][tpos] = word[wpos];
-			// se pasa a la siguiente posición del token actual
-			tpos++;
-        }
-        // Avanza al siguiente caracter de la palabra
-        wpos++;
-    }
-    // Termina el último token si la palabra no termina con '|'
-    if (tpos > 0) {
-        cl->words[*pos][tpos] = '\0';
-		// incrementa el valor de la posición del array ya que lo
-		// que faltaba por acabar conforma otro subtoken
-        *pos = *pos + 1;
-    }
-}*/
-
 // tokeniza y almacena en un array de strings todos los elementos
 void
 tokenize(CommandLine *cl, char *line)
@@ -499,14 +457,19 @@ tokenize(CommandLine *cl, char *line)
 	// copiar el valor de token en el array words
 	handlespecialchars(cl, aux, &i);
 
+	fprintf(stderr, "valor de i: %d\n", i);
+
 	//strcpy(cl->words[i], token);
 	//i++;
-	/*while (token != NULL && i < cl->numwords) {
+	while (token != NULL && i < cl->numwords) {
 
 		token = strtok_r(NULL, " \t", &saveptr);
-		strcpy(cl->words[i], token);
-		i++;
-	}*/
+		strcpy(aux, token);
+		handlespecialchars(cl, aux, &i);
+
+		//strcpy(cl->words[i], token);
+		//i++;
+	}
 	free(aux);
 }
 
