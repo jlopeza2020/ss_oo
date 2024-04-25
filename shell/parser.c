@@ -412,9 +412,11 @@ handlespecialchars(CommandLine *cl, char *word, int *pos) {
         // Avanza al siguiente caracter de la palabra
         word_index++;
     }
-    // Termina el último token
-    cl->words[*pos][token_index] = '\0';
-    *pos = *pos +1; // Incrementa el contador de tokens para el último token
+	// Termina el último token si la palabra no termina con '|'
+    if (token_index > 0) {
+    	cl->words[*pos][token_index] = '\0';
+    	*pos = *pos +1; // Incrementa el contador de tokens para el último token
+	}
 }
 
 /*void 
