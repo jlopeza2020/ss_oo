@@ -72,7 +72,6 @@ getnumwords(char *line)
 	return numwords;
 }
 
-
 int
 checkword(char *cmd){
 
@@ -88,17 +87,22 @@ checkword(char *cmd){
 
 }
 
-
 // preguntar si isalnum se puede usar 
+// ASCII:
+// A = 65, Z = 90
+// a = 97, z = 122
+// 0 = 48, 9 = 57
 int 
 isname(const char *palabra) {
     while (*palabra) {
+        // No se trata de un carácter alfanumérico
         if (!((*palabra >= 'A' && *palabra <= 'Z') || (*palabra >= 'a' && *palabra <= 'z') || (*palabra >= '0' && *palabra <= '9'))) {
-            return 0; // No es alfanumérico
+            return 0;
         }
         palabra++;
     }
-    return 1; // Es alfanumérico
+    // si es un carácter alfanumérico
+    return 1; 
 }
 
 int 
@@ -109,50 +113,39 @@ checkcmd(char *arg, int value){
     valuecmd = value;
     
     switch (value) {
-
-	// obligatoriamente recibe un nombre con numeros y letras
+	// obligatoriamente recibe un nombre con numeros y letras // REVISAR
     case Newplayer:
         if(!isname(arg)){
             valuecmd = -1;
         }
 		break;
-
-    // obligatoriamente recibe un nombre con numeros y letras
+    // obligatoriamente recibe un nombre con numeros y letras // REVISAR
 	case Delplayer:
         if(!isname(arg)){
             valuecmd = -1;
         }
 		break;
-        
     // no recibe ningún argumento más
     case Highscore:
-        if(strcmp(arg, "nocommand") == 0){
-            valuecmd = value;
-        }else{
+        if(strcmp(arg, "nocommand") != 0){
             valuecmd = -1;
-
         }
 		break;
-
     // opcionalmente recibe un nombre con numeros y letras
 	case Reset:
 
-        if(strcmp(arg, "nocommand") == 0){
-            valuecmd = value;
-        }else{
-            if(!isname(arg)){
-                valuecmd = -1;
-            }
+        if(strcmp(arg, "nocommand") != 0 && !isname(arg)){
+            valuecmd = -1;
         }
         break;
 
 	default:
         valuecmd = -1;
-
 	}
 
     return valuecmd;
 }
+
 int
 getkindcommand(char *line){
 
@@ -179,18 +172,16 @@ getkindcommand(char *line){
         free(aux);
         return -1;
     }
-    
     // solo nos quedamos con la primera palabra de la tokenización
     strcpy(aux, token);
 
     // solo nos quedamos con el primero de la tokenización
-    //printf("%s\n", aux);
     valueword = checkword(aux);
 
     token = strtok_r(NULL, " \t" , &saveptr);
+
     if(token == NULL){
         strcpy(aux, "nocommand");
-
     }else{
         strcpy(aux, token);
     }
@@ -198,7 +189,6 @@ getkindcommand(char *line){
     valuecmd = checkcmd(aux, valueword);    
 
     free(aux);
-
 
     return valuecmd;
 }
@@ -229,13 +219,12 @@ main(int argc, char *argv[]){
 
         line[strlen(line) -1] = '\0';
 
-        // Comprobar que el input se trate de algún comando definido
+        // Comprobar que el input se trate de algún 
+        // comando definido y siga su forma correcta
         kind = getkindcommand(line);
         // si el comando es incorrecto
         if(kind < 0){
-
             fprintf(stderr, "Incorrect command\n");
-            //while ((c = getchar()) != '\n' && c != EOF);
             continue;
         }
 

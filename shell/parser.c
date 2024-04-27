@@ -460,6 +460,9 @@ tokenize(CommandLine *cl, char *line)
 	char *aux;
 
 	aux = (char *)malloc(sizeof(char) * MaxWord);
+	if (aux == NULL) {
+		perror("Error: dynamic memory cannot be allocated");
+	}
 	cl->words =
 	    (char **)malloc(sizeof(char *) * cl->numwords);
 	if (cl->words == NULL) {
