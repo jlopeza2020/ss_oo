@@ -63,67 +63,76 @@ main(int argc, char *argv[])
 			break;
 		}
 
-		// si la linea es inferior al máximo 
-		if (line[strlen(line) - 1] == '\n') {
-
-			// Elimina el '\n' de la string
-			newline = strrchr(line, '\n');
-
-			if (newline != NULL) {
-				// donde apunta newline poner un '\0'
-				*newline = '\0';
-			}
-
-			cl.numwords = getnumwords(line);
-			// tokeniza las palabras y las mete en un array de strings
-			tokenize(&cl, line);
-			//manejar los erorres de tokenizado
-			
-			// una vez tokenizado hay que distinguir cada caso
-			parse(&cl);
-			// paro de ejecutar porque en el parsing ha habido algun error
-			// en concreto solo hay redirección y no fichero
-			if(cl.status==PARSINGERROR){
-				freememory(&cl);
-				//fprintf(stderr,"red errr\n");
-				continue;
-			}
-
-			for(i = 0; i < cl.numwords; i++){
-				fprintf(stderr, "Palabra: %s\n", cl.words[i]);
-			}
-			//fprintf(stderr,"sigo ejecutando\n");
-
-			// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
-			//executecommands(&cl);
-
-			// trazas
-			if(cl.status == INPUTRED){
-				fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
-
-			}
-			if(cl.status == OUTPUTRED){
-				fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-
-			}
-			if(cl.status == BOTHRED){
-				fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
-				fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-
-			}
-
-			freememory(&cl);
-		
-			if (strcmp(line, "EXIT") == 0) {
-				exit(EXIT_SUCCESS);
-			}
-
-		}else {
+		if (line[strlen(line) - 1] != '\n'){
 			fprintf(stderr,"Exceeded path size\n");
 			// elimina el contenido del buffer de entrada
             while ((c = getchar()) != '\n' && c != EOF);
-			
+			continue;
+
 		}
+
+		// si la linea es inferior al máximo 
+		//if (line[strlen(line) - 1] == '\n') {
+
+			// Elimina el '\n' de la string
+		newline = strrchr(line, '\n');
+
+		if (newline != NULL) {
+			// donde apunta newline poner un '\0'
+			*newline = '\0';
+		}
+
+		cl.numwords = getnumwords(line);
+		// tokeniza las palabras y las mete en un array de strings
+		tokenize(&cl, line);
+		//manejar los erorres de tokenizado
+			
+		// una vez tokenizado hay que distinguir cada caso
+		parse(&cl);
+		// paro de ejecutar porque en el parsing ha habido algun error
+		// en concreto solo hay redirección y no fichero
+		if(cl.status==PARSINGERROR){
+			freememory(&cl);
+			//fprintf(stderr,"red errr\n");
+			continue;
+		}
+
+		// traza
+		for(i = 0; i < cl.numwords; i++){
+			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
+		}
+		//fprintf(stderr,"sigo ejecutando\n");
+
+		// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
+		//executecommands(&cl);
+
+		// trazas
+		if(cl.status == INPUTRED){
+			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
+
+		}
+		if(cl.status == OUTPUTRED){
+			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
+
+		}
+		if(cl.status == BOTHRED){
+			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
+			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
+
+		}
+
+		freememory(&cl);
+		
+		if (strcmp(line, "EXIT") == 0) {
+			exit(EXIT_SUCCESS);
+		}
+
+		//}else {
+			//fprintf(stderr,"Exceeded path size\n");
+			// elimina el contenido del buffer de entrada
+            //while ((c = getchar()) != '\n' && c != EOF);
+			
+		//}
 	}
 	if(!feof(stdin)){
 		errx(EXIT_FAILURE, "eof not reached\n");

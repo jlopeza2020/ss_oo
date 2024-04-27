@@ -72,7 +72,7 @@ caseenv(CommandLine *cl){
 	int i;
 
 	for(i = 0; i < cl->numwords; i++){
-		fprintf(stderr, "%s ", cl->words[i]);
+		//fprintf(stderr, "%s ", cl->words[i]);
 		// ir comprobando si cada palabra son variables de entorno 
 		if(isenv(cl->words[i])){
 			fprintf(stderr, "soy una variable de entorno\n");
@@ -80,7 +80,7 @@ caseenv(CommandLine *cl){
 			setenvvar(cl->words[i]);
 		}
 	}
-	fprintf(stderr, "\n");
+	//fprintf(stderr, "\n");
 }
 
 // libera memoria y decrementa los valores
