@@ -3,6 +3,11 @@
 #include <string.h>
 #include <err.h>
 
+// quitar el usuario de la tabla es complejo 
+// hcer un cleanup 
+// el principal sale cuando acaben todos 
+// no condicienes de carrera, los fifos funcionen correctamente 
+// el cleanp ordenado sin condiciones de carrera y demás 
 
 enum {
     LineSz = 512,
@@ -92,14 +97,24 @@ checkword(char *cmd){
 // A = 65, Z = 90
 // a = 97, z = 122
 // 0 = 48, 9 = 57
+
 int 
-isname(const char *palabra) {
-    while (*palabra) {
+isletter(char *letter){
+    return ((*letter >= 'A' && *letter <= 'Z') || (*letter >= 'a' && *letter <= 'z'));
+}
+int 
+isnumber(char *letter){
+    return (*letter >= '0' && *letter <= '9');
+}
+int 
+isname(char *word) {
+    while (*word) {
         // No se trata de un carácter alfanumérico
-        if (!((*palabra >= 'A' && *palabra <= 'Z') || (*palabra >= 'a' && *palabra <= 'z') || (*palabra >= '0' && *palabra <= '9'))) {
+        //if (!((*palabra >= 'A' && *palabra <= 'Z') || (*palabra >= 'a' && *palabra <= 'z') || (*palabra >= '0' && *palabra <= '9'))) {
+        if(!isletter(word) && !isnumber(word)){
             return 0;
         }
-        palabra++;
+        word++;
     }
     // si es un carácter alfanumérico
     return 1; 
@@ -115,13 +130,13 @@ checkcmd(char *arg, int value){
     switch (value) {
 	// obligatoriamente recibe un nombre con numeros y letras // REVISAR
     case Newplayer:
-        if(!isname(arg)){
+        if(strcmp(arg, "nocommand") == 0 || !isname(arg)){
             valuecmd = -1;
         }
 		break;
     // obligatoriamente recibe un nombre con numeros y letras // REVISAR
 	case Delplayer:
-        if(!isname(arg)){
+        if(strcmp(arg, "nocommand") == 0 || !isname(arg)){
             valuecmd = -1;
         }
 		break;
@@ -230,6 +245,7 @@ main(int argc, char *argv[]){
 
         fprintf(stderr, "soy el comando num: %d\n", kind);
         // si el valor  es alguno definiddo hacer las operacioens que corresponda
+        // hacer una lista enlazada 
 
     }
 

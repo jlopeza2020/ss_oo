@@ -64,12 +64,12 @@ main(int argc, char *argv[])
 		}
 
 		if (line[strlen(line) - 1] != '\n'){
-			fprintf(stderr,"Exceeded path size\n");
-			// elimina el contenido del buffer de entrada
+            fprintf(stderr, "Exceeded path size\n");
+            // Limpia el buffer de entrada
             while ((c = getchar()) != '\n' && c != EOF);
-			continue;
+            continue;
+        }
 
-		}
 
 		// si la linea es inferior al máximo 
 		//if (line[strlen(line) - 1] == '\n') {
