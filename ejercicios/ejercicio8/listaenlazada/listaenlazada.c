@@ -44,6 +44,7 @@ List
     return l;
 }
 
+// es vacío si el nodo inicial no apunta a nada
 int 
 isempty(List *l){
     if(l->init == NULL){
@@ -61,7 +62,9 @@ insertatend(List *l, Node *n){
         l->init = n;
         l->last = n;
     }else{
+        // la siguiente posición del último nodo pasa de NULL a n
         l->last->next = n;
+        // el nodo final de la lista apunta al nuevo nodo insertado
         l->last = n;
     }
     l->total++;
@@ -73,7 +76,10 @@ insertatbeggining(List *l, Node *n){
         l->init = n;
         l->last = n;
     }else{
+        // el nodo apunta donde se encuentra la primera
+        // posición de la lista 
         n->next= l->init;
+        // la primera posición ahora es n
         l->init = n;
     }
     l->total++;
@@ -103,9 +109,9 @@ elimfirst(List *l){
             l->init = NULL;
             l->last = NULL;
         }else{
-            // nodo raíz apunta al nodo siguiente 
+            // nodo del principio de la lista 
+            // apunta al nodo siguiente 
             l->init = l->init->next; 
-
         }
         // eliminamos la memoria del nodo a eliminar
         free(aux);
@@ -132,6 +138,7 @@ elimlast(List *l){
             while(prelast->next != l->last){
                 prelast = prelast->next;
             }
+            // se deja el nodo final de la lista el penúltimo
             l->last = prelast; 
             // último en su atributo siguiente es NULO
             l->last->next = NULL;
@@ -152,12 +159,21 @@ elimbyindex(List *l, int index){
         }else if(index == (l->total -1)){
             elimlast(l);
         }else{
+            // se define un nodo aux que apunta 
+            // al principio de la lista
             aux = l->init;
             for(i = 0; i < index; i++){
+                // se usa otro nodo pre que se encunetra una posición
+                // previa a la de aux
                 pre=aux;
                 aux=aux->next;
             }
+            // cuando llegamos al índice buscado: 
+            // el nodo prev pasa apuntar como nodo siguiente al que está 
+            // apuntando aux
             pre->next=aux->next;
+            // como ya la lista está completamente enlazada,
+            // el valor de aux no nos hace falta y podemo liberarlo
             free(aux);
             l->total--;
 
@@ -177,7 +193,7 @@ elimbyvalue(List *l, int data){
         aux = aux->next;
         i++;
     }
-    // Hemos encontrado el nodo
+    // Hemos encontrado el nodo y por lo tanto sabemos su índice
     if(aux != NULL){
         elimbyindex(l,i);
     }
@@ -233,9 +249,6 @@ main(int argc, char *argv[]){
         printnode(n);
     }
     emptylist(l);
-    printf("after list: \n");
-    //printlist(l);
-
 
     exit(EXIT_SUCCESS);
 }
