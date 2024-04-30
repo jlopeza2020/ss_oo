@@ -99,19 +99,19 @@ checkword(char *cmd){
 // 0 = 48, 9 = 57
 
 int 
-isletter(char *letter){
-    return ((*letter >= 'A' && *letter <= 'Z') || (*letter >= 'a' && *letter <= 'z'));
+isletter(char letter){
+    return ((letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'));
 }
 int 
-isnumber(char *letter){
-    return (*letter >= '0' && *letter <= '9');
+isnumber(char letter){
+    return (letter >= '0' && letter <= '9');
 }
 int 
 isname(char *word) {
+
     while (*word) {
-        // No se trata de un carácter alfanumérico
-        //if (!((*palabra >= 'A' && *palabra <= 'Z') || (*palabra >= 'a' && *palabra <= 'z') || (*palabra >= '0' && *palabra <= '9'))) {
-        if(!isletter(word) && !isnumber(word)){
+
+        if(!isletter(*word) && !isnumber(*word)){
             return 0;
         }
         word++;
@@ -128,13 +128,13 @@ checkcmd(char *arg, int value){
     valuecmd = value;
     
     switch (value) {
-	// obligatoriamente recibe un nombre con numeros y letras // REVISAR
+	// obligatoriamente recibe un nombre con numeros y letras
     case Newplayer:
         if(strcmp(arg, "nocommand") == 0 || !isname(arg)){
             valuecmd = -1;
         }
 		break;
-    // obligatoriamente recibe un nombre con numeros y letras // REVISAR
+    // obligatoriamente recibe un nombre con numeros y letras
 	case Delplayer:
         if(strcmp(arg, "nocommand") == 0 || !isname(arg)){
             valuecmd = -1;
