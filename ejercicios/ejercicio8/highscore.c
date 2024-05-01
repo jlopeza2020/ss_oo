@@ -10,7 +10,8 @@
 // el cleanp ordenado sin condiciones de carrera y demás 
 
 enum {
-    LineSz = 512,
+    MaxPlayers = 50,
+    LineSz = 1024,
 };
 
 enum {
@@ -23,11 +24,11 @@ enum {
 
 char  *commands[Ncommnads] = {"newplayer", "delplayer", "highscore", "reset"};
 
-/*struct CheckInput{
-    int command[Ncommnads];
-    long long size; 
+struct Command{
+    char *command;
+    char *arg; 
 };
-typedef struct CheckInput CheckInput;*/
+typedef struct Command Command;
 
 
 void
@@ -78,7 +79,7 @@ getnumwords(char *line)
 }
 
 int
-checkword(char *cmd){
+checkcmd(char *cmd){
 
     int i;
 
@@ -121,7 +122,7 @@ isname(char *word) {
 }
 
 int 
-checkcmd(char *arg, int value){
+checkarg(char *arg, int value){
 
     int valuecmd;
     
@@ -162,51 +163,82 @@ checkcmd(char *arg, int value){
 }
 
 int
-getkindcommand(char *line){
+getkindcommand(Command *cl, char *line){
 
     char *saveptr;
 	char *token;
-    char *aux;
+    //char *aux;
 
     int valueword;
     int valuecmd;
 
+    cl->command = (char *)malloc(sizeof(char) * LineSz);
+    cl->arg = (char *)malloc(sizeof(char) * LineSz);
+
+    if (cl->command == NULL || cl->arg == NULL) {
+		errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+	}
 
     if(getnumwords(line) > 2){
         return -1;
     }
-    
-    aux = (char *)malloc(sizeof(char) * LineSz);
 
-    if (aux == NULL) {
-		errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-	}
 
     token = strtok_r(line, " \t" , &saveptr);
     if(token == NULL){
-        free(aux);
+        //free(aux);
+        free(cl->command);
+        free(cl->arg);
         return -1;
     }
     // solo nos quedamos con la primera palabra de la tokenización
-    strcpy(aux, token);
+    strcpy(cl->command, token);
 
     // solo nos quedamos con el primero de la tokenización
-    valueword = checkword(aux);
+    valueword = checkcmd(cl->command);
 
     token = strtok_r(NULL, " \t" , &saveptr);
 
     if(token == NULL){
-        strcpy(aux, "nocommand");
+        strcpy(cl->arg, "nocommand");
     }else{
-        strcpy(aux, token);
+        strcpy(cl->arg, token);
     }
     // tengo que comprobar el segundo argumento 
-    valuecmd = checkcmd(aux, valueword);    
+    valuecmd = checkarg(cl->arg, valueword);    
 
-    free(aux);
+    //free(aux);
 
     return valuecmd;
 }
+
+void 
+treatkind(char *name, int kind){
+
+    
+    switch (kind) {
+    case Newplayer:
+        //addplayer(name);
+        fprintf(stderr, "soy newplayer: %s \n", name);
+		break;
+	case Delplayer:
+        //deleteplayer(name);
+        fprintf(stderr, "soy delplayer: %s\n", name);
+		break;
+    case Highscore:
+        //highscore();
+        fprintf(stderr, "soy highscore: %s\n", name);
+		break;
+	case Reset:
+        //reset(name);
+        fprintf(stderr, "soy reset: %s \n", name);
+        break;
+
+	default:
+	}
+
+}
+
 
 int 
 main(int argc, char *argv[]){
@@ -214,6 +246,7 @@ main(int argc, char *argv[]){
     char line[LineSz];
     int c;
     int kind;
+    Command cl;
 
     argc--;
     argv++;
@@ -236,17 +269,22 @@ main(int argc, char *argv[]){
 
         // Comprobar que el input se trate de algún 
         // comando definido y siga su forma correcta
-        kind = getkindcommand(line);
+        kind = getkindcommand(&cl,line);
         // si el comando es incorrecto
         if(kind < 0){
             fprintf(stderr, "Incorrect command\n");
+            free(cl.command);
+            free(cl.arg);
             continue;
         }
 
-        fprintf(stderr, "soy el comando num: %d\n", kind);
+        treatkind(cl.arg,kind);
+
+        //fprintf(stderr, "soy el comando num: %d\n", kind);
         // si el valor  es alguno definiddo hacer las operacioens que corresponda
         // hacer una lista enlazada 
-
+        free(cl.command);
+        free(cl.arg);
     }
 
     if(!feof(stdin)){

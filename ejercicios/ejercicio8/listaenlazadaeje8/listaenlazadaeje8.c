@@ -287,10 +287,14 @@ changevalue(List *l, char *name, long long value){
     Node *n;
     n = searchbyname(l,name);
     if(n != NULL){
-        n->score = value;
+        if(n->score < value){
+            n->score = value;
+        }
     }
 }
 
+
+// TRATAR LO DE LOS MAX JUGADORES
 int 
 main(int argc, char *argv[]){
 
@@ -300,7 +304,7 @@ main(int argc, char *argv[]){
     l = createlist();
     insertatend(l,createnode("Manuel", 270000077));
     insertatend(l,createnode("Pedro", 25));
-    insertatend(l,createnode("Lucía", 789));
+    insertatend(l,createnode("Lucía",100000));
     insertatend(l,createnode("María", 564));
     //printlist(l);
     //elimbyvalue(l,27);
