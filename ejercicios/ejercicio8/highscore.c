@@ -529,7 +529,7 @@ getcompletepath(char *path, char *dname)
 }
 
 void 
-addplayer(char *name){
+addplayer(List *l,char *name){
 
     // crea el fifo con ese nombre en /tmp
     // si el nombre ya existe, se considera un error
@@ -562,10 +562,13 @@ addplayer(char *name){
         if (access(fullpath, F_OK) == 0){
             fprintf(stderr, "Error: this file exists\n");
         }else{
+            
             if (mkfifo(fullpath, 0664) < 0){
                 free(fullpath);
                 err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
             }
+            // insertar en la tabla
+            insertatend(l, createnode(name, 0));
 
             while(1){
 
@@ -574,34 +577,18 @@ addplayer(char *name){
                     free(fullpath);
                     err(EXIT_FAILURE, "fopen error");
                 }
-
-                // st es descriptor de fichero (tipo FILE) que obtenemos
-                // los datos
+                // st es descriptor de fichero (tipo FILE) 
+                // que obtenemos los datos
                 while (fgets(line, LineSz, st) != NULL) {
 
                     line[strlen(line) -1] = '\0';
-
-                    printf("%s\n", line);
-
-                    /*number = getnumber(line);
-                    if(number < 0){
-
-                        //deleteplayer
-                        fprintf(stderr, "borrar jugador\n");
-                        if (unlink(fullpath) < 0){
-                            err(EXIT_FAILURE, "can't remove %s", fullpath);
-                        }   
-                        fclose(st);
-                        free(fullpath);
-                        break; 
-                    }
-                    fprintf(stderr, "ES UN NUMERO MAYOR O IGUAL QUE 0\n");*/
                 }
 
                 number = getnumber(line);
                 if(number < 0){
 
                     //deleteplayer
+                    elimbyname(l,name);
                     fprintf(stderr, "borrar jugador\n");
                     if (unlink(fullpath) < 0){
                         err(EXIT_FAILURE, "can't remove %s", fullpath);
@@ -609,7 +596,16 @@ addplayer(char *name){
                     fclose(st);
                     break; 
                 }
-                fprintf(stderr, "ES UN NUMERO MAYOR O IGUAL QUE 0\n");
+                fprintf(stderr, "numero: %lld \n", number);
+
+                // actualizar elemento en la tabla si el actual 
+                // es mayor al existente
+                changevalue(l,name, number);
+
+
+                if (ferror(st)) {
+                    err(EXIT_FAILURE, "read error");
+                }
                 fclose(st);
             }
         }
@@ -618,16 +614,27 @@ addplayer(char *name){
 }
 
 void 
-deleteplayer(char *name){
+deleteplayer(List *l, char *name){
     // borrará la jugador si existe, incluyendo destruir el hilo (pthread joino pthread_exit),
     // el fifo (unlink o rmfifo) y su existencia de la tabla de punttuaciones (elimbyname) 
     // si no existe lo reportará y seguirá ejecutando
+    Node *n;
+
+    n=searchbyname(l, name);
+    // significa que existe
+    if(n!=NULL){
+        // printnode(n);
+        elimbyname(l,name);
+        // lo que aparece en delete player
+    }
+
 }
 
 void
-highscore(){
+highscore(List *l){
     // listará las puntuaciones máximas de cada jugador junto con su nombre,
     // en cualquier orden, con nombre y puntuación separada por 2 puntos (printlist)
+    printlist(l);
 }
 
 void
@@ -637,11 +644,11 @@ reset(char *name){
     // si no existe se reporta y se continua ejecutando (parecido a changevalue)
 }
 void 
-treatkind(char *name, int kind){
+treatkind(List * l, char *name, int kind){
 
     switch (kind) {
     case Newplayer:
-        addplayer(name);
+        addplayer(l, name);
         //fprintf(stderr, "soy newplayer: %s \n", name);
 		break;
 	case Delplayer:
@@ -649,8 +656,7 @@ treatkind(char *name, int kind){
         fprintf(stderr, "soy delplayer: %s\n", name);
 		break;
     case Highscore:
-        //highscore();
-        fprintf(stderr, "soy highscore: %s\n", name);
+        highscore(l);
 		break;
 	case Reset:
         //reset(name);
@@ -669,6 +675,7 @@ main(int argc, char *argv[]){
     int c;
     int kind;
     Command cl;
+    List *l;
 
     argc--;
     argv++;
@@ -676,6 +683,8 @@ main(int argc, char *argv[]){
     if(argc != 0){
         usage();
     }
+
+    l = createlist();
 
     while (fgets(line, LineSz, stdin) != NULL){
 
@@ -700,7 +709,7 @@ main(int argc, char *argv[]){
             continue;
         }
 
-        treatkind(cl.arg,kind);
+        treatkind(l,cl.arg,kind);
 
         // estar pendiente de las entradas que reciba y manejarlas
         // el thread UNICAMENTE está pendiente de lo que reciba 
@@ -708,6 +717,11 @@ main(int argc, char *argv[]){
         free(cl.command);
         free(cl.arg);
     }
+
+    // hacer como un wait escribiendo a cada fifo una string para que acaben
+    // hacer un write en el fifo adecuado
+
+    printf("YA ACABAO");
 
     if(!feof(stdin)){
         errx(EXIT_FAILURE, "eof not reached\n");
