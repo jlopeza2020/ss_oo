@@ -35,7 +35,6 @@ Node
 
     strcpy(n->name,name);
 
-    //n->name = name;
     n->score = score;
     n->next = NULL;
 
