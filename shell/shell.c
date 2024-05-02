@@ -28,8 +28,8 @@ initcl(CommandLine *cl){
     cl->stdired = 0;
     cl->stdored = 0;
 	cl->numpipes = 0;
-    cl->env = 0;
-    cl->equal = 0;
+    //cl->env = 0;
+    //cl->equal = 0;
 	cl->status = 0;
 }
 
@@ -71,7 +71,6 @@ main(int argc, char *argv[])
             continue;
         }
 
-
 		// Elimina el '\n' de la string
 		newline = strrchr(line, '\n');
 
@@ -81,21 +80,25 @@ main(int argc, char *argv[])
 		}
 
 		cl.numwords = getnumwords(line);
+		if (cl.numwords > MaxWords){
+			fprintf(stderr,"Line too long\n");
+			continue;
+		}
 		// tokeniza las palabras y las mete en un array de strings
 		tokenize(&cl, line);
-		//manejar los erorres de tokenizado
 			
 		// una vez tokenizado hay que distinguir cada caso
 		parse(&cl);
+
 		// paro de ejecutar porque en el parsing ha habido algun error
-		// en concreto solo hay redirección y no fichero
 		if(cl.status==PARSINGERROR){
 			freememory(&cl);
 			fprintf(stderr,"Syntax error near unexpected token\n");
+			// paso a la siguiente ejecución
 			continue;
 		}
 
-		// traza
+		// trazas
 		for(i = 0; i < cl.numwords; i++){
 			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
 		}
@@ -113,9 +116,10 @@ main(int argc, char *argv[])
 			fprintf(stderr, "Hay bg\n");
 
 		}
-		//fprintf(stderr,"sigo ejecutando\n");
 
-		// habrá que crear otro .c y .h para otras operaciones de asignacion de directorios
+
+		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
+		// escribirlo en executor.c 
 		//executecommands(&cl);
 
 		// trazas
@@ -138,13 +142,6 @@ main(int argc, char *argv[])
 		if (strcmp(line, "EXIT") == 0) {
 			exit(EXIT_SUCCESS);
 		}
-
-		//}else {
-			//fprintf(stderr,"Exceeded path size\n");
-			// elimina el contenido del buffer de entrada
-            //while ((c = getchar()) != '\n' && c != EOF);
-			
-		//}
 	}
 	if(!feof(stdin)){
 		errx(EXIT_FAILURE, "eof not reached\n");

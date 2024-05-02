@@ -4,6 +4,78 @@
 #include "common.h"
 #include "parser.h"
 
+int
+isequal(char *str)
+{
+	int i;
+	int len;
+	int times;
+
+	len = strlen(str);
+
+	// Si primer o último carácter es igual a '=' devuelve falso
+	if ((str[0] == '=') || (str[len - 1] == '=')) {
+		return 0;
+	}
+
+	times = 0;
+	for (i = 1; i < len - 1; i++) {
+
+		if (str[i] == '=') {
+			times++;
+		}
+
+	}
+	// comprueba que entre el segundo y 
+	// penúltimo carácter haya solo un igual
+	if (times == 1) {
+		return 1;
+	}
+	return 0;
+}
+
+void 
+setequal(char *str){
+
+	char *token;
+	char *saveptr;
+	char name[MaxWord];
+	char value[MaxWord];
+
+	token = strtok_r(str, "=", &saveptr);
+	strcpy(name, token);
+	strcpy(value, saveptr);
+
+	//fprintf(stderr, " name: %s  = value: %s\n", name, value);
+
+	if (setenv(name, value, 0) != 0){
+		fprintf(stderr,"Env var %s could not be set\n", name);
+	}
+}
+
+void 
+caseequal(CommandLine *cl){
+
+	long long i;
+
+	if(cl->numpipes == 0){
+
+		for(i = 0; i < cl->numwords; i++){
+
+			if(isequal(cl->words[i])){
+				fprintf(stderr, "tengo un igual\n");
+				// hacer la sustitución correspondiente
+				setequal(cl->words[i]);
+				elimstr(cl,i);
+				// al moverse todo una posición a la izquierda, 
+				// es necesario decrementar dicho valor
+				i--;
+			}
+		}
+	}
+	// si hay pipes se tomará los iguales como palabras
+	// si en la palabra hay más de un igual también se tratará como palabras
+}
 // comprueba que hay uno y sólo al principio de la palabra
 int
 isenv(char *str)
@@ -53,29 +125,28 @@ setenvvar(CommandLine *cl, char *str){
 	char *value;
 
 	elimfirstchar(str);
-	fprintf(stderr, " name: %s \n", str);
+	//fprintf(stderr, " name: %s \n", str);
 
 	value = getenv(str);
 	if (value != NULL) {
-		fprintf(stderr, " value: %s \n", value);
+		//fprintf(stderr, " value: %s \n", value);
 		strcpy(str, value);
 		// sustituir el valor de value en str para hacer
 		// la ejecución de los comandos 
 	}else{
 		fprintf(stderr, "error: var %s does not exist\n", str);
 		cl->status = PARSINGERROR;
-		// acabar la ejecución aquí ARREGLARLO
 	}
 
 }
 // sustitución de $ 
 // Solo funciona para $cualquiercosa (menos |, >,<)
-// si le introduces $cualquier$cosa o $ NO lo identifica 
-// como si fueran 2 variables de entorno -> trata como una palabra
+// si le introduces $cualquier$cosa o $ NO lo identifica.
+// Lo como una palabra
 void
 caseenv(CommandLine *cl){
 
-	int i;
+	long long i;
 
 	for(i = 0; i < cl->numwords; i++){
 		// ir comprobando si cada palabra son variables de entorno 
@@ -89,9 +160,9 @@ caseenv(CommandLine *cl){
 
 // libera memoria y decrementa los valores
 void 
-elimstr(CommandLine *cl, int index) {
+elimstr(CommandLine *cl, long long index) {
     
-	int i;
+	long long i;
 	// indice fuera de lo buscado, no se puede eliminar
 	if (index < 0 || index >= cl->numwords) {
         return;
@@ -131,7 +202,6 @@ isambiguoischar(char letter){
 	return ( letter == '<' || letter == '>' || letter == '|');
 }
 
-// considero que el fichero tiene que contener las letras Aa-Zz y 0-9
 int 
 isname(char *word) {
 
@@ -142,7 +212,7 @@ isname(char *word) {
         }
         word++;
     }
-    // si es un carácter alfanumérico
+    // si es un carácter que buscamos
     return 1; 
 }
 
@@ -152,9 +222,10 @@ isstr(char *word) {
     if (word == NULL) {
         return 0; 
     }
-
+	
     if (strlen(word) > 0 && isname(word)) {
-        return 1; // Es un string
+        // Es un string
+		return 1;
     } else {
         return 0;
     }
@@ -176,7 +247,6 @@ isred(CommandLine *cl, char *typered)
 	// falta el fichero al final
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
 		//fprintf(stderr,"Missed redirection file\n");
-
 		cl->status = PARSINGERROR;
 	}
 
@@ -200,8 +270,9 @@ handlered(CommandLine *cl, char *file, int value, int status){
 void 
 casered(CommandLine *cl){
 
+	long long i;
 	// Pueden aparecer en cualquier orden
-	for (int i = 0; i < cl->numwords; i++) {
+	for (i = 0; i < cl->numwords; i++) {
 		if (isred(cl, "<")){
 			
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
@@ -233,12 +304,9 @@ void
 setcommands(CommandLine *cl){
 
 	
-	int i; 
-	int posc;
-	int possubc;
-
-	//int j; 
-	//int k;
+	long long i; 
+	long long posc;
+	long long possubc;
 
 	posc = 0;
 	possubc = 0;
@@ -262,24 +330,15 @@ setcommands(CommandLine *cl){
 			possubc = 0;
 		}
 	}
-
-	// traza 
-	/*for(j = 0; j < cl->numcommands; j++){
-		for(k = 0; k < cl->numsubcommands[j]; k++){
-
-		fprintf(stderr,"soy el subcommando: %s\n", cl->commands[j][k]);		
-		}
-	}*/
-
 }
 	
 void
 handlepipes(CommandLine * cl){
 
-	int i;
-	int j;
+	long long i;
+	long long j;
 
-	// inicializar los valores del char ***: FUNCIONAN
+	// inicializa los valores del char ***
 	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numcommands));
 	if (cl->commands == NULL) {
 		fprintf(stderr,"Error: dynamic memory cannot be allocated");
@@ -309,11 +368,11 @@ handlepipes(CommandLine * cl){
 void 
 setnumcommands(CommandLine *cl){
 
-	int i;
-	int numcommands;
-    int numsubcommands;
+	long long i;
+	long long numcommands;
+    long long numsubcommands;
 
-	cl->numsubcommands = (int *)malloc(sizeof(int) * (cl->numpipes+1));
+	cl->numsubcommands = (long long *)malloc(sizeof(long long) * (cl->numpipes+1));
 
 	if(cl->numsubcommands == NULL){
 		fprintf(stderr,"Error: dynamic memory cannot be allocated");
@@ -341,7 +400,7 @@ setnumcommands(CommandLine *cl){
 void 
 checkpipessyntax(CommandLine *cl){
 
-	int i;
+	long long i;
 
 	if (strcmp(cl->words[0], "|") == 0 || strcmp(cl->words[cl->numwords-1], "|") == 0) {
 		cl->status = PARSINGERROR;
@@ -358,7 +417,7 @@ checkpipessyntax(CommandLine *cl){
 void 
 casepipes(CommandLine * cl){
 
-	int i;
+	long long i;
 
 	checkpipessyntax(cl);
 
@@ -389,17 +448,17 @@ parse(CommandLine * cl)
 	casebg(cl);
 	// 3º: > o <
 	casered(cl);
-	// 4º: | Necesario añadir si hay algún parsing error
+	// 4º: |
 	casepipes(cl);
-	// 5º: = 
-	
+	// 5º: =
+	caseequal(cl); 
 }
 
 void
 freememory(CommandLine * cl)
 {
-	int i;
-	//int j;
+	long long i;
+	long long j;
 
 	// liberamos el array de strings 
 	for (i = 0; i < cl->numwords; i++) {
@@ -427,7 +486,7 @@ freememory(CommandLine * cl)
 		//libera cada subcomando
     	for (i = 0; i < cl->numcommands; i++) {
 
-            for (int j = 0; j < cl->numsubcommands[i]; j++) {
+            for (j = 0; j < cl->numsubcommands[i]; j++) {
                 free(cl->commands[i][j]);
             }
 			// libera comando
@@ -443,7 +502,7 @@ freememory(CommandLine * cl)
 
 
 void
-setspecialchar(CommandLine *cl, char *delim, int *pos, int *tpos)
+setspecialchar(CommandLine *cl, char *delim, long long *pos, long long *tpos)
 {
 	// Si el token actual no está vacío, hay que 
 	// acabar la palabra con '\0'
@@ -460,16 +519,16 @@ setspecialchar(CommandLine *cl, char *delim, int *pos, int *tpos)
 }
 
 void 
-handlespecialchars(CommandLine *cl, char *word, int *pos) {
-    int wpos;
-    int tpos;
+handlespecialchars(CommandLine *cl, char *word, long long *pos) {
+    
+	long long wpos;
+    long long tpos;
 
 	wpos = 0;
 	tpos = 0;
 
     while (word[wpos] != '\0') {
         // Si el caracter actual es '|', se acaba el token actual y avanza al siguiente
-        // hacer swithc case
 		switch (word[wpos]) {
 
 		case '|':
@@ -504,7 +563,7 @@ handlespecialchars(CommandLine *cl, char *word, int *pos) {
 void
 tokenize(CommandLine *cl, char *line)
 {
-	int i;
+	long long i;
 	char *saveptr;
 	char *token;
 	char *aux;
@@ -547,8 +606,8 @@ tokenize(CommandLine *cl, char *line)
 int
 getnumwords(char *line)
 {
-	int i;
-	int numwords;
+	long long i;
+	long long numwords;
 	int inword;
 
 	i = 0;
