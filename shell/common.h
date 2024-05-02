@@ -16,8 +16,7 @@ struct CommandLine{
     int stdored;
     char *outred; // eje: x
 	int numpipes;
-    //int env;
-    //int equal;
-    int status; // si es error, si hay redirección entrada, salida o las 2
+    int status;
+    int statusred; // si es error, si hay redirección entrada, salida o las 2
 };
 typedef struct CommandLine CommandLine;

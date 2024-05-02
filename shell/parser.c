@@ -58,7 +58,7 @@ caseequal(CommandLine *cl){
 
 	long long i;
 
-	if(cl->numpipes == 0){
+	if(cl->numpipes == 0 && cl->status != PARSINGERROR){
 
 		for(i = 0; i < cl->numwords; i++){
 
@@ -246,7 +246,7 @@ isred(CommandLine *cl, char *typered)
 	// caso en el que solo se encuentre redirección al final:
 	// falta el fichero al final
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
-		//fprintf(stderr,"Missed redirection file\n");
+		fprintf(stderr,"Missed redirection file\n");
 		cl->status = PARSINGERROR;
 	}
 
@@ -264,16 +264,19 @@ handlered(CommandLine *cl, char *file, int value, int status){
 	// elimina <
 	elimstr(cl,cl->numwords-1);
 	value++;
-	cl->status += status; 
+	cl->statusred += status; 
 }
 
+// si recibo una linea estlo: echo hola > eje > eje2
+// tomará como descriptor de fichero eje2  y '>', 'eje' se 
+// tomarán como palabras
 void 
 casered(CommandLine *cl){
 
 	long long i;
 	// Pueden aparecer en cualquier orden
 	for (i = 0; i < cl->numwords; i++) {
-		if (isred(cl, "<")){
+		if (isred(cl, "<") && cl->stdired == 0){
 			
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->inred == NULL) {
@@ -282,7 +285,7 @@ casered(CommandLine *cl){
 			handlered(cl, cl->inred, cl->stdired++, INPUTRED);
 		}
 
-		if(isred(cl, ">")){
+		if(isred(cl, ">") && cl->stdored == 0){
 
 			// almacenar la string en algún lado
 			cl->outred = (char *)malloc(sizeof(char) * MaxWord);
@@ -292,10 +295,13 @@ casered(CommandLine *cl){
 			handlered(cl, cl->outred, cl->stdored++, OUTPUTRED);
 
 		}
-
+	
 		if(cl->status == PARSINGERROR){
 			break;
 		}
+		//fprintf(stderr,"%s, %s\n", cl->inred, cl->outred);
+
+
 	}
 }
 
@@ -467,16 +473,16 @@ freememory(CommandLine * cl)
 	free(cl->words);
 
 	// solo se ha creado el de entrada 
-	if(cl->status == INPUTRED){
+	if(cl->statusred == INPUTRED){
 		free(cl->inred);
 	}
 
-	// solo se ha credo el de salida
-	if(cl->status == OUTPUTRED){
+	// solo se ha creado el de salida
+	if(cl->statusred == OUTPUTRED){
 		free(cl->outred);
 	}
 	// se han creado los dos
-	if (cl->status == BOTHRED){
+	if (cl->statusred == BOTHRED){
 		free(cl->inred);
 		free(cl->outred);
 	}

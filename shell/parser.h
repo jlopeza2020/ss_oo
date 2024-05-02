@@ -1,8 +1,8 @@
 
 // manejar errores parsing
 enum {
-    PARSINGERROR = 1,
-    INPUTRED,
+    PARSINGERROR = -1,
+    INPUTRED = 2,
     OUTPUTRED,
     BOTHRED = 5,
 };

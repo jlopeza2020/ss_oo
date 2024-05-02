@@ -15,5 +15,7 @@ executecommands(CommandLine *cl){
 		//  - fichero ejecutable del dir de trabajo 
 		//  - fichero ejecutable de alguno de la variable PATH
 
+	// Para ello distinguir si se trata de un pipeline o no
+
 
 }

@@ -28,9 +28,8 @@ initcl(CommandLine *cl){
     cl->stdired = 0;
     cl->stdored = 0;
 	cl->numpipes = 0;
-    //cl->env = 0;
-    //cl->equal = 0;
 	cl->status = 0;
+	cl->statusred = 0;
 }
 
 int
@@ -123,15 +122,15 @@ main(int argc, char *argv[])
 		//executecommands(&cl);
 
 		// trazas
-		if(cl.status == INPUTRED){
+		if(cl.statusred == INPUTRED){
 			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
 
 		}
-		if(cl.status == OUTPUTRED){
+		if(cl.statusred == OUTPUTRED){
 			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
 
 		}
-		if(cl.status == BOTHRED){
+		if(cl.statusred == BOTHRED){
 			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
 			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
 
