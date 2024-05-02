@@ -42,28 +42,32 @@ void handlespecialchars(CommandLine *cl, char *word, int *pos);
 void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);
 
-
 void parse(CommandLine *cl);
 
-void setenvvar(char *Str);
+// $
+void setenvvar(CommandLine *cl, char *Str);
 int isenv(char *str);
 void elimfirstchar(char *word);
-
 void caseenv(CommandLine *cl);
-//int isbg(char *str, int actualpos, int totalpos);
-int isbg(CommandLine *cl);
-int isred(CommandLine *cl, char *typered);
-int isstr(char *word);
 
-//int isenv(char *str);
-//int isequal(char *str);
-
+// &
 void casebg(CommandLine * cl);
+int isbg(CommandLine *cl);
+
+// > < 
 void casered(CommandLine *cl);
 void elimstr(CommandLine * cl, int pos);
+int isred(CommandLine *cl, char *typered);
+int isambiguoischar(char letter);
+int isname(char *word);
+int isstr(char *word);
 void handlered(CommandLine *cl, char *file, int value, int status);
 
+// |
 void casepipes(CommandLine * cl);
+void checkpipessyntax(CommandLine *cl);
 void handlepipes(CommandLine *cl);
 void setnumcommnads(CommandLine *cl);
 void setcommands(CommandLine *cl);
+
+// = 

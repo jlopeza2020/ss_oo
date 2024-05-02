@@ -41,6 +41,7 @@ main(int argc, char *argv[])
 	char *newline;
 	int c;
 	int i;
+	int j,k;
 
 	// así está bien
 	CommandLine cl;
@@ -71,10 +72,7 @@ main(int argc, char *argv[])
         }
 
 
-		// si la linea es inferior al máximo 
-		//if (line[strlen(line) - 1] == '\n') {
-
-			// Elimina el '\n' de la string
+		// Elimina el '\n' de la string
 		newline = strrchr(line, '\n');
 
 		if (newline != NULL) {
@@ -93,13 +91,27 @@ main(int argc, char *argv[])
 		// en concreto solo hay redirección y no fichero
 		if(cl.status==PARSINGERROR){
 			freememory(&cl);
-			//fprintf(stderr,"red errr\n");
+			fprintf(stderr,"Syntax error near unexpected token\n");
 			continue;
 		}
 
 		// traza
 		for(i = 0; i < cl.numwords; i++){
 			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
+		}
+
+		if(cl.numpipes > 0){
+			for(j = 0; j < cl.numcommands; j++){
+				for(k = 0; k < cl.numsubcommands[j]; k++){
+
+					fprintf(stderr,"soy el subcommando: %s\n", cl.commands[j][k]);		
+				}
+			}
+
+		}
+		if(cl.bg){
+			fprintf(stderr, "Hay bg\n");
+
 		}
 		//fprintf(stderr,"sigo ejecutando\n");
 

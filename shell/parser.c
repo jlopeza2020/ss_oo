@@ -18,6 +18,11 @@ isenv(char *str)
 	if (str[0] != '$') {
 		return 0;
 	}
+	// si el primer caracter es '$' y no hay nada más
+	if(str[0] == '$' && strlen(str) == 1){
+		return 0;
+	}
+
 	// Verifica si el carácter '$' aparece más de una vez
 	for (i = 1; i < len; i++) {
 		if (str[i] == '$') {
@@ -43,7 +48,7 @@ elimfirstchar(char *word) {
 }
 
 void
-setenvvar(char *str){
+setenvvar(CommandLine *cl, char *str){
 
 	char *value;
 
@@ -58,29 +63,28 @@ setenvvar(char *str){
 		// la ejecución de los comandos 
 	}else{
 		fprintf(stderr, "error: var %s does not exist\n", str);
+		cl->status = PARSINGERROR;
 		// acabar la ejecución aquí ARREGLARLO
 	}
 
 }
 // sustitución de $ 
 // Solo funciona para $cualquiercosa (menos |, >,<)
-// si le introduces $cualquier$cosa no lo identifica 
-// como si fueran 2 variables de entorno
+// si le introduces $cualquier$cosa o $ NO lo identifica 
+// como si fueran 2 variables de entorno -> trata como una palabra
 void
 caseenv(CommandLine *cl){
 
 	int i;
 
 	for(i = 0; i < cl->numwords; i++){
-		//fprintf(stderr, "%s ", cl->words[i]);
 		// ir comprobando si cada palabra son variables de entorno 
 		if(isenv(cl->words[i])){
 			fprintf(stderr, "soy una variable de entorno\n");
 			// hacer la sustitución correspondiente
-			setenvvar(cl->words[i]);
+			setenvvar(cl, cl->words[i]);
 		}
 	}
-	//fprintf(stderr, "\n");
 }
 
 // libera memoria y decrementa los valores
@@ -122,6 +126,26 @@ isbg(CommandLine *cl)
 	return 0;
 }
 
+int
+isambiguoischar(char letter){
+	return ( letter == '<' || letter == '>' || letter == '|');
+}
+
+// considero que el fichero tiene que contener las letras Aa-Zz y 0-9
+int 
+isname(char *word) {
+
+    while (*word) {
+
+        if(isambiguoischar(*word)){
+            return 0;
+        }
+        word++;
+    }
+    // si es un carácter alfanumérico
+    return 1; 
+}
+
 int 
 isstr(char *word) {
     // Verifica si el argumento es un puntero nulo
@@ -129,7 +153,7 @@ isstr(char *word) {
         return 0; 
     }
 
-    if (strlen(word) > 0 && word[0] != '\0') {
+    if (strlen(word) > 0 && isname(word)) {
         return 1; // Es un string
     } else {
         return 0;
@@ -148,9 +172,10 @@ isred(CommandLine *cl, char *typered)
 		}
 	}
 
-	// caso en el que solo se encuentre redirección al final
+	// caso en el que solo se encuentre redirección al final:
+	// falta el fichero al final
 	if (strcmp(cl->words[cl->numwords-1], typered) == 0) {
-		fprintf(stderr,"Missed redirection file\n");
+		//fprintf(stderr,"Missed redirection file\n");
 
 		cl->status = PARSINGERROR;
 	}
@@ -181,7 +206,7 @@ casered(CommandLine *cl){
 			
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->inred == NULL) {
-				perror("Error: dynamic memory cannot be allocated");
+				fprintf(stderr,"Error: dynamic memory cannot be allocated");
 			}
 			handlered(cl, cl->inred, cl->stdired++, INPUTRED);
 		}
@@ -191,7 +216,7 @@ casered(CommandLine *cl){
 			// almacenar la string en algún lado
 			cl->outred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->outred == NULL) {
-				perror("Error: dynamic memory cannot be allocated");
+				fprintf(stderr,"Error: dynamic memory cannot be allocated");
 			}
 			handlered(cl, cl->outred, cl->stdored++, OUTPUTRED);
 
@@ -257,7 +282,7 @@ handlepipes(CommandLine * cl){
 	// inicializar los valores del char ***: FUNCIONAN
 	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numcommands));
 	if (cl->commands == NULL) {
-		perror("Error: dynamic memory cannot be allocated");
+		fprintf(stderr,"Error: dynamic memory cannot be allocated");
 	}
 
 	for(i = 0; i < cl->numcommands; i++){
@@ -265,12 +290,12 @@ handlepipes(CommandLine * cl){
 		cl->commands[i] = (char **)malloc(sizeof(char *) * cl->numsubcommands[i]);
 
 		if(cl->commands[i] == NULL){
-			perror("Error: dynamic memory cannot be allocated");
+			fprintf(stderr,"Error: dynamic memory cannot be allocated");
 		}
 		for(j = 0; j < cl->numsubcommands[i]; j++){
 			cl->commands[i][j] = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->commands[i][j] == NULL) {
-				perror("Error: dynamic memory cannot be allocated");
+				fprintf(stderr,"Error: dynamic memory cannot be allocated");
 			}
 		}
 
@@ -291,7 +316,7 @@ setnumcommands(CommandLine *cl){
 	cl->numsubcommands = (int *)malloc(sizeof(int) * (cl->numpipes+1));
 
 	if(cl->numsubcommands == NULL){
-		perror("Error: dynamic memory cannot be allocated");
+		fprintf(stderr,"Error: dynamic memory cannot be allocated");
 
 	}
 
@@ -312,23 +337,46 @@ setnumcommands(CommandLine *cl){
 	cl->numcommands = numcommands + 1;
 
 }
+
+void 
+checkpipessyntax(CommandLine *cl){
+
+	int i;
+
+	if (strcmp(cl->words[0], "|") == 0 || strcmp(cl->words[cl->numwords-1], "|") == 0) {
+		cl->status = PARSINGERROR;
+	}
+
+	// posición 0 a la penúltima
+	for(i = 0;  i < cl->numwords -1; i++){
+		if(strcmp(cl->words[i], "|") == 0 && strcmp(cl->words[i+1], "|") == 0){
+			cl->status = PARSINGERROR;
+		}
+	}
+}
+
 void 
 casepipes(CommandLine * cl){
 
-	
 	int i;
 
-	for (i = 0;  i < cl->numwords; i++){
+	checkpipessyntax(cl);
 
-		if (strcmp(cl->words[i], "|") == 0) {
-			cl->numpipes++;
+	if(cl->status != PARSINGERROR){
+		
+		for (i = 0;  i < cl->numwords; i++){
+
+			if (strcmp(cl->words[i], "|") == 0) {
+				cl->numpipes++;
+			}
 		}
-	}
 
-	if(cl->numpipes > 0){
+		if(cl->numpipes > 0 ){
 
-		setnumcommands(cl);
-		handlepipes(cl);
+			setnumcommands(cl);
+			handlepipes(cl);
+		}
+	
 	}
 }
 
@@ -338,11 +386,13 @@ parse(CommandLine * cl)
 	// 1º: $
 	caseenv(cl);
 	// 2º: &
-	//casebg(cl);
+	casebg(cl);
 	// 3º: > o <
-	//casered(cl);
-	// 4º: | 
-	//casepipes(cl);
+	casered(cl);
+	// 4º: | Necesario añadir si hay algún parsing error
+	casepipes(cl);
+	// 5º: = 
+	
 }
 
 void
@@ -461,18 +511,18 @@ tokenize(CommandLine *cl, char *line)
 
 	aux = (char *)malloc(sizeof(char) * MaxWord);
 	if (aux == NULL) {
-		perror("Error: dynamic memory cannot be allocated");
+		fprintf(stderr,"Error: dynamic memory cannot be allocated");
 	}
 	cl->words =
 	    (char **)malloc(sizeof(char *) * cl->numwords);
 	if (cl->words == NULL) {
-		perror("Error: dynamic memory cannot be allocated");
+		fprintf(stderr,"Error: dynamic memory cannot be allocated");
 	}
 	// inicializamos cada elemento del array
 	for (i = 0; i < cl->numwords; i++) {
 		cl->words[i] = (char *)malloc(sizeof(char) * MaxWord);
 		if (cl->words[i] == NULL) {
-			perror("Error: dynamic memory cannot be allocated");
+			fprintf(stderr,"Error: dynamic memory cannot be allocated");
 		}
 	}
 
