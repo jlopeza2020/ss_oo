@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <err.h>
 #include "common.h"
 #include "parser.h"
 
@@ -280,7 +281,7 @@ casered(CommandLine *cl){
 			
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->inred == NULL) {
-				fprintf(stderr,"Error: dynamic memory cannot be allocated");
+				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
 			handlered(cl, cl->inred, cl->stdired++, INPUTRED);
 		}
@@ -290,7 +291,7 @@ casered(CommandLine *cl){
 			// almacenar la string en algún lado
 			cl->outred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->outred == NULL) {
-				fprintf(stderr,"Error: dynamic memory cannot be allocated");
+				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
 			handlered(cl, cl->outred, cl->stdored++, OUTPUTRED);
 
@@ -347,7 +348,7 @@ handlepipes(CommandLine * cl){
 	// inicializa los valores del char ***
 	cl->commands = (char ***)malloc(sizeof(char **) * (cl->numcommands));
 	if (cl->commands == NULL) {
-		fprintf(stderr,"Error: dynamic memory cannot be allocated");
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 	}
 
 	for(i = 0; i < cl->numcommands; i++){
@@ -355,12 +356,12 @@ handlepipes(CommandLine * cl){
 		cl->commands[i] = (char **)malloc(sizeof(char *) * cl->numsubcommands[i]);
 
 		if(cl->commands[i] == NULL){
-			fprintf(stderr,"Error: dynamic memory cannot be allocated");
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 		}
 		for(j = 0; j < cl->numsubcommands[i]; j++){
 			cl->commands[i][j] = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->commands[i][j] == NULL) {
-				fprintf(stderr,"Error: dynamic memory cannot be allocated");
+				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
 		}
 
@@ -381,7 +382,7 @@ setnumcommands(CommandLine *cl){
 	cl->numsubcommands = (long long *)malloc(sizeof(long long) * (cl->numpipes+1));
 
 	if(cl->numsubcommands == NULL){
-		fprintf(stderr,"Error: dynamic memory cannot be allocated");
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 
 	}
 
@@ -576,18 +577,18 @@ tokenize(CommandLine *cl, char *line)
 
 	aux = (char *)malloc(sizeof(char) * MaxWord);
 	if (aux == NULL) {
-		fprintf(stderr,"Error: dynamic memory cannot be allocated");
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 	}
 	cl->words =
 	    (char **)malloc(sizeof(char *) * cl->numwords);
 	if (cl->words == NULL) {
-		fprintf(stderr,"Error: dynamic memory cannot be allocated");
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 	}
 	// inicializamos cada elemento del array
 	for (i = 0; i < cl->numwords; i++) {
 		cl->words[i] = (char *)malloc(sizeof(char) * MaxWord);
 		if (cl->words[i] == NULL) {
-			fprintf(stderr,"Error: dynamic memory cannot be allocated");
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 		}
 	}
 
@@ -609,7 +610,7 @@ tokenize(CommandLine *cl, char *line)
 	free(aux);
 }
 
-int
+long long
 getnumwords(char *line)
 {
 	long long i;

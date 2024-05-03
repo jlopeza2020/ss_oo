@@ -79,7 +79,6 @@ main(int argc, char *argv[])
 		}
 
 		if (strcmp(line, "EXIT") == 0) {
-			//freememory(&cl);
 			exit(EXIT_SUCCESS);
 		}
 
@@ -92,7 +91,7 @@ main(int argc, char *argv[])
 		if(cl.numwords == 0){
 			continue;
 		}
-		
+
 		// tokeniza las palabras y las mete en un array de strings
 		tokenize(&cl, line);
 			
@@ -126,6 +125,17 @@ main(int argc, char *argv[])
 
 		}
 
+		// trazas
+		if(cl.statusred == INPUTRED){
+			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
+		}
+		if(cl.statusred == OUTPUTRED){
+			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
+		}
+		if(cl.statusred == BOTHRED){
+			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
+			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
+		}
 
 		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
 		// escribirlo en executor.c 
@@ -140,28 +150,7 @@ main(int argc, char *argv[])
 
 		//executecommands(&cl);
 
-
-		// trazas
-		if(cl.statusred == INPUTRED){
-			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
-
-		}
-		if(cl.statusred == OUTPUTRED){
-			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-
-		}
-		if(cl.statusred == BOTHRED){
-			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
-			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-
-		}
-
 		freememory(&cl);
-		
-		/*if (strcmp(line, "EXIT") == 0) {
-			//freememory(&cl);
-			exit(EXIT_SUCCESS);
-		}*/
 	}
 	if(!feof(stdin)){
 		errx(EXIT_FAILURE, "eof not reached\n");

@@ -7,7 +7,7 @@ enum {
     BOTHRED = 5,
 };
 
-int getnumwords(char *line);
+long long getnumwords(char *line);
 void handlespecialchars(CommandLine *cl, char *word, long long *pos);
 void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);
