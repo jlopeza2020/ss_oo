@@ -79,8 +79,12 @@ main(int argc, char *argv[])
 		}
 
 		cl.numwords = getnumwords(line);
+
 		if (cl.numwords > MaxWords){
 			fprintf(stderr,"Line too long\n");
+			continue;
+		}
+		if(cl.numwords == 0){
 			continue;
 		}
 		// tokeniza las palabras y las mete en un array de strings
@@ -119,7 +123,17 @@ main(int argc, char *argv[])
 
 		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
 		// escribirlo en executor.c 
+		findcommands(&cl);
+
+		if(cl.status==FINDERROR){
+			freememory(&cl);
+			fprintf(stderr,"Command not found\n");
+			// paso a la siguiente ejecución
+			continue;
+		}
+
 		//executecommands(&cl);
+
 
 		// trazas
 		if(cl.statusred == INPUTRED){

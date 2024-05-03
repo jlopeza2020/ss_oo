@@ -3,6 +3,11 @@ enum {
     MaxWord = 4*1024, // 4k  
 };
 
+enum {
+    PARSINGERROR = -2,
+    FINDERROR = -1,
+};
+
 struct CommandLine{
 
     char **words; // eje: [cat, /tmp/a, |, wc -c, >, x, <, y, &]
