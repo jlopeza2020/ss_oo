@@ -106,6 +106,18 @@ main(int argc, char *argv[])
 			continue;
 		}
 
+		
+		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
+		// escribirlo en executor.c 
+		findcommands(&cl);
+
+		if(cl.status==FINDERROR){
+			freememory(&cl);
+			fprintf(stderr,"Command not found\n");
+			// paso a la siguiente ejecución
+			continue;
+		}
+
 		// trazas
 		for(i = 0; i < cl.numwords; i++){
 			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
@@ -125,6 +137,7 @@ main(int argc, char *argv[])
 
 		}
 
+
 		// trazas
 		if(cl.statusred == INPUTRED){
 			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
@@ -137,16 +150,6 @@ main(int argc, char *argv[])
 			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
 		}
 
-		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
-		// escribirlo en executor.c 
-		findcommands(&cl);
-
-		if(cl.status==FINDERROR){
-			freememory(&cl);
-			fprintf(stderr,"Command not found\n");
-			// paso a la siguiente ejecución
-			continue;
-		}
 
 		//executecommands(&cl);
 

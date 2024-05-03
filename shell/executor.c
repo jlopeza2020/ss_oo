@@ -52,7 +52,7 @@ getcompletepath(char *path, char *dname)
 	fullpath = (char *)malloc(sizeof(char) * (lenfull));
 	if (fullpath == NULL) {
 		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-        return NULL;
+        //return NULL;
 	}
 
 	strncpy(fullpath, path, lenfull);
@@ -67,43 +67,36 @@ getcompletepath(char *path, char *dname)
 }
 
 int 
-ispwd(char *cmd){
+setpwd(char *cmd){
 
 	char *fullpath;
 	char pwdpath[MaxWord];
 	char *value;
+	int iscorrect;
 
-	//fprintf(stderr, "valores: %s\n", getenv("PWD"));
+	iscorrect = 0;
 
 	value = getenv("PWD");
 
 	if (value != NULL) {
-		//fprintf(stderr, " value: %s \n", value);
 		strcpy(pwdpath, value);
-		// sustituir el valor de value en str para hacer
-		// la ejecución de los comandos 
 	}
 	// crear una función 
 
 	fullpath = getcompletepath(pwdpath, cmd);
     if(fullpath != NULL){
 
-        //fprintf(stderr, "la línea resultante es %s\n", fullpath);
-
         // si el valor es 0: el fichero existe y es ejecutable
         if (access(fullpath, X_OK) == 0){
-            //fprintf(stderr, "Error: this file exists\n");
 			// almacenar en la estrutura el path completo
-			free(fullpath);
-			return 1;
+			strcpy(cmd, fullpath);
+			iscorrect = 1;
 		}
 
 	}
-	// cuando se solucione hay que meter el path completo en la estructura
-	// de datos commandline
 	free(fullpath);
 	
-	return 0;
+	return iscorrect;
 }
 char **
 tokenpath(char *path, long long times){
@@ -154,14 +147,13 @@ getnumpathtokens(char *line)
 		if (line[i] == ':') {
 			numtokens++;
 		}
-
 		i++;
 	}
 	return numtokens;
 }
 
 int
-ispath(char *cmd){
+setpath(char *cmd){
 
 	char *fullpath;
 	char pathpath[MaxWord];
@@ -173,34 +165,25 @@ ispath(char *cmd){
 
 	iscorrect = 0;
 
-	//fprintf(stderr, "valores: %s\n", getenv("PWD"));
-
 	value = getenv("PATH");
 
-	// tokenizarlo y hacerlo esto 12 veces que hay 11 ':'
-
 	if (value != NULL) {
-		//fprintf(stderr, " value: %s \n", value);
 		strcpy(pathpath, value);
-		// sustituir el valor de value en str para hacer
-		// la ejecución de los comandos 
 	}
 
 	numtokens = getnumpathtokens(pathpath);
 	tokens = tokenpath(pathpath, numtokens);
 
 
-	
 	for(i = 0; i < (numtokens + 1); i++){
 
 		fullpath = getcompletepath(tokens[i], cmd);
     	if(fullpath != NULL){
 
-        	fprintf(stderr, "la línea resultante es %s\n", fullpath);
-
         	// si el valor es 0: el fichero existe y es ejecutable
         	if (access(fullpath, X_OK) == 0){
-            	fprintf(stderr, "Winner: %s\n", fullpath);
+            	// ALMACENARNOS ESE VALOR
+				strcpy(cmd, fullpath);
 				iscorrect = 1;
 			}
 
@@ -209,31 +192,10 @@ ispath(char *cmd){
 	}
 
 	for(i = 0; i < (numtokens + 1); i++){
-		fprintf(stderr, "token: %lld, %s\n", i,tokens[i]);
 		free(tokens[i]);
 	}
 
 	free(tokens);
-	//free(fullpath);
-
-
-	// crear una función 
-
-	/*fullpath = getcompletepath(pathpath, cmd);
-    if(fullpath != NULL){
-
-        fprintf(stderr, "la línea resultante es %s\n", fullpath);
-
-        // si el valor es 0: el fichero existe y es ejecutable
-        if (access(fullpath, X_OK) == 0){
-            //fprintf(stderr, "Error: this file exists\n");
-			return 1;
-		}
-
-	}
-	// cuando se solucione hay que meter el path completo en la estructura
-	// de datos commandline
-	free(fullpath);*/
 
 	return iscorrect;
 
@@ -244,23 +206,20 @@ ispath(char *cmd){
 void  
 findtypecommand(CommandLine *cl, char *cmd){
 
-	if(isbuiltin(cmd)){
+	int isbt; 
+	int ispwd;
+	int ispath;
+
+	isbt = isbuiltin(cmd);
+	ispwd = setpwd(cmd);
+	ispath = setpath(cmd);
+
+	if(isbt){
 		fprintf(stderr,"soy built in\n");
-		//setbuiltin(cmd)
-	}
-	if (ispwd(cmd)){
-		fprintf(stderr,"soy pwd\n");
-
-		//setpwd()
-	}
-	if(ispath(cmd)){
-		fprintf(stderr,"soy path\n");
-
-		//setpath()
+		//setbuiltin(cmd);
 	}
 
-	//if(!isbuiltin(cmd) && !ispwd(cmd) && !ispath(cmd)){
-	if(!isbuiltin(cmd) && !ispwd(cmd)){
+	if(!isbt && !ispwd && !ispath){
 
 		cl->status = FINDERROR;
 	}		
@@ -279,20 +238,13 @@ findcommands(CommandLine *cl){
 	// Para ello distinguir si se trata de un pipeline o no
 
 	long long j;
-	//long long k;
 
 	if(cl->numpipes > 0){
-
 		for(j = 0; j < cl->numcommands; j++){
-			//for(k = 0; k < cl->numsubcommands[j]; k++){
 			findtypecommand(cl,cl->commands[j][0]);
-				//fprintf(stderr,"soy el subcommando: %s\n", cl.commands[j][0]);		
-			//}
-
 		}
 	}else{
 
 		findtypecommand(cl,cl->words[0]);
-		//findtypecommand(c)
 	}
 }
