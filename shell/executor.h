@@ -5,7 +5,7 @@ enum {
 };
 
 void findcommands(CommandLine *cl);
-void findtypecommand(CommandLine *cl,char *str);
-int isbuiltin(char *str);
-int ispwd(char *str);
-int ispath(char *str);
+void findtypecommand(CommandLine *cl,char *cmd);
+int isbuiltin(char *cmd);
+int ispwd(char *cmd);
+int ispath(char *cmd);

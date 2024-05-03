@@ -78,6 +78,11 @@ main(int argc, char *argv[])
 			*newline = '\0';
 		}
 
+		if (strcmp(line, "EXIT") == 0) {
+			//freememory(&cl);
+			exit(EXIT_SUCCESS);
+		}
+
 		cl.numwords = getnumwords(line);
 
 		if (cl.numwords > MaxWords){
@@ -87,6 +92,7 @@ main(int argc, char *argv[])
 		if(cl.numwords == 0){
 			continue;
 		}
+		
 		// tokeniza las palabras y las mete en un array de strings
 		tokenize(&cl, line);
 			
@@ -152,9 +158,10 @@ main(int argc, char *argv[])
 
 		freememory(&cl);
 		
-		if (strcmp(line, "EXIT") == 0) {
+		/*if (strcmp(line, "EXIT") == 0) {
+			//freememory(&cl);
 			exit(EXIT_SUCCESS);
-		}
+		}*/
 	}
 	if(!feof(stdin)){
 		errx(EXIT_FAILURE, "eof not reached\n");
