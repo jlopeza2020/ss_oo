@@ -7,6 +7,7 @@
 struct Node{
     long long score;
     char *name;
+    int id;
     struct Node *next; 
 };
 typedef struct Node Node;
@@ -21,7 +22,7 @@ typedef struct List List;
 
 // OPERACIONES PARA EL NODOD
 Node 
-*createnode(char *name, long long score){
+*createnode(char *name, long long score, int id){
 
     Node *n = (Node *)malloc(sizeof(Node));
     if (n == NULL) {
@@ -36,6 +37,7 @@ Node
     strcpy(n->name,name);
 
     n->score = score;
+    n->id = id;
     n->next = NULL;
 
     return n;
@@ -299,12 +301,20 @@ main(int argc, char *argv[]){
 
     Node *n;
     List *l;
+    int i;
     
+    i = 0;
     l = createlist();
-    insertatend(l,createnode("Manuel", 270000077));
-    insertatend(l,createnode("Pedro", 25));
-    insertatend(l,createnode("Lucía",100000));
-    insertatend(l,createnode("María", 564));
+    insertatend(l,createnode("Manuel", 270000077, i));
+    i++;
+    insertatend(l,createnode("Pedro", 25, i));
+    i++;
+
+    insertatend(l,createnode("Lucía",100000, i));
+    i++;
+    insertatend(l,createnode("María", 564, i));
+    i++;
+
     //printlist(l);
     //elimbyvalue(l,27);
     elimbyname(l,"María");

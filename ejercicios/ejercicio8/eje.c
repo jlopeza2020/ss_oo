@@ -39,7 +39,7 @@ typedef struct List List;
 
 // ***************** DEFINICIÓN PARA COMANDOS ******************************
 enum {
-    MaxPlayers = 2, // TENGO QUE INCLUIRLO
+    MaxPlayers = 50, // TENGO QUE INCLUIRLO
     LineSz = 2*1024,
 
 };
@@ -622,10 +622,13 @@ deleteplayer(List *l, char *name){
     }
 
 }
-
 void *
-scoreupdating(void *arg){
+addplayer(void *arg){
 
+    // crea el fifo con ese nombre en /tmp
+    // si el nombre ya existe, se considera un error
+    // Los errores se reportan y se seguirá leyendo comandos
+    
     // Para gestionar las lecturas de cada fifo, se creará un hilo nuevo
     // (uno para cada fifo). 
     // En los fifos se escribirán puntuaciones: cuando lea una línea con un número
@@ -635,143 +638,119 @@ scoreupdating(void *arg){
     // Si la lectura del fifo contiene algo que no sea una línea con números, se
     // considerará un error y será equivalente a ejecutar delplayer de su nombre 
 
-    ThreadArgs *args;
-    //FILE *st;
-    char *name;
-    //List *l;
-    //int id;
-    //char line[LineSz];
-    //long long number;
-    //char *fullpath;
+    // ESQUEMA
+    // crea el trhead
+    // dentro del thread crea el fifo y espera a ver qué valor recibe
 
-    
+    ThreadArgs *args;
+
+    char *fullpath;
+    FILE *st;
+    char line[LineSz];
+    long long number;
+    char *name;
+    List *l;
+    int id;
+
     args = (ThreadArgs *)arg;
 
     name = args->name;
-    fprintf(stderr, "soyyyy %s\n", name);
-
-    //l = args->list;
-    //id = args->id;
-
-    //fullpath = getcompletepath("/tmp", name);
-
-    // insertar en la tabla
-    //insertatend(l, createnode(name, 0, id));
-
-    /*while(1){
-        st = fopen(name, "r");
-        if (st == NULL) {
-            free(name);
-            free(args);
-            fprintf(stderr, "fopen error\n");
-            pthread_exit((void *)1);
-        }
-        // st es descriptor de fichero (tipo FILE) 
-        // que obtenemos los datos
-        while (fgets(line, LineSz, st) != NULL) {
-
-            line[strlen(line) -1] = '\0';
-        }
-
-        number = getnumber(line);
-        if(number < 0){
-
-            //HAY QUE MIRAR LO DE FCLOSE 
-
-            fclose(st);
-            deleteplayer(l, name);
-            break; 
-        }
-
-        fprintf(stderr, "numero: %lld \n", name);
-
-        // actualizar elemento en la tabla si el actual 
-        // es mayor al existente
-        changevalue(l,name, number);
+    l = args->list;
+    id = args->id;
 
 
-        if (ferror(st)) {
-            fclose(st);
-            free(name);
-            free(args);
-            fprintf(stderr, "Error: read error\n");
-            pthread_exit((void *)1);
-        }
-        fclose(st);
-    }*/
-    // libero ThreadArgs
-	free(name);
-    free(args);
-
-    return NULL;
-}
-
-void 
-addplayer(List *l, char *name, int *id){
-
-    
-    pthread_t thread;
-    ThreadArgs *args;
-    char *fullpath;
-    char *nameplayer;
-
-
-    nameplayer = (char *)malloc(sizeof(char) * (LineSz));
-	if (nameplayer == NULL) {
-		errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-	}
-
-    strcpy(nameplayer, name);
-
-    
-    // crea el fifo con ese nombre en /tmp
-    // si el nombre ya existe, se considera un error
-    // Los errores se reportan y se seguirá leyendo comandos
-
-    fullpath = getcompletepath("/tmp", nameplayer);
+    fullpath = getcompletepath("/tmp", name);
     if(fullpath != NULL){
 
+        //fprintf(stderr, "la línea resultante es %s\n", fullpath);
 
         // si el valor es 0: el fichero existe
         if (access(fullpath, F_OK) == 0){
+            //free(fullpath);
+            //free(args);
             fprintf(stderr, "Error: this file exists\n");
+            //pthread_exit((void *)1);
+
         }else{
+            
+            fprintf(stderr, "this filedoes not exit\n");
+
             
             if (mkfifo(fullpath, 0664) < 0){
                 free(fullpath);
-                err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
+                free(args);
+                fprintf(stderr, "Error: cannot make fifo\n");
+                pthread_exit((void *)1);
+
+                //err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
             }
 
-            if(*id < MaxPlayers){
-                fprintf(stderr, "Valid player\n");
+            
+            // insertar en la tabla
+            // crear el thread
+            insertatend(l, createnode(name, 0, id));
 
-                args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
-		        if (args == NULL) {
-				    errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-		        }
+            while(1){
 
-                args->name = nameplayer;
-                args->list = l;
-                args->id = *id;
-                
-                fprintf(stderr, "%s\n", args->name);
+                st = fopen(fullpath, "r");
+                if (st == NULL) {
+                    free(fullpath);
+                    free(args);
+                    fprintf(stderr, "fopen error\n");
+                    pthread_exit((void *)1);
+                }
+                // st es descriptor de fichero (tipo FILE) 
+                // que obtenemos los datos
+                while (fgets(line, LineSz, st) != NULL) {
 
-                // el thread hace free de args
-                if (pthread_create
-		            (&thread, NULL, scoreupdating, (void *)args) != 0) {
-			        fprintf(stderr, "Error creating thread\n");
-		        }
+                    line[strlen(line) -1] = '\0';
+                }
 
-            }else{
-                fprintf(stderr, "Exceded Maximun players\n");
+                number = getnumber(line);
+                if(number < 0){
+
+                    fclose(st);
+                    deleteplayer(l, name);
+                    //HAY QUE MIRAR LO DE FCLOSE 
+
+                    //tratarlo en DELETE PLAYER(pasarle id)
+                    //elimbyname(l,name);
+                    //fprintf(stderr, "borrar jugador\n");
+                    //if (unlink(fullpath) < 0){
+                    ////unlink(fullpath);
+
+                    //    err(EXIT_FAILURE, "can't remove %s", fullpath);
+                    //}   
+                    //fclose(st);
+                    //break;
+                    //free(fullpath);
+                    //free(args);
+                    //pthread_exit((void *)1);
+
+                    break; 
+                }
+                fprintf(stderr, "numero: %lld \n", number);
+
+                // actualizar elemento en la tabla si el actual 
+                // es mayor al existente
+                changevalue(l,name, number);
+
+
+                if (ferror(st)) {
+                    fclose(st);
+                    free(fullpath);
+                    free(args);
+                    fprintf(stderr, "Error: cannot make fifo\n");
+                    pthread_exit((void *)1);
+                    //err(EXIT_FAILURE, "read error");
+                }
+                fclose(st);
             }
-
-            *id = *id +1;
         }
         free(fullpath);
     }
-
-
+    free(args);
+    return NULL;
 }
 
 void
@@ -781,20 +760,17 @@ reset(char *name){
     // si no existe se reporta y se continua ejecutando (parecido a changevalue)
 }
 void 
-treatkind(List * l, char *name, int kind, int *id){
+treatkind(List * l, char *name, int kind){
 
-    //pthread_t threads[MaxPlayers];
-    /*ThreadArgs *args;
+    pthread_t threads[MaxPlayers];
+    ThreadArgs *args;
     int i;
 
-    i = 0;*/
-
+    i = 0;
     switch (kind) {
     case Newplayer:
 
-        addplayer(l, name, id);
-
-        /*if(i < MaxPlayers){
+        if(i < MaxPlayers){
 
             args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 		    if (args == NULL) {
@@ -812,14 +788,15 @@ treatkind(List * l, char *name, int kind, int *id){
 
         }else{
             fprintf(stderr, "Exceded Maximun players\n");
-        }*/
+        }
     
-        //fprintf(stderr, "soy newplayer: %s \n", name);
         //addplayer(l, name);
+        //fprintf(stderr, "soy newplayer: %s \n", name);
 		break;
 	case Delplayer:
         deleteplayer(l, name);
         fprintf(stderr, "soy delplayer: %s\n", name);
+        i--;
 		break;
     case Highscore:
         // listará las puntuaciones máximas de cada jugador junto con su nombre,
@@ -844,9 +821,6 @@ main(int argc, char *argv[]){
     int kind;
     Command cl;
     List *l;
-    int id;
-
-    id = 0;
 
     argc--;
     argv++;
@@ -880,11 +854,7 @@ main(int argc, char *argv[]){
             continue;
         }
 
-        
-        //if(id < MaxPlayers){
-        treatkind(l,cl.arg,kind, &id);
-        
-        //}
+        treatkind(l,cl.arg,kind);
 
         // estar pendiente de las entradas que reciba y manejarlas
         // el thread UNICAMENTE está pendiente de lo que reciba 
