@@ -294,6 +294,19 @@ changevalue(List *l, char *name, long long value){
     }
 }
 
+void
+changeallvalues(List *l, long long value){
+
+
+    Node *aux = l->init;
+
+
+    while (aux != NULL){
+        aux->score  = 0;
+        aux=aux->next;
+    }
+}
+
 
 // TRATAR LO DE LOS MAX JUGADORES
 int 
@@ -331,6 +344,8 @@ main(int argc, char *argv[]){
     changevalue(l,"Lucía", 70567);
 
     printlist(l);
+
+    changeallvalues(l, 0);
 
     emptylist(l);
     exit(EXIT_SUCCESS);

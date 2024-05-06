@@ -329,6 +329,37 @@ changevalue(List *l, char *name, long long value){
     pthread_mutex_unlock(&l->listmutex);
 
 }
+
+void
+resetvalue(List *l, char *name, long long value){
+
+    Node *n;
+    pthread_mutex_lock(&l->listmutex);
+
+    n = _searchbyname(l,name);
+    if(n != NULL){
+        n->score = value;
+    }
+
+    pthread_mutex_unlock(&l->listmutex);
+
+}
+
+void
+resetallvalues(List *l, long long value){
+
+
+    Node *aux = l->init;
+    pthread_mutex_lock(&l->listmutex);
+
+    while (aux != NULL){
+        aux->score  = value;
+        aux=aux->next;
+    }
+
+    pthread_mutex_unlock(&l->listmutex);
+
+}
 // **************************************************************************
 // ******************* OPERACIONES PARA LOS COMANDOS ************************
 void
@@ -568,6 +599,7 @@ getcompletepath(char *path, char *dname)
 	return fullpath;
 }
 
+// TODAVIA EN PROCESO DE ARREGLARSE
 void 
 deleteplayer(List *l, char *name){
     // borrará la jugador si existe, incluyendo destruir el hilo (pthread joino pthread_exit),
@@ -781,11 +813,23 @@ addplayer(List *l, char *name, int *id){
 }
 
 void
-reset(char *name){
-    // si no hay nombre: pone a 0 todas las puntuaciones de todos
-    // si hay nombre: pone a 0 la puntuación de ese jugador
-    // si no existe se reporta y se continua ejecutando (parecido a changevalue)
+reset(List *l, char *name){
+    Node *n;
+
+    if(strcmp(name, "nocommand")!= 0){
+        
+        n=searchbyname(l, name);
+        // significa que existe el usuario
+        if(n!=NULL){
+            resetvalue(l,name,0);
+        }else{
+            fprintf(stderr, "Error: this user does not exist\n");
+        }
+    }else{
+        resetallvalues(l,0);
+    }
 }
+
 void 
 treatkind(List * l, char *name, int kind, int *id){
 
@@ -797,12 +841,10 @@ treatkind(List * l, char *name, int kind, int *id){
         deleteplayer(l, name);
 		break;
     case Highscore:
-        // listará las puntuaciones máximas de cada jugador junto con su nombre,
-        // en cualquier orden, con nombre y puntuación separada por 2 puntos (printlist)
         printlist(l);
 		break;
 	case Reset:
-        reset(name);
+        reset(l,name);
         break;
 	default:
 	}
