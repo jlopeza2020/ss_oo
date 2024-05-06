@@ -31,17 +31,16 @@ struct List{
     Node *init;
     int total;
     Node *last; 
-    // Dentro de la estructura lista incluir un mutex !!!!
     pthread_mutex_t listmutex;
 
 };
 typedef struct List List;
 
 // ***************************************************************************
-
 // ***************** DEFINICIÓN PARA COMANDOS ******************************
 enum {
-    MaxPlayers = 2, // TENGO QUE INCLUIRLO
+    MaxPlayers = 50,
+    NameSz = 1024,
     LineSz = 2*1024,
 
 };
@@ -70,7 +69,6 @@ struct ThreadArgs {
 };
 typedef struct ThreadArgs ThreadArgs;
 // ***************************************************************************
-
 // ******************** OPERACIONES PARA EL NODO *****************************
 Node 
 *createnode(char *name, long long score, int id, int fd){
@@ -80,7 +78,7 @@ Node
 		errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
 	}
 
-    n->name = (char *)malloc(sizeof(char)*1024);
+    n->name = (char *)malloc(sizeof(char)*NameSz);
     if (name == NULL) {
 		errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
 	}
@@ -248,9 +246,7 @@ elimbyindex(List *l, int index){
             free(aux->name);
             free(aux);
             l->total--;
-
         }
-
     }
 }
 
@@ -277,7 +273,6 @@ elimbyname(List *l, char *name){
 }
 
 // SE USA EN EL MAIN
-
 Node *
 searchbyname(List *l, char *name){
 
@@ -334,7 +329,6 @@ changevalue(List *l, char *name, long long value){
     pthread_mutex_unlock(&l->listmutex);
 
 }
-
 // **************************************************************************
 // ******************* OPERACIONES PARA LOS COMANDOS ************************
 void
@@ -343,7 +337,6 @@ usage(void)
 	fprintf(stderr, "usage: ./highscore\n");
 	exit(EXIT_FAILURE);
 }
-
 
 int
 getnumwords(char *line)
@@ -368,7 +361,6 @@ getnumwords(char *line)
 				numwords++;
 				inword = 1;
 			}
-
 		}
 		// si el caracter es espacio o tabulador y si ha estado 
 		// dentro de una palabra, ponemos que acabamos de salir de ella  
@@ -396,7 +388,6 @@ checkcmd(char *cmd){
         }
     }
     return -1;
-
 }
 
 // ASCII:
@@ -471,7 +462,6 @@ getkindcommand(Command *cl, char *line){
 
     char *saveptr;
 	char *token;
-    //char *aux;
 
     int valueword;
     int valuecmd;
@@ -487,12 +477,8 @@ getkindcommand(Command *cl, char *line){
         return -1;
     }
 
-
     token = strtok_r(line, " \t" , &saveptr);
     if(token == NULL){
-        //free(aux);
-        //free(cl->command);
-        //free(cl->arg);
         return -1;
     }
     // solo nos quedamos con la primera palabra de la tokenización
@@ -510,8 +496,6 @@ getkindcommand(Command *cl, char *line){
     }
     // tengo que comprobar el segundo argumento 
     valuecmd = checkarg(cl->arg, valueword);    
-
-    //free(aux);
 
     return valuecmd;
 }
@@ -537,22 +521,18 @@ getnumber(char *str)
         return -1;
 	}
 	if (endptr == str) {
-		//errx(EXIT_FAILURE, "Error: No digits were found in %s", str);
         return -1;
 	}
 	// Ahora es necesario comprobar si la string ha sido un número o no
 	if (*endptr != '\0') {
-		//errx(EXIT_FAILURE, "Error: %s is not a complete number", str);
         return -1;
 	}
 	return val;
 }
 
-
 char *
 getcompletepath(char *path, char *dname)
 {
-
 	char *fullpath;
 	ssize_t lenpath;
 	ssize_t lenname;
@@ -599,19 +579,25 @@ deleteplayer(List *l, char *name){
     n=searchbyname(l, name);
     // significa que existe
     if(n!=NULL){
-
+        
+        fullpath = getcompletepath("/tmp", name);
+        unlink(fullpath);
+        free(name);
+        free(fullpath);
+        
+        
+        if (pthread_join(n->id, NULL) != 0) {
+            fprintf(stderr, "Error: joining thread\n");
+        }
+        close(n->fd);
     
         // borrará al jugador de su tabla de puntuaciones
         elimbyname(l,name);
         fprintf(stderr, "borrar jugador\n");
+        pthread_mutex_destroy(&l->listmutex);
 
-        if (pthread_join(n->id, NULL) != 0) {
-            fprintf(stderr, "Error: joining thread");
-        }
-        fullpath = getcompletepath("/tmp", name);
-        close(n->fd);
-        unlink(fullpath);
-        free(fullpath);
+        //free(name);
+
         //free(args);
 
 
@@ -643,80 +629,68 @@ scoreupdating(void *arg){
     int id;
     char line[LineSz];
     long long number;
-    //char *fullpath;
     int fd;
+    //int c;
+    char *newline;
 
     
     args = (ThreadArgs *)arg;
 
     name = args->name;
-    //fprintf(stderr, "soyyyy %s\n", name);
 
     l = args->list;
     id = args->id;
     fd = args->fd;
 
-    fprintf(stderr, "soyyyy %d\n", fd);
-
-
-    //fullpath = getcompletepath("/tmp", name);
 
     // insertar en la tabla
     insertatend(l, createnode(name, 0, id, fd));
 
     // el thread actualiza lo que reciba
-    while(1){
-        st = fdopen(fd, "r");
-        //fprintf(stderr, "fdopen:  %p\n", (void *)st);
+    st = fdopen(fd, "r");
 
-        if (st == NULL) {
-            free(name);
-            free(args);
-            fprintf(stderr, "fopen error\n");
-            pthread_exit((void *)1);
+    if (st == NULL) {
+        free(name);
+        free(args);
+        fprintf(stderr, "fopen error\n");
+        pthread_exit((void *)1);
+    }
+
+    // st es descriptor de fichero (tipo FILE) 
+    // que obtenemos los datos
+    while (fgets(line, LineSz, st) != NULL) {
+
+        if (line[strlen(line) - 1] != '\n') {
+            fprintf(stderr, "Exceeded path size\n");
+            continue;
         }
-        // st es descriptor de fichero (tipo FILE) 
-        // que obtenemos los datos
-        while (fgets(line, LineSz, st) != NULL) {
+        
+        // Elimina el '\n' de la string
+		newline = strrchr(line, '\n');
 
-            line[strlen(line) -1] = '\0';
-            number = getnumber(line);
-
-
-            if(number < 0){
-
-                //HAY QUE MIRAR LO DE FCLOSE 
-                deleteplayer(l, name);
-                break; 
-            }
-
-            changevalue(l,name, number);
-
-        }
-
-
-        /*number = getnumber(line);
-
+		if (newline != NULL) {
+			// donde apunta newline poner un '\0'
+			*newline = '\0';
+		}
+        number = getnumber(line);
 
         if(number < 0){
-
-            //HAY QUE MIRAR LO DE FCLOSE 
             deleteplayer(l, name);
             break; 
         }
 
-        changevalue(l,name, number);*/
-
-        if (ferror(st)) {
-            fclose(st);
-            free(name);
-            free(args);
-            fprintf(stderr, "Error: read error\n");
-            pthread_exit((void *)1);
-        }
-        fclose(st);
+        changevalue(l,name, number);
     }
-    // libero ThreadArgs
+
+    if (ferror(st)) {
+        fclose(st);
+        free(name);
+        free(args);
+        fprintf(stderr, "Error: read error\n");
+        pthread_exit((void *)1);
+    }
+
+    fclose(st);
 	free(name);
     free(args);
 
@@ -733,7 +707,6 @@ addplayer(List *l, char *name, int *id){
     char *nameplayer;
     int fd;
 
-
     nameplayer = (char *)malloc(sizeof(char) * (LineSz));
 	if (nameplayer == NULL) {
 		errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
@@ -741,11 +714,7 @@ addplayer(List *l, char *name, int *id){
 
     strcpy(nameplayer, name);
 
-    
     // crea el fifo con ese nombre en /tmp
-    // si el nombre ya existe, se considera un error
-    // Los errores se reportan y se seguirá leyendo comandos
-
     fullpath = getcompletepath("/tmp", nameplayer);
     if(fullpath != NULL){
 
@@ -763,7 +732,6 @@ addplayer(List *l, char *name, int *id){
             }
 
             if(*id < MaxPlayers){
-                fprintf(stderr, "Valid player\n");
 
                 args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 		        if (args == NULL) {
@@ -773,7 +741,6 @@ addplayer(List *l, char *name, int *id){
 				    errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 		        }
 
-                // hacer el open
                 fd = open(fullpath, O_RDWR);
 
                 if (fd == -1) {
@@ -782,16 +749,14 @@ addplayer(List *l, char *name, int *id){
                     free(fullpath);
                     free(args);
                     errx(EXIT_FAILURE, "Error: opening FIFO for player\n");
-
                 }
-                
-                // el thread hace free de esto
+            
+                // el thread hace free de args
                 args->name = nameplayer;
                 args->list = l;
                 args->id = *id;
                 args->fd = fd;
                 
-                // el thread hace free de args
                 if (pthread_create
 		            (&thread, NULL, scoreupdating, (void *)args) != 0) {
 			        free(nameplayer);
@@ -800,6 +765,7 @@ addplayer(List *l, char *name, int *id){
                     free(args);
                     fprintf(stderr, "Error creating thread\n");
 		        }
+                
 
             }else{
                 fprintf(stderr, "Exceded Maximun players\n");
@@ -812,7 +778,6 @@ addplayer(List *l, char *name, int *id){
         free(fullpath);
     }
 
-
 }
 
 void
@@ -824,20 +789,12 @@ reset(char *name){
 void 
 treatkind(List * l, char *name, int kind, int *id){
 
-    //pthread_t threads[MaxPlayers];
-    /*ThreadArgs *args;
-    int i;
-
-    i = 0;*/
-
     switch (kind) {
     case Newplayer:
-
         addplayer(l, name, id);
 		break;
 	case Delplayer:
         deleteplayer(l, name);
-        fprintf(stderr, "soy delplayer: %s\n", name);
 		break;
     case Highscore:
         // listará las puntuaciones máximas de cada jugador junto con su nombre,
@@ -845,14 +802,11 @@ treatkind(List * l, char *name, int kind, int *id){
         printlist(l);
 		break;
 	case Reset:
-        //reset(name);
-        fprintf(stderr, "soy reset: %s \n", name);
+        reset(name);
         break;
-
 	default:
 	}
 }
-
 
 int 
 main(int argc, char *argv[]){
@@ -865,7 +819,6 @@ main(int argc, char *argv[]){
     int id;
 
     id = 0;
-
     argc--;
     argv++;
 
@@ -898,12 +851,8 @@ main(int argc, char *argv[]){
             continue;
         }
 
-        
-        //if(id < MaxPlayers){
         treatkind(l,cl.arg,kind, &id);
-        
-        //}
-
+    
         // estar pendiente de las entradas que reciba y manejarlas
         // el thread UNICAMENTE está pendiente de lo que reciba 
         // si es distinto de numero hay que borrarlo
