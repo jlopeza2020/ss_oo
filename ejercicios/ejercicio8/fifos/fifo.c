@@ -34,13 +34,17 @@ int main(int argc, char **argv) {
 
     if (mkfifo("/tmp/logger", 0664) < 0)
         err(EXIT_FAILURE, "cannot make fifo /tmp/logger");
+    st = fopen("/tmp/logger", "r");
+    if (st == NULL) {
+        err(EXIT_FAILURE, "fopen error");
+    }
 
     for (;;) {
         printevent("waiting for clients\n");
-        st = fopen("/tmp/logger", "r");
+        /*st = fopen("/tmp/logger", "r");
         if (st == NULL) {
             err(EXIT_FAILURE, "fopen error");
-        }
+        }*/
 
         printevent("ready to read events\n");
 
@@ -53,7 +57,9 @@ int main(int argc, char **argv) {
         }
 
         printevent("client is gone\n");
-        fclose(st);
+        //fclose(st);
     }
+    fclose(st);
+
     return 0;
 }

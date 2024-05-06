@@ -1,175 +1,235 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <pthread.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <errno.h>
 
+#define MAX_NAME_LENGTH 20
 #define FIFO_PATH "/tmp/"
 
 typedef struct {
-    char name[50];
+    char name[MAX_NAME_LENGTH];
     int score;
     pthread_t thread;
-    int fifo_fd;
+    FILE *fifo_file;
     pthread_mutex_t mutex;
 } Player;
 
-Player players[50];
+Player players[100]; // Suponemos un máximo de 100 jugadores
 int num_players = 0;
 
-void *player_thread(void *arg) {
+void *fifo_reader(void *arg) {
     Player *player = (Player *)arg;
-    char buffer[256];
+    char buffer[100];
 
-    while (1) {
-        char *fgets_result = fgets(buffer, sizeof(buffer), fdopen(player->fifo_fd, "r"));
-        if (fgets_result == NULL) {
-            fprintf(stderr, "Error reading from FIFO for player %s\n", player->name);
-            break;
-        }
-
-        int new_score = atoi(buffer);
-
-        if (new_score >= 0) {
-            pthread_mutex_lock(&player->mutex);
-            if (new_score > player->score) {
-                player->score = new_score;
-                printf("Updated score of player %s to %d\n", player->name, player->score);
+    while (fgets(buffer, sizeof(buffer), player->fifo_file) != NULL) {
+        buffer[strcspn(buffer, "\n")] = '\0'; // Eliminar el salto de línea del final
+        char *endptr;
+        int score = strtol(buffer, &endptr, 10); // Convertir la cadena a entero
+        if (endptr != buffer && *endptr == '\0' && score >= 0) { // Si la conversión fue exitosa y el número es no negativo
+            pthread_mutex_lock(&player->mutex); // Bloquear el mutex para evitar condiciones de carrera
+            if (score > player->score) {
+                player->score = score; // Actualizar la puntuación si es mayor que la puntuación actual
             }
-            pthread_mutex_unlock(&player->mutex);
+            pthread_mutex_unlock(&player->mutex); // Desbloquear el mutex
         } else {
-            fprintf(stderr, "Invalid score received for player %s, removing player\n", player->name);
-            close(player->fifo_fd);
-            pthread_cancel(player->thread);
+            // Error en la lectura del FIFO, eliminamos al jugador
+            fclose(player->fifo_file);
             pthread_mutex_destroy(&player->mutex);
-            unlink(player->name);
-            memset(player, 0, sizeof(Player));
-            break;
+            printf("Error: Lectura inválida en el FIFO de %s. Eliminando al jugador.\n", player->name);
+            return NULL;
         }
     }
+
+    // Cerrar el FIFO y destruir el mutex
+    fclose(player->fifo_file);
+    pthread_mutex_destroy(&player->mutex);
 
     return NULL;
 }
 
 void new_player(const char *name) {
-    if (num_players >= 50) {
-        fprintf(stderr, "Cannot add more players, limit reached\n");
-        return;
-    }
-
-    for (int i = 0; i < num_players; ++i) {
+    // Verificar si el nombre ya existe
+    for (int i = 0; i < num_players; i++) {
         if (strcmp(players[i].name, name) == 0) {
-            fprintf(stderr, "Player with name %s already exists\n", name);
+            printf("Error: El nombre de jugador ya existe.\n");
             return;
         }
     }
 
-    char fifo_path[100];
-    sprintf(fifo_path, "%s%s", FIFO_PATH, name);
+    // Verificar si el nombre es válido
+    for (const char *c = name; *c != '\0'; c++) {
+        if (!((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9'))) {
+            printf("Error: El nombre de jugador solo puede contener letras y números.\n");
+            return;
+        }
+    }
 
+    // Construir el path del FIFO
+    char fifo_path[100];
+    snprintf(fifo_path, sizeof(fifo_path), "%s%s", FIFO_PATH, name);
+
+    // Crear el FIFO
     if (mkfifo(fifo_path, 0666) == -1) {
-        fprintf(stderr, "Error creating FIFO for player %s: %s\n", name, strerror(errno));
+        perror("Error creando FIFO");
         return;
     }
 
+    // Abrir el FIFO para lectura
     int fifo_fd = open(fifo_path, O_RDONLY | O_NONBLOCK);
     if (fifo_fd == -1) {
-        fprintf(stderr, "Error opening FIFO for player %s: %s\n", name, strerror(errno));
-        unlink(fifo_path);
+        perror("Error abriendo FIFO");
         return;
     }
 
-    Player *player = &players[num_players++];
-    strcpy(player->name, name);
-    player->score = 0;
-    player->fifo_fd = fifo_fd;
-    pthread_mutex_init(&player->mutex, NULL);
-    pthread_create(&player->thread, NULL, player_thread, (void *)player);
+    // Abrir el descriptor de archivo en modo de lectura
+    FILE *fifo_file = fdopen(fifo_fd, "r");
+    if (fifo_file == NULL) {
+        perror("Error abriendo descriptor de archivo");
+        close(fifo_fd);
+        unlink(fifo_path); // Eliminar el FIFO
+        return;
+    }
 
-    printf("New player %s added\n", name);
+    // Inicializar el jugador
+    Player player;
+    strcpy(player.name, name);
+    player.score = 0;
+    player.fifo_file = fifo_file;
+    pthread_mutex_init(&player.mutex, NULL);
+
+    // Crear el hilo para leer el FIFO
+    if (pthread_create(&player.thread, NULL, fifo_reader, (void *)&player) != 0) {
+        perror("Error creando hilo");
+        fclose(fifo_file);
+        unlink(fifo_path); // Eliminar el FIFO
+        return;
+    }
+
+    // Añadir el jugador al arreglo de jugadores
+    players[num_players++] = player;
+
+    printf("Nuevo jugador creado: %s\n", name);
 }
 
 void del_player(const char *name) {
-    for (int i = 0; i < num_players; ++i) {
+    int player_index = -1;
+
+    // Buscar al jugador por nombre
+    for (int i = 0; i < num_players; i++) {
         if (strcmp(players[i].name, name) == 0) {
-            close(players[i].fifo_fd);
-            pthread_cancel(players[i].thread);
-            pthread_mutex_destroy(&players[i].mutex);
-            unlink(players[i].name);
-            memset(&players[i], 0, sizeof(Player));
-            printf("Player %s removed\n", name);
-            return;
+            player_index = i;
+            break;
         }
     }
 
-    fprintf(stderr, "Player with name %s not found\n", name);
+    if (player_index == -1) {
+        printf("Error: El jugador \"%s\" no existe.\n", name);
+        return;
+    }
+
+    // Cancelar el hilo
+    pthread_cancel(players[player_index].thread);
+
+    // Esperar a que el hilo termine
+    pthread_join(players[player_index].thread, NULL);
+
+    // Cerrar el archivo FIFO
+    fclose(players[player_index].fifo_file);
+
+    // Destruir el mutex
+    pthread_mutex_destroy(&players[player_index].mutex);
+
+    // Eliminar al jugador del arreglo de jugadores
+    for (int i = player_index; i < num_players - 1; i++) {
+        players[i] = players[i + 1];
+    }
+    num_players--;
+
+    printf("Jugador \"%s\" eliminado.\n", name);
 }
 
 void highscore() {
-    for (int i = 0; i < num_players; ++i) {
-        pthread_mutex_lock(&players[i].mutex);
+    printf("Puntuaciones máximas:\n");
+    for (int i = 0; i < num_players; i++) {
         printf("%s:%d\n", players[i].name, players[i].score);
-        pthread_mutex_unlock(&players[i].mutex);
     }
 }
 
 void reset(const char *name) {
     if (name == NULL) {
-        for (int i = 0; i < num_players; ++i) {
-            pthread_mutex_lock(&players[i].mutex);
+        // Resetear todas las puntuaciones
+        for (int i = 0; i < num_players; i++) {
+            pthread_mutex_lock(&players[i].mutex); // Bloquear el mutex antes de modificar la puntuación
             players[i].score = 0;
-            pthread_mutex_unlock(&players[i].mutex);
+            pthread_mutex_unlock(&players[i].mutex); // Desbloquear el mutex
         }
-        printf("All scores reset to 0\n");
+        printf("Todas las puntuaciones han sido reseteadas.\n");
     } else {
-        for (int i = 0; i < num_players; ++i) {
+        // Resetear la puntuación de un jugador específico
+        int player_index = -1;
+        for (int i = 0; i < num_players; i++) {
             if (strcmp(players[i].name, name) == 0) {
-                pthread_mutex_lock(&players[i].mutex);
-                players[i].score = 0;
-                pthread_mutex_unlock(&players[i].mutex);
-                printf("Score of player %s reset to 0\n", name);
-                return;
+                player_index = i;
+                break;
             }
         }
-        fprintf(stderr, "Player with name %s not found\n", name);
+        if (player_index == -1) {
+            printf("Error: El jugador \"%s\" no existe.\n", name);
+            return;
+        }
+        pthread_mutex_lock(&players[player_index].mutex); // Bloquear el mutex antes de modificar la puntuación
+        players[player_index].score = 0;
+        pthread_mutex_unlock(&players[player_index].mutex); // Desbloquear el mutex
+        printf("Puntuación de \"%s\" reseteada a 0.\n", name);
     }
 }
 
 int main() {
+    char input[100];
+    char command[100];
+    char arg[100];
+
     while (1) {
-        printf(">");
-        char command[100];
-        fgets(command, sizeof(command), stdin);
-
-        char *token = strtok(command, " \n");
-        if (token == NULL) continue;
-
-        if (strcmp(token, "newplayer") == 0) {
-            token = strtok(NULL, " \n");
-            if (token != NULL) {
-                new_player(token);
-            } else {
-                fprintf(stderr, "Error: Missing player name\n");
-            }
-        } else if (strcmp(token, "delplayer") == 0) {
-            token = strtok(NULL, " \n");
-            if (token != NULL) {
-                del_player(token);
-            } else {
-                fprintf(stderr, "Error: Missing player name\n");
-            }
-        } else if (strcmp(token, "highscore") == 0) {
-            highscore();
-        } else if (strcmp(token, "reset") == 0) {
-            token = strtok(NULL, " \n");
-            reset(token);
-        } else {
-            fprintf(stderr, "Error: Unknown command\n");
+        printf("Ingrese un comando: ");
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            break;
         }
+
+        // Eliminar el salto de línea del final
+        input[strcspn(input, "\n")] = '\0';
+
+        // Leer el comando y el argumento (si lo hay)
+        if (sscanf(input, "%s %s", command, arg) == 1) {
+            arg[0] = '\0'; // No hay argumento
+        }
+
+        if (strcmp(command, "newplayer") == 0) {
+            new_player(arg);
+        } else if (strcmp(command, "delplayer") == 0) {
+            del_player(arg);
+        } else if (strcmp(command, "highscore") == 0) {
+            highscore();
+        } else if (strcmp(command, "reset") == 0) {
+            reset(arg[0] != '\0' ? arg : NULL);
+        } else {
+            printf("Error: Comando no reconocido.\n");
+        }
+    }
+
+    // Liberar todos los recursos al salir
+    for (int i = 0; i < num_players; i++) {
+        pthread_cancel(players[i].thread);
+        pthread_join(players[i].thread, NULL);
+        fclose(players[i].fifo_file);
+        pthread_mutex_destroy(&players[i].mutex);
+        char fifo_path[100];
+        snprintf(fifo_path, sizeof(fifo_path), "%s%s", FIFO_PATH, players[i].name);
+        unlink(fifo_path);
     }
 
     return 0;
