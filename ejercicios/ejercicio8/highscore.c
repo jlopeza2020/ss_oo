@@ -64,7 +64,7 @@ struct ThreadArgs {
 	List *list;
     char *name;
     int id;
-    int running;
+    //int *running;
     //pthread_t *threads;
 
 };
@@ -641,7 +641,7 @@ elimbyname(List *l, char *name, pthread_t *threads){
 
         elimbyindex(l,i);
 
-        /*if (pthread_join(threads[i], NULL) != 0) {
+        /*if (pthread_join(threads[aux->id], NULL) != 0) {
             fprintf(stderr, "Error: join failed\n");
 		}*/
 
@@ -652,11 +652,45 @@ elimbyname(List *l, char *name, pthread_t *threads){
 
 }
 
-void deleteplayer(pthread_t *threads, List *l, char *name) {
+
+//void deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int running) {
+    
+void 
+deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name) {
+
     Node *n = searchbyname(l, name);
 
     // Si el jugador existe
     if (n != NULL) {
+
+        
+        //fprintf(stderr, "running  in delete: %ls\n", args[n->id].running);
+
+        //args[n->id].running = 0;
+        
+        //fprintf(stderr, "running  in delete: %ls\n", args[n->id].running);
+
+        //if(!args[n->id].running){
+            
+        if (n->fd != NULL) {
+            // Cerrar el archivo si no está cerrado
+
+            pthread_cancel(threads[n->id]);
+            if (fclose(n->fd) != 0) {
+                fprintf(stderr, "Error: fclose failed\n");
+            }
+            // Eliminar el jugador de la lista
+            elimbyname(l, name, threads);
+            // Cambiar el estado del hilo asociado al jugador a 0
+            
+        }
+        //}
+            
+            
+         /*   if (pthread_join(threads[n->id], NULL) != 0) {
+                fprintf(stderr, "Error: join failed\n");
+		    }
+        }
         // Verificar si el puntero de archivo es válido
         if (n->fd != NULL) {
             // Cerrar el archivo si no está cerrado
@@ -666,19 +700,17 @@ void deleteplayer(pthread_t *threads, List *l, char *name) {
             // Eliminar el jugador de la lista
             elimbyname(l, name, threads);
             // Cambiar el estado del hilo asociado al jugador a 0
-            ThreadArgs *args = (ThreadArgs *)threads[n->id];
-            args->running = 0;
-        }
+            
+        }*/
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
 }
 
-
-
-void 
-*scoreupdating(void *arg) {
-    /*ThreadArgs *args;
+void *
+scoreupdating(void *arg) {
+    
+    ThreadArgs *args;
     char *name;
     List *l;
     int id;
@@ -686,19 +718,19 @@ void
     long long number;
     FILE *fd;
     char *newline;
-    pthread_t *threads;
+    //pthread_t *threads;
     char *fullpath;
-    int running;
+    //int *running;
 
     args = (ThreadArgs *)arg;
 
     name = args->name;
     l = args->list;
     id = args->id;
-    threads = args->threads;
-    running = args->running;*/
+    //threads = args->threads;
+    //running = args->running;
 
-    /*fullpath = getcompletepath("/tmp", name);
+    fullpath = getcompletepath("/tmp", name);
 
     fd = fopen(fullpath, "r+");
     if (fd == NULL) {
@@ -711,7 +743,7 @@ void
 
     insertatend(l, createnode(name, 0, id, fd));
 
-    fprintf(stderr, " running : %d\n", running);
+    //fprintf(stderr, " running : %d\n", *running);
     while (fgets(line, LineSz, fd) != NULL) {
         if (line[strlen(line) - 1] != '\n') {
             fprintf(stderr, "Exceeded path size\n");
@@ -723,14 +755,14 @@ void
         }
         number = getnumber(line);
         if (number < 0) {
-            deleteplayer(threads, l, name);
+            //deleteplayer(threads, l, name);
             break;
         }
         // Verificar si el hilo debe continuar ejecutándose
-        if (!running) {
+        /*if (!*running) {
             fprintf(stderr, "Thread %d stopped\n", id);
             break;
-        }
+        }*/
         changevalue(l, name, number);
     }
 
@@ -750,16 +782,15 @@ void
     free(args);
     free(fullpath);
 
-    return NULL;*/
-    fprintf(stderr, "soy\n");
-
     return NULL;
 
 }
 
 
-void addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id) {
-    
+void 
+//addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id, int *running) {
+addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id) {
+
     char *fullpath;
 
     fullpath = getcompletepath("/tmp", name);
@@ -778,19 +809,23 @@ void addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *i
             if (*id < MaxPlayers) {
                 args[*id].name = name;
                 fprintf(stderr, "Error: args[*id] = %s\n", args[*id].name);
+                fprintf(stderr, "Error: args[*id] = %d\n", *id);
+
 
                 args[*id].list = l;
                 args[*id].id = *id;
                 fprintf(stderr, "Error: args[*id] = %d\n", args[*id].id);
-                args[*id].running = 1; // Inicialmente, el hilo está corriendo
-                *id = *id + 1;
+                //args[*id].running = running; // Inicialmente, el hilo está corriendo
+                //*id = *id + 1;
 
-                /*if (pthread_create(&threads[args[*id].id], NULL, scoreupdating, (void *)&args[*id]) != 0) {
+                if (pthread_create(&threads[args[*id].id], NULL, scoreupdating, (void *)&args[*id]) != 0) {
                     free(name);
                     unlink(fullpath);
                     //free(args);
                     fprintf(stderr, "Error creating thread\n");
-                }*/
+                }
+                *id = *id + 1;
+
             } else {
                 fprintf(stderr, "Exceeded Maximum players\n");
                 free(name);
@@ -820,30 +855,8 @@ reset(List *l, char *name){
     }
 }
 
-/*void 
-treatkind(pthread_t *threads, List *l, char *name, int kind, int *id){
 
-    int running;
-
-    switch (kind) {
-    case Newplayer:
-        running = 1;
-        addplayer(threads,l, name, id, &running);
-		break;
-	case Delplayer:
-        running = 0; 
-        deleteplayer(threads,l, name);
-		break;
-    case Highscore:
-        printlist(l);
-		break;
-	case Reset:
-        reset(l,name);
-        break;
-	default:
-	}
-}*/
-
+// TENGO QUE MIRAR LO DE THREADS Y ARGS
 int 
 main(int argc, char *argv[]){
 
@@ -855,6 +868,7 @@ main(int argc, char *argv[]){
     int id;
     pthread_t threads[MaxPlayers];
     ThreadArgs args[MaxPlayers];
+    //int running;
 
     id = 0;
     argc--;
@@ -881,11 +895,16 @@ main(int argc, char *argv[]){
 
         switch (kind) {
         case Newplayer:
+            //running = 1;
+            //addplayer(args, threads,l, cl.arg, &id, &running);
             addplayer(args, threads,l, cl.arg, &id);
+
 		    break;
 	    case Delplayer:
             //running = 0; 
-            deleteplayer(threads,l, cl.arg);
+            //deleteplayer(args,threads,l, cl.arg, running);
+            deleteplayer(args,threads,l, cl.arg);
+
 		    break;
         case Highscore:
             printlist(l);
