@@ -21,7 +21,8 @@ struct Node{
     long long score;
     char *name;
     int id; // es el id del thread
-    int fd;
+    //int fd;
+    FILE *fd;
     struct Node *next; 
 };
 typedef struct Node Node;
@@ -65,13 +66,16 @@ struct ThreadArgs {
 	List *list;
     char *name;
     int id;
-    int fd;
+    //int fd;
+    FILE *fd;
+    pthread_t *threads;
+
 };
 typedef struct ThreadArgs ThreadArgs;
 // ***************************************************************************
 // ******************** OPERACIONES PARA EL NODO *****************************
 Node 
-*createnode(char *name, long long score, int id, int fd){
+*createnode(char *name, long long score, int id, FILE *fd){
 
     Node *n = (Node *)malloc(sizeof(Node));
     if (n == NULL) {
@@ -600,8 +604,8 @@ getcompletepath(char *path, char *dname)
 }
 
 // TODAVIA EN PROCESO DE ARREGLARSE
-void 
-deleteplayer(List *l, char *name){
+/*void 
+deleteplayer(pthread_t *threads,List *l, char *name){
     // borrará la jugador si existe, incluyendo destruir el hilo (pthread joino pthread_exit),
     // el fifo (unlink o rmfifo) y su existencia de la tabla de punttuaciones (elimbyname) 
     // si no existe lo reportará y seguirá ejecutando
@@ -618,7 +622,7 @@ deleteplayer(List *l, char *name){
         free(fullpath);
         
         
-        if (pthread_join(n->id, NULL) != 0) {
+        if (pthread_join(threads[n->id], NULL) != 0) {
             fprintf(stderr, "Error: joining thread\n");
         }
         close(n->fd);
@@ -640,7 +644,93 @@ deleteplayer(List *l, char *name){
 
     }
 
+}*/
+
+/*void 
+deleteplayer(pthread_t *threads, List *l, char *name){
+    // Borrará al jugador si existe, incluyendo destruir el hilo, el fifo y su existencia en la tabla de puntuaciones.
+    Node *n;
+    char *fullpath;
+
+    // REVISAR
+    n = searchbyname(l, name);
+    // Significa que el jugador existe
+    if(n != NULL){
+        
+        printnode(n);
+        elimbyname(l, name);
+        fclose(n->fd);
+        fullpath = getcompletepath("/tmp", name);
+        unlink(fullpath);
+        free(fullpath);
+
+        free(name);
+
+        //printf("%d\n", n->fd);
+
+        //close(n->fd);
+        if (pthread_join(threads[n->id], NULL) != 0) {
+            fprintf(stderr, "Error: joining thread\n");
+        }
+        close(n->fd);
+        free(name);
+        if (pthread_join(threads[n->id], NULL) != 0) {
+            fprintf(stderr, "Error: joining thread\n");
+        }
+    
+        // Borrará al jugador de su tabla de puntuaciones
+        //elimbyname(l, name);
+        fprintf(stderr, "Borrando jugador\n");
+        //pthread_mutex_destroy(&l->listmutex);
+
+        // Liberar memoria asignada para name
+    } else {
+        fprintf(stderr, "%s does not exist\n", name);
+    }
+}*/
+
+
+void 
+deleteplayer(pthread_t *threads, List *l, char *name) {
+    Node *n;
+    //char *fullpath;
+
+    // Buscar al jugador por nombre
+    n = searchbyname(l, name);
+
+    // Si el jugador existe
+    if (n != NULL) {
+        printnode(n);
+
+        fprintf(stderr, "Error: unlink failed\n");
+
+        // Verificar si el puntero de archivo es válido
+        if (n->fd != NULL) {
+            fprintf(stderr, "fd %p\n", (void *)n->fd);
+            // Cerrar el archivo si no está cerrado
+            /*if (fclose(n->fd) != 0) {
+                fprintf(stderr, "Error: fclose failed\n");
+            }*/
+        }
+
+        // Eliminar al jugador de la lista: elimina name y n
+        //elimbyname(l, name);
+
+        /*// Eliminar el archivo FIFO y liberar memoria
+        fullpath = getcompletepath("/tmp", name);
+        if (unlink(fullpath) != 0) {
+            fprintf(stderr, "Error: unlink failed\n");
+        }
+        free(fullpath);*/
+
+        // Liberar memoria asignada para el nombre
+        //free(name);
+    } else {
+        fprintf(stderr, "%s does not exist\n", name);
+    }
 }
+
+
 
 void *
 scoreupdating(void *arg){
@@ -655,15 +745,15 @@ scoreupdating(void *arg){
     // considerará un error y será equivalente a ejecutar delplayer de su nombre 
 
     ThreadArgs *args;
-    FILE *st;
+    //FILE *st;
     char *name;
     List *l;
     int id;
     char line[LineSz];
     long long number;
-    int fd;
-    //int c;
+    FILE *fd;
     char *newline;
+    pthread_t *threads;
 
     
     args = (ThreadArgs *)arg;
@@ -673,24 +763,25 @@ scoreupdating(void *arg){
     l = args->list;
     id = args->id;
     fd = args->fd;
+    threads = args->threads;
 
 
     // insertar en la tabla
     insertatend(l, createnode(name, 0, id, fd));
 
     // el thread actualiza lo que reciba
-    st = fdopen(fd, "r");
+    //st = fdopen(fd, "r");
 
-    if (st == NULL) {
+    /*if (st == NULL) {
         free(name);
         free(args);
         fprintf(stderr, "fopen error\n");
         pthread_exit((void *)1);
-    }
+    }*/
 
     // st es descriptor de fichero (tipo FILE) 
     // que obtenemos los datos
-    while (fgets(line, LineSz, st) != NULL) {
+    while (fgets(line, LineSz, fd) != NULL) {
 
         if (line[strlen(line) - 1] != '\n') {
             fprintf(stderr, "Exceeded path size\n");
@@ -707,22 +798,22 @@ scoreupdating(void *arg){
         number = getnumber(line);
 
         if(number < 0){
-            deleteplayer(l, name);
+            deleteplayer(threads,l, name);
             break; 
         }
 
         changevalue(l,name, number);
     }
 
-    if (ferror(st)) {
-        fclose(st);
+    if (ferror(fd)) {
+        fclose(fd);
         free(name);
         free(args);
         fprintf(stderr, "Error: read error\n");
         pthread_exit((void *)1);
     }
 
-    fclose(st);
+    fclose(fd);
 	free(name);
     free(args);
 
@@ -730,35 +821,38 @@ scoreupdating(void *arg){
 }
 
 void 
-addplayer(List *l, char *name, int *id){
+addplayer(pthread_t *threads, List *l, char *name, int *id){
 
-    
-    pthread_t thread;
     ThreadArgs *args;
     char *fullpath;
-    char *nameplayer;
-    int fd;
+    //char *nameplayer;
+    //int fd;
+    FILE *fd;
 
-    nameplayer = (char *)malloc(sizeof(char) * (LineSz));
+    /*nameplayer = (char *)malloc(sizeof(char) * (LineSz));
 	if (nameplayer == NULL) {
 		errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-	}
+	}*/
 
-    strcpy(nameplayer, name);
+    //strcpy(nameplayer, name);
 
     // crea el fifo con ese nombre en /tmp
-    fullpath = getcompletepath("/tmp", nameplayer);
+    //fullpath = getcompletepath("/tmp", nameplayer);
+    fullpath = getcompletepath("/tmp", name);
+
     if(fullpath != NULL){
 
 
         // si el valor es 0: el fichero existe
         if (access(fullpath, F_OK) == 0){
-            free(nameplayer);
+            //free(nameplayer);
+            free(name);
             fprintf(stderr, "Error: this file exists\n");
         }else{
             
             if (mkfifo(fullpath, 0664) < 0){
-                free(nameplayer);
+                //free(nameplayer);
+                free(name);
                 free(fullpath);
                 err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
             }
@@ -767,16 +861,19 @@ addplayer(List *l, char *name, int *id){
 
                 args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 		        if (args == NULL) {
-                    free(nameplayer);
+                    //free(nameplayer);
+                    free(name);
                     unlink(fullpath);
                     free(fullpath);
 				    errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 		        }
 
-                fd = open(fullpath, O_RDWR);
+                //fd = open(fullpath, O_RDWR);
+                fd = fopen(fullpath, "r+");
 
-                if (fd == -1) {
-                    free(nameplayer);
+                if (fd == NULL) {
+                    //free(nameplayer);
+                    free(name);
                     unlink(fullpath);
                     free(fullpath);
                     free(args);
@@ -784,16 +881,19 @@ addplayer(List *l, char *name, int *id){
                 }
             
                 // el thread hace free de args
-                args->name = nameplayer;
+                //args->name = nameplayer;
+                args->name = name;
                 args->list = l;
                 args->id = *id;
-                args->fd = fd;
+                //args->fd = fd;
+                args->threads = threads;
                 
                 if (pthread_create
-		            (&thread, NULL, scoreupdating, (void *)args) != 0) {
-			        free(nameplayer);
+		            (&threads[args->id], NULL, scoreupdating, (void *)args) != 0) {
+			        //free(nameplayer);
+                    free(name);
                     unlink(fullpath);
-                    close(fd);
+                    fclose(fd);
                     free(args);
                     fprintf(stderr, "Error creating thread\n");
 		        }
@@ -801,7 +901,8 @@ addplayer(List *l, char *name, int *id){
 
             }else{
                 fprintf(stderr, "Exceded Maximun players\n");
-                free(nameplayer);
+                //free(nameplayer);
+                free(name);
                 unlink(fullpath);
             }
 
@@ -831,14 +932,14 @@ reset(List *l, char *name){
 }
 
 void 
-treatkind(List * l, char *name, int kind, int *id){
+treatkind(pthread_t *threads, List *l, char *name, int kind, int *id){
 
     switch (kind) {
     case Newplayer:
-        addplayer(l, name, id);
+        addplayer(threads,l, name, id);
 		break;
 	case Delplayer:
-        deleteplayer(l, name);
+        deleteplayer(threads,l, name);
 		break;
     case Highscore:
         printlist(l);
@@ -859,6 +960,7 @@ main(int argc, char *argv[]){
     Command cl;
     List *l;
     int id;
+    pthread_t threads[MaxPlayers];
 
     id = 0;
     argc--;
@@ -893,13 +995,14 @@ main(int argc, char *argv[]){
             continue;
         }
 
-        treatkind(l,cl.arg,kind, &id);
+        treatkind(threads,l,cl.arg,kind, &id);
     
         // estar pendiente de las entradas que reciba y manejarlas
         // el thread UNICAMENTE está pendiente de lo que reciba 
         // si es distinto de numero hay que borrarlo
         free(cl.command);
-        free(cl.arg);
+        // hacer free cuando se libera el join y así no hacer más mallocs
+        //free(cl.arg);
     }
 
     // hacer como un wait escribiendo a cada fifo una string para que acaben
