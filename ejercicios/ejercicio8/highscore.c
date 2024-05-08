@@ -512,13 +512,6 @@ getkindcommand(Command *cl, char *line){
     int valueword;
     int valuecmd;
 
-    cl->command = (char *)malloc(sizeof(char) * LineSz);
-    cl->arg = (char *)malloc(sizeof(char) * LineSz);
-
-    if (cl->command == NULL || cl->arg == NULL) {
-		errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-	}
-
     if(getnumwords(line) > 2){
         return -1;
     }
@@ -541,7 +534,7 @@ getkindcommand(Command *cl, char *line){
         strcpy(cl->arg, token);
     }
     // tengo que comprobar el segundo argumento 
-    valuecmd = checkarg(cl->arg, valueword);    
+    valuecmd = checkarg(cl->arg, valueword); 
 
     return valuecmd;
 }
@@ -577,7 +570,7 @@ getnumber(char *str)
 }
 
 
-char *
+/*char *
 getcompletepath(char *path, char *dname)
 {
 	char *fullpath;
@@ -613,13 +606,89 @@ getcompletepath(char *path, char *dname)
 	fullpath[lenfull - 1] = '\0';
 
 	return fullpath;
+}*/
+void 
+getcompletepath(char *path, char *dname, char *fullpath) {
+    ssize_t lenpath = strlen(path);
+    ssize_t lenname = strlen(dname);
+    ssize_t lenfull = lenpath + lenname + 2;
+
+    strncpy(fullpath, path, lenfull);
+    fullpath[lenpath] = '/';
+    fullpath[lenfull - 1] = '\0';
+    strncpy(fullpath + lenpath + 1, dname, lenfull - lenpath - 1);
+    fullpath[lenfull - 1] = '\0';
 }
 
+
+// tengo que terminar de arreglar donde hay fugas de memoria
+void *
+scoreupdating(void *arg) {
+    ThreadArgs *args = (ThreadArgs *)arg;
+    char *name = args->name;
+    List *l = args->list;
+    int id = args->id;
+    char line[LineSz];
+    long long number;
+    FILE *fd;
+    char *newline;
+    char fullpath[LineSz];
+
+    getcompletepath("/tmp", name, fullpath);
+    fd = fopen(fullpath, "r+");
+    if (fd == NULL) {
+        fprintf(stderr, "Error: opening FIFO for player\n");
+        free(name);
+        //free(args);
+        pthread_exit((void *)1);
+    }
+
+    insertatend(l, createnode(name, 0, id, fd));
+
+    while (fgets(line, LineSz, fd) != NULL) {
+        if (line[strlen(line) - 1] != '\n') {
+            fprintf(stderr, "Exceeded path size\n");
+            continue;
+        }
+        newline = strrchr(line, '\n');
+        if (newline != NULL) {
+            *newline = '\0';
+        }
+        number = getnumber(line);
+        if (number < 0) {
+            break;
+        }
+        changevalue(l, name, number);
+    }
+
+    if (ferror(fd)) {
+        fclose(fd);
+        free(name);
+        //free(args);
+        fprintf(stderr, "Error: read error\n");
+        pthread_exit((void *)1);
+    }
+
+    if (fclose(fd) != 0) {
+        fprintf(stderr, "Error: fclose failed\n");
+    }
+
+    free(name);
+    //free(args);
+
+    return NULL;
+}
+
+
 void
-elimbyname(List *l, char *name, pthread_t *threads){
+//elimbyname(List *l, char *name, pthread_t *threads){
+elimbyname(List *l, char *name){
+
     int i;
     Node *aux;
-    char *fullpath;
+    //char *fullpath;
+    char fullpath[LineSz];
+
     i = 0;
     aux = l->init;
 
@@ -632,12 +701,14 @@ elimbyname(List *l, char *name, pthread_t *threads){
     // Hemos encontrado el nodo y por lo tanto sabemos su índice
     if(aux != NULL){
 
-        fprintf(stderr, "Node index: %d\n", i);
-        fullpath = getcompletepath("/tmp", name);
+        //fprintf(stderr, "Node index: %d\n", i);
+        //fullpath = getcompletepath("/tmp", name);
+        getcompletepath("/tmp", name, fullpath);
+
         if (unlink(fullpath) != 0) {
             fprintf(stderr, "Error: unlink failed\n");
         }
-        free(fullpath);
+        //free(fullpath);
 
         elimbyindex(l,i);
 
@@ -656,7 +727,7 @@ elimbyname(List *l, char *name, pthread_t *threads){
 //void deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int running) {
     
 void 
-deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name) {
+deleteplayer(pthread_t *threads, List *l, char *name) {
 
     Node *n = searchbyname(l, name);
 
@@ -680,7 +751,10 @@ deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name) {
                 fprintf(stderr, "Error: fclose failed\n");
             }
             // Eliminar el jugador de la lista
-            elimbyname(l, name, threads);
+            
+            //elimbyname(l, name, threads);
+            elimbyname(l, name);
+            //free(name);
             // Cambiar el estado del hilo asociado al jugador a 0
             
         }
@@ -705,9 +779,11 @@ deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name) {
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
+    free(name);
+
 }
 
-void *
+/*void *
 scoreupdating(void *arg) {
     
     ThreadArgs *args;
@@ -759,10 +835,10 @@ scoreupdating(void *arg) {
             break;
         }
         // Verificar si el hilo debe continuar ejecutándose
-        /*if (!*running) {
-            fprintf(stderr, "Thread %d stopped\n", id);
-            break;
-        }*/
+        //if (!*running) {
+        //    fprintf(stderr, "Thread %d stopped\n", id);
+        //    break;
+        //}
         changevalue(l, name, number);
     }
 
@@ -784,16 +860,20 @@ scoreupdating(void *arg) {
 
     return NULL;
 
-}
+}*/
 
 
 void 
 //addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id, int *running) {
 addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id) {
 
-    char *fullpath;
+    //char *fullpath;
+    char fullpath[LineSz];
 
-    fullpath = getcompletepath("/tmp", name);
+
+    //fullpath = getcompletepath("/tmp", name);
+    getcompletepath("/tmp", name, fullpath);
+
     if (fullpath != NULL) {
 
         if (access(fullpath, F_OK) == 0) {
@@ -802,19 +882,19 @@ addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id) {
         } else {
             if (mkfifo(fullpath, 0664) < 0) {
                 free(name);
-                free(fullpath);
+                //free(fullpath);
                 err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
             }
 
             if (*id < MaxPlayers) {
                 args[*id].name = name;
-                fprintf(stderr, "Error: args[*id] = %s\n", args[*id].name);
-                fprintf(stderr, "Error: args[*id] = %d\n", *id);
+                //fprintf(stderr, "Error: args[*id] = %s\n", args[*id].name);
+                //fprintf(stderr, "Error: args[*id] = %d\n", *id);
 
 
                 args[*id].list = l;
                 args[*id].id = *id;
-                fprintf(stderr, "Error: args[*id] = %d\n", args[*id].id);
+                //fprintf(stderr, "Error: args[*id] = %d\n", args[*id].id);
                 //args[*id].running = running; // Inicialmente, el hilo está corriendo
                 //*id = *id + 1;
 
@@ -832,7 +912,7 @@ addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id) {
                 unlink(fullpath);
             }
         }
-        free(fullpath);
+        //free(fullpath);
     }
 }
 
@@ -891,26 +971,45 @@ main(int argc, char *argv[]){
 
         line[strlen(line) -1] = '\0';
 
+        cl.command = (char *)malloc(sizeof(char) * LineSz);
+        cl.arg = (char *)malloc(sizeof(char) * LineSz);
+
+        if (cl.command == NULL || cl.arg == NULL) {
+		    errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+	    }
+
         kind = getkindcommand(&cl,line);
+
+
 
         switch (kind) {
         case Newplayer:
             //running = 1;
             //addplayer(args, threads,l, cl.arg, &id, &running);
+            free(cl.command);
+
             addplayer(args, threads,l, cl.arg, &id);
+            //free(cl.arg);
 
 		    break;
 	    case Delplayer:
             //running = 0; 
             //deleteplayer(args,threads,l, cl.arg, running);
-            deleteplayer(args,threads,l, cl.arg);
+            free(cl.command);
+
+            deleteplayer(threads,l, cl.arg);
 
 		    break;
         case Highscore:
             printlist(l);
+            free(cl.command);
+            free(cl.arg);
+
 		    break;
 	    case Reset:
             reset(l,cl.arg);
+            free(cl.command);
+            free(cl.arg);
             break;
 	    default:
             fprintf(stderr, "Error: Incorrect command\n");
@@ -919,7 +1018,7 @@ main(int argc, char *argv[]){
             continue;
 	    }
 
-        free(cl.command);
+        //free(cl.command);
         // hacer free cuando se libera el join y así no hacer más mallocs
         //free(cl.arg);
     }
