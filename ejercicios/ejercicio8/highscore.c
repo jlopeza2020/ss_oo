@@ -156,6 +156,7 @@ printlist(List *l){
 
     while (aux != NULL){
         printnode(aux);
+        fprintf(stderr,"valor id:%d\n", aux->id);
         aux=aux->next;
     }
     pthread_mutex_unlock(&l->listmutex);
@@ -217,6 +218,20 @@ elimlast(List *l){
     }
 
 }
+
+// STATIC INT 
+void 
+updateids(List *l, int deletedid) {
+
+    Node *current = l->init;
+    while (current != NULL) {
+        if (current->id > deletedid) {
+            current->id -= 1;
+        }
+        current = current->next;
+    }
+}
+
 // STATIC INT 
 void 
 elimbyindex(List *l, int index){
@@ -226,19 +241,23 @@ elimbyindex(List *l, int index){
     if(index >= 0 && index < l->total){
         if(index == 0){
             elimfirst(l);
+            updateids(l, 0);
         }else if(index == (l->total -1)){
             elimlast(l);
+            updateids(l, l->total -1);
         }else{
+            
             // se define un nodo aux que apunta 
             // al principio de la lista
             aux = l->init;
             for(i = 0; i < index; i++){
-                // se usa otro nodo pre que se encunetra una posición
+                // se usa otro nodo pre que se encuentra una posición
                 // previa a la de aux
                 pre=aux;
                 aux=aux->next;
             }
             // cuando llegamos al índice buscado: 
+            updateids(l, aux->id);
             // el nodo prev pasa apuntar como nodo siguiente al que está 
             // apuntando aux
             pre->next=aux->next;
@@ -251,41 +270,6 @@ elimbyindex(List *l, int index){
     }
 }
 
-//  se usa para DELPLAYER 
-/*void
-elimbyname(List *l, char *name, pthread_t *threads){
-    int i;
-    Node *aux;
-    char *fullpath;
-    i = 0;
-    aux = l->init;
-
-    pthread_mutex_lock(&l->listmutex);
-
-    while(aux != NULL && strcmp(aux->name, name)!= 0){
-        aux = aux->next;
-        i++;
-    }
-    // Hemos encontrado el nodo y por lo tanto sabemos su índice
-    if(aux != NULL){
-
-        fullpath = getcompletepath("/tmp", name);
-        if (unlink(fullpath) != 0) {
-            fprintf(stderr, "Error: unlink failed\n");
-        }
-        free(fullpath);
-        //elimbyname(l, name);
-
-        if (pthread_join(threads[aux->id], NULL) != 0) {
-            fprintf(stderr, "Error: join failed\n");
-		}
-
-        elimbyindex(l,i);
-
-    }
-    pthread_mutex_unlock(&l->listmutex);
-
-}*/
 
 // SE USA EN EL MAIN
 Node *
@@ -589,27 +573,28 @@ void *
 scoreupdating(void *arg) {
 
     ThreadArgs *args;
-    //char *name;
-    //List *l;
-    //int id;
+    char *name;
+    List *l;
+    int id;
 
-    /*char line[LineSz];
+    char line[LineSz];
     long long number;
     FILE *fd;
     char *newline;
-    char fullpath[LineSz];*/
+    char fullpath[LineSz];
 
 
     args = (ThreadArgs *)arg;
 
-    //name = args->name;
-    //l = args->list;
-    //id = args->id;
+    name = args->name;
+    // puntero a la lista
+    l = args->list;
+    id = args->id;
 
 
     // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
     // hacerlo también de lectura
-    /*getcompletepath("/tmp", name, fullpath);
+    getcompletepath("/tmp", name, fullpath);
     fd = fopen(fullpath, "r+");
     if (fd == NULL) {
         fprintf(stderr, "Error: opening FIFO for player\n");
@@ -631,6 +616,7 @@ scoreupdating(void *arg) {
         }
         number = getnumber(line);
         if (number < 0) {
+            fprintf(stderr, "break\n");
             break;
         }
         changevalue(l, name, number);
@@ -646,18 +632,49 @@ scoreupdating(void *arg) {
 
     if (fclose(fd) != 0) {
         fprintf(stderr, "Error: fclose failed\n");
-    }*/
+    }
 
-    free(args->name);
+    free(name);
     free(args);
 
     return NULL;
 }
 
 
+
+void 
+closethread(char *path) {
+
+    FILE *file;
+    size_t bytes_written;
+    char data[] = "Exit\n";
+
+    // Abrir el archivo en modo de escritura ("w")
+    file = fopen(path, "w");
+    if (file == NULL) {
+        errx(EXIT_FAILURE, "Error: fopen failed%s\n", path);
+    }
+
+    // Escribir datos en el archivo usando fwrite
+    bytes_written = fwrite(data, sizeof(char), sizeof(data), file);
+    if (bytes_written != sizeof(data)) {
+        fclose(file); // Cerrar el archivo antes de salir
+        errx(EXIT_FAILURE, "Error: fwrite failed\n");
+    }
+
+    // Cerrar el archivo después de escribir los datos
+    if (fclose(file) != 0) {
+        errx(EXIT_FAILURE, "Error: fclose failed\n");
+    }
+
+    printf("Datos escritos correctamente en el fichero %s\n", path);
+
+
+}
+
 void
 //elimbyname(List *l, char *name, pthread_t *threads){
-elimbyname(List *l, char *name){
+elimbyname(pthread_t *threads,List *l, char *name){
 
     int i;
     Node *aux;
@@ -677,18 +694,18 @@ elimbyname(List *l, char *name){
 
         getcompletepath("/tmp", name, fullpath);
 
+        
+        closethread(fullpath);
+        
         if (unlink(fullpath) != 0) {
             fprintf(stderr, "Error: unlink failed\n");
         }
-        //free(fullpath);
+
+        if (pthread_join(threads[aux->id], NULL) != 0) {
+            fprintf(stderr, "Error: join failed\n");
+		}
 
         elimbyindex(l,i);
-
-        /*if (pthread_join(threads[aux->id], NULL) != 0) {
-            fprintf(stderr, "Error: join failed\n");
-		}*/
-
-        //elimbyindex(l,i);
 
     }
     pthread_mutex_unlock(&l->listmutex);
@@ -705,12 +722,14 @@ deleteplayer(pthread_t *threads, List *l, char *name) {
 
         if (n->fd != NULL) {
             // Cerrar el archivo si no está cerrado
+            // hacer un write de algo negativo
 
-            pthread_cancel(threads[n->id]);
-            if (fclose(n->fd) != 0) {
+            //pthread_cancel(threads[n->id]);
+            /*if (fclose(n->fd) != 0) {
                 fprintf(stderr, "Error: fclose failed\n");
-            }
-            elimbyname(l, name); 
+            }*/
+            elimbyname(threads,l, name); 
+
         }
     } else {
         fprintf(stderr, "%s does not exist\n", name);
@@ -739,7 +758,6 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
         } else {
             if (mkfifo(fullpath, 0664) < 0) {
                 free(name);
-                //free(fullpath);
                 err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
             }
 
@@ -750,12 +768,9 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
 
                 if(args == NULL) {
                     free(name);
-                    //free(nameplayer);
                     unlink(fullpath);
                     errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-                    //free(fullpath);
                 }
-                //args[*id].name = name;
                 args->name = name;
                 args->list = l;
                 args->id = *id;
@@ -763,6 +778,7 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
                 
                 if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)args) != 0) {
                     free(name);
+                    free(args);
                     unlink(fullpath);
                     fprintf(stderr, "Error creating thread\n");
                 }
@@ -808,8 +824,7 @@ main(int argc, char *argv[]){
     Command cl;
     List *l;
     int id;
-    pthread_t threads[MaxPlayers];
-    //ThreadArgs args[MaxPlayers];
+    pthread_t threads[2];
 
     id = 0;
     argc--;
@@ -841,33 +856,20 @@ main(int argc, char *argv[]){
 
         kind = getkindcommand(&cl,line);
 
-
-
         switch (kind) {
         case Newplayer:
-            //running = 1;
-            //addplayer(args, threads,l, cl.arg, &id, &running);
             free(cl.command);
-
-            //addplayer(args, threads,l, cl.arg, &id);
             addplayer(threads,l, cl.arg, &id);
-
-            //free(cl.arg);
-
 		    break;
 	    case Delplayer:
-            //running = 0; 
-            //deleteplayer(args,threads,l, cl.arg, running);
             free(cl.command);
-
             deleteplayer(threads,l, cl.arg);
-
+            id--;
 		    break;
         case Highscore:
             printlist(l);
             free(cl.command);
             free(cl.arg);
-
 		    break;
 	    case Reset:
             reset(l,cl.arg);
@@ -886,7 +888,7 @@ main(int argc, char *argv[]){
     // hacer un write en el fifo adecuado
     emptylist(l);
 
-    printf("YA ACABAO");
+    fprintf(stderr,"YA ACABAO\n");
 
     if(!feof(stdin)){
         errx(EXIT_FAILURE, "eof not reached\n");

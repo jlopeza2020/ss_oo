@@ -235,6 +235,7 @@ elimbyname(List *l, char *name){
     }
     // Hemos encontrado el nodo y por lo tanto sabemos su índice
     if(aux != NULL){
+        fprintf(stderr, "valor: %d\n", aux->id);
         elimbyindex(l,i);
     }
 }
@@ -330,7 +331,7 @@ main(int argc, char *argv[]){
 
     //printlist(l);
     //elimbyvalue(l,27);
-    elimbyname(l,"María");
+    elimbyname(l,"Pedro");
 
     printlist(l);
 
@@ -346,6 +347,9 @@ main(int argc, char *argv[]){
     printlist(l);
 
     changeallvalues(l, 0);
+
+    elimbyname(l,"Lucía");
+
 
     emptylist(l);
     exit(EXIT_SUCCESS);
