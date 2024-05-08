@@ -9,6 +9,16 @@
 #include <pthread.h>
 #include <fcntl.h>
 
+// 
+// tener una lista enlazada de muertos
+// IMPORTANTE
+// acabar: escribes exit
+// cierre 
+// apunto sale thread en el NODO
+// escrbo algo 
+// close y salga hacer join en ese momento
+// for(p = head; p != NULL; p= p->next)
+
 // quitar el usuario de la tabla es complejo 
 // hacer un cleanup 
 // el principal sale cuando acaben todos 
@@ -250,42 +260,6 @@ elimbyindex(List *l, int index){
         }
     }
 }
-
-//  se usa para DELPLAYER 
-/*void
-elimbyname(List *l, char *name, pthread_t *threads){
-    int i;
-    Node *aux;
-    char *fullpath;
-    i = 0;
-    aux = l->init;
-
-    pthread_mutex_lock(&l->listmutex);
-
-    while(aux != NULL && strcmp(aux->name, name)!= 0){
-        aux = aux->next;
-        i++;
-    }
-    // Hemos encontrado el nodo y por lo tanto sabemos su índice
-    if(aux != NULL){
-
-        fullpath = getcompletepath("/tmp", name);
-        if (unlink(fullpath) != 0) {
-            fprintf(stderr, "Error: unlink failed\n");
-        }
-        free(fullpath);
-        //elimbyname(l, name);
-
-        if (pthread_join(threads[aux->id], NULL) != 0) {
-            fprintf(stderr, "Error: join failed\n");
-		}
-
-        elimbyindex(l,i);
-
-    }
-    pthread_mutex_unlock(&l->listmutex);
-
-}*/
 
 // SE USA EN EL MAIN
 Node *
@@ -569,7 +543,6 @@ getnumber(char *str)
 	return val;
 }
 
-
 void 
 getcompletepath(char *path, char *dname, char *fullpath) {
     ssize_t lenpath = strlen(path);
@@ -581,44 +554,38 @@ getcompletepath(char *path, char *dname, char *fullpath) {
     fullpath[lenfull - 1] = '\0';
     strncpy(fullpath + lenpath + 1, dname, lenfull - lenpath - 1);
     fullpath[lenfull - 1] = '\0';
+    //free(dname);
 }
-
 
 // tengo que terminar de arreglar donde hay fugas de memoria
 void *
 scoreupdating(void *arg) {
+    ThreadArgs *args = (ThreadArgs *)arg;
 
-    ThreadArgs *args;
-    //char *name;
-    //List *l;
-    //int id;
+    char *name = args->name;
+    List *l = args->list;
+    int id = args->id;
 
-    /*char line[LineSz];
+    char line[LineSz];
     long long number;
     FILE *fd;
     char *newline;
-    char fullpath[LineSz];*/
-
-
-    args = (ThreadArgs *)arg;
-
-    //name = args->name;
-    //l = args->list;
-    //id = args->id;
+    char fullpath[LineSz];
 
 
     // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
     // hacerlo también de lectura
-    /*getcompletepath("/tmp", name, fullpath);
+    getcompletepath("/tmp", name, fullpath);
     fd = fopen(fullpath, "r+");
     if (fd == NULL) {
         fprintf(stderr, "Error: opening FIFO for player\n");
         free(name);
-        free(args);
         pthread_exit((void *)1);
     }
 
     insertatend(l, createnode(name, 0, id, fd));
+
+    //free(args->name);
 
     while (fgets(line, LineSz, fd) != NULL) {
         if (line[strlen(line) - 1] != '\n') {
@@ -631,6 +598,7 @@ scoreupdating(void *arg) {
         }
         number = getnumber(line);
         if (number < 0) {
+            // hacer delplayer
             break;
         }
         changevalue(l, name, number);
@@ -639,16 +607,15 @@ scoreupdating(void *arg) {
     if (ferror(fd)) {
         fclose(fd);
         free(name);
-        free(args);
         fprintf(stderr, "Error: read error\n");
         pthread_exit((void *)1);
     }
 
     if (fclose(fd) != 0) {
         fprintf(stderr, "Error: fclose failed\n");
-    }*/
+    }
 
-    free(args->name);
+    free(name);
     free(args);
 
     return NULL;
@@ -680,7 +647,6 @@ elimbyname(List *l, char *name){
         if (unlink(fullpath) != 0) {
             fprintf(stderr, "Error: unlink failed\n");
         }
-        //free(fullpath);
 
         elimbyindex(l,i);
 
@@ -689,11 +655,15 @@ elimbyname(List *l, char *name){
 		}*/
 
         //elimbyindex(l,i);
+        //free(name);
 
     }
     pthread_mutex_unlock(&l->listmutex);
 
 }
+
+
+//void deleteplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int running) {
     
 void 
 deleteplayer(pthread_t *threads, List *l, char *name) {
@@ -710,25 +680,29 @@ deleteplayer(pthread_t *threads, List *l, char *name) {
             if (fclose(n->fd) != 0) {
                 fprintf(stderr, "Error: fclose failed\n");
             }
-            elimbyname(l, name); 
+            // Eliminar el jugador de la lista
+            
+            elimbyname(l, name);
+            // Cambiar el estado del hilo asociado al jugador a 0
+            
         }
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
     free(name);
+    //free(args);
 
 }
 
+//addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id) {
+
 void 
-//addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id, int *running) {
 addplayer(pthread_t *threads, List *l, char *name, int *id) {
 
-    //char *fullpath;
+
     ThreadArgs *args;
     char fullpath[LineSz];
 
-
-    //fullpath = getcompletepath("/tmp", name);
     getcompletepath("/tmp", name, fullpath);
 
     if (fullpath != NULL) {
@@ -739,12 +713,10 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
         } else {
             if (mkfifo(fullpath, 0664) < 0) {
                 free(name);
-                //free(fullpath);
                 err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
             }
 
             if (*id < MaxPlayers) {
-
 
                 args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
 
@@ -760,13 +732,14 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
                 args->list = l;
                 args->id = *id;
         
+                //args[*id].list = l;
+                //args[*id].id = *id;
                 
-                if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)args) != 0) {
+                if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)&args) != 0) {
                     free(name);
                     unlink(fullpath);
                     fprintf(stderr, "Error creating thread\n");
                 }
-
                 *id = *id + 1;
 
             } else {
@@ -810,6 +783,7 @@ main(int argc, char *argv[]){
     int id;
     pthread_t threads[MaxPlayers];
     //ThreadArgs args[MaxPlayers];
+    //int running;
 
     id = 0;
     argc--;
@@ -880,6 +854,10 @@ main(int argc, char *argv[]){
             free(cl.arg);
             continue;
 	    }
+
+        //free(cl.command);
+        // hacer free cuando se libera el join y así no hacer más mallocs
+        //free(cl.arg);
     }
 
     // hacer como un wait escribiendo a cada fifo una string para que acaben
