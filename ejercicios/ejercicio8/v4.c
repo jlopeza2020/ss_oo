@@ -732,8 +732,6 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
                 args->list = l;
                 args->id = *id;
         
-                //args[*id].list = l;
-                //args[*id].id = *id;
                 
                 if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)&args) != 0) {
                     free(name);
