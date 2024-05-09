@@ -629,33 +629,17 @@ elimbyname(pthread_t thread,List *l, char *name){
 }
 
 
-
-/*void 
-deleteplayer(List *l, char *name, int *id) {
-
-    Node *n = searchbyname(l, name);
-
-    // Si el jugador existe
-    if (n != NULL) {
-
-        elimbyname(n->thread,l, name); 
-        *id = *id - 1;
-    } else {
-        fprintf(stderr, "%s does not exist\n", name);
-    }
-    free(name);
-
-}*/
-
 void 
 deleteplayer(List *l, char *name, int *id) {
+
+    //pthread_mutex_lock(&l->listmutex);
 
     char fullpath[LineSz];
     Node *n = searchbyname(l, name);
 
     // Si el jugador existe
     if (n != NULL) {
-        n->running = 0;
+        //n->running = 0;
 
         getcompletepath("/tmp", n->name, fullpath);
 
@@ -667,50 +651,16 @@ deleteplayer(List *l, char *name, int *id) {
         fprintf(stderr, "%s does not exist\n", name);
     }
     free(name);
+    //pthread_mutex_unlock(&l->listmutex);
+
 
 }
-
-/*void 
-joindeadthreads(List *l){
-
-    char fullpath[LineSz];
-    Node *aux = l->init;
-
-
-    pthread_mutex_lock(&l->listmutex);
-
-    while (aux != NULL){
-
-        if(aux->running == 0){
-            
-        
-        //printnode(aux);
-        //fprintf(stderr,"valor id:%d\n", aux->id);
-
-            getcompletepath("/tmp", aux->name, fullpath);
-
-            //closethread(fullpath);
-        
-            if (unlink(fullpath) != 0) {
-                fprintf(stderr, "Error: unlink failed\n");
-            }
-
-            if (pthread_join(aux->thread, NULL) != 0) {
-                fprintf(stderr, "Error: join failed\n");
-		    }
-
-            elimbyindex(l,aux->id);
-        }
-
-        aux=aux->next;
-    }
-    pthread_mutex_unlock(&l->listmutex);
-
-}*/
 
 
 void 
 joindeadthreads(List *l) {
+
+    
     pthread_mutex_lock(&l->listmutex);
 
     Node *current = l->init;
@@ -722,8 +672,6 @@ joindeadthreads(List *l) {
             Node *temp = current;
             current = current->next;
 
-            // Unlink y join antes de eliminar el nodo
-            //char fullpath[LineSz];
             getcompletepath("/tmp", temp->name, fullpath);
             if (unlink(fullpath) != 0) {
                 fprintf(stderr, "Error: unlink failed\n");
@@ -740,7 +688,7 @@ joindeadthreads(List *l) {
             }
 
             // Liberar la memoria del nodo eliminado
-            free(temp->name); // Si name es un puntero dinámico, libéralo primero
+            free(temp->name);
             free(temp);
         } else {
             previous = current;
@@ -752,10 +700,6 @@ joindeadthreads(List *l) {
 }
 
 
-
-
-
-
 void *
 scoreupdating(void *arg) {
 
@@ -763,7 +707,7 @@ scoreupdating(void *arg) {
     char *name;
     List *l;
     int id;
-    //Node * n;
+    Node * n;
 
     char line[LineSz];
     long long number;
@@ -809,6 +753,12 @@ scoreupdating(void *arg) {
         number = getnumber(line);
         
         if (number < 0) {
+            n = searchbyname(l,name);
+            if(n != NULL){
+                n->running = 0;
+                fprintf(stderr, "running a 0 %d\n", n->running);
+
+            }
             break;
         }
         changevalue(l, name, number);
@@ -829,21 +779,19 @@ scoreupdating(void *arg) {
         pthread_exit((void *)1);
     }
     
-    if(strcmp(line, "EXIT") == 0){
-        fprintf(stderr, "Lo he recibido por delplayer\n");
-        free(name);
-        free(args);
-    }else{
-        fprintf(stderr, "break\n");
-        //deleteotherplayer(l, name, &id);
-        //elimbyothername(thread,l, name); 
-        //id = id - 1;
-        free(name);
-        free(args);
+    //if(strcmp(line, "EXIT") == 0){
+    //    fprintf(stderr, "Lo he recibido por delplayer\n");
+    //    free(name);
+    //    free(args);
+    //}else{
+    //    fprintf(stderr, "break\n");
+    free(name);
+    free(args);
         // hacer exit
-    }
+    //}
 
     return NULL;
+    //pthread_exit(NULL);
 }
 
 void 
@@ -987,7 +935,6 @@ main(int argc, char *argv[]){
 	    }
         // hacer join de los threads muertos
         joindeadthreads(l);
-
 
     }
 
