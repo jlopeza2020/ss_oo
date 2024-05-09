@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,12 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <fcntl.h>
+
+// quitar el usuario de la tabla es complejo 
+// hacer un cleanup 
+// el principal sale cuando acaben todos 
+// no condicienes de carrera, los fifos funcionen correctamente 
+// el cleanp ordenado sin condiciones de carrera y demás 
 
 // ******************* DEFINICIONES PARA LA TABLA ****************************
 struct Node{
@@ -65,8 +72,9 @@ struct ThreadArgs {
 };
 typedef struct ThreadArgs ThreadArgs;
 // ***************************************************************************
-
+// ******************** OPERACIONES PARA EL NODO *****************************
 Node *
+//createnode(char *name, long long score, int id, FILE *fd,pthread_t thread){
 createnode(char *name, long long score, int id,pthread_t thread){
 
     Node *n = (Node *)malloc(sizeof(Node));
@@ -95,6 +103,8 @@ printnode(Node *n){
     printf("%s:%lld\n", n->name,n->score);
 }
 
+// ***************************************************************************
+// ******************** OPERACIONES PARA LA LISTA ****************************
 List 
 *createlist(){
 
@@ -150,11 +160,120 @@ printlist(List *l){
 
     while (aux != NULL){
         printnode(aux);
+        //fprintf(stderr,"valor id:%d\n", aux->id);
         aux=aux->next;
     }
     pthread_mutex_unlock(&l->listmutex);
 
 }
+
+// ponerla como STATIC INT
+void
+elimfirst(List *l){
+
+    Node *aux;
+
+    if(!isempty(l)){
+
+        aux = l->init;
+        if(l->total == 1){
+            // usamos aux para eliminar la memoria de ese nodo
+            l->init = NULL;
+            l->last = NULL;
+        }else{
+            // nodo del principio de la lista 
+            // apunta al nodo siguiente 
+            l->init = l->init->next; 
+        }
+        // eliminamos la memoria del nodo a eliminar
+        free(aux->name);
+        free(aux);
+        l->total--;
+    }
+}
+
+// STATIC INT
+void 
+elimlast(List *l){
+
+    Node *aux, *prelast;
+
+    if(!isempty(l)){
+
+        aux = l->last;
+        if(l->total == 1){
+            // usamos aux para eliminar la memoria de ese nodo
+            l->init = NULL;
+            l->last = NULL;
+        }else{
+            // recorrer la lista y posicionarnos en la posición n-1
+            prelast = l->init;
+            while(prelast->next != l->last){
+                prelast = prelast->next;
+            }
+            // se deja el nodo final de la lista el penúltimo
+            l->last = prelast; 
+            // último en su atributo siguiente es NULO
+            l->last->next = NULL;
+        }
+        free(aux->name);
+        free(aux);
+        l->total--;
+    }
+
+}
+
+// STATIC INT 
+void 
+updateids(List *l, int deletedid) {
+
+    Node *current = l->init;
+    while (current != NULL) {
+        if (current->id > deletedid) {
+            current->id -= 1;
+        }
+        current = current->next;
+    }
+}
+
+// STATIC INT 
+void 
+elimbyindex(List *l, int index){
+    Node *pre, *aux;
+    int i;
+
+    if(index >= 0 && index < l->total){
+        if(index == 0){
+            elimfirst(l);
+            updateids(l, 0);
+        }else if(index == (l->total -1)){
+            elimlast(l);
+            updateids(l, l->total -1);
+        }else{
+            
+            // se define un nodo aux que apunta 
+            // al principio de la lista
+            aux = l->init;
+            for(i = 0; i < index; i++){
+                // se usa otro nodo pre que se encuentra una posición
+                // previa a la de aux
+                pre=aux;
+                aux=aux->next;
+            }
+            // cuando llegamos al índice buscado: 
+            updateids(l, aux->id);
+            // el nodo prev pasa apuntar como nodo siguiente al que está 
+            // apuntando aux
+            pre->next=aux->next;
+            // como ya la lista está completamente enlazada,
+            // el valor de aux no nos hace falta y podemo liberarlo
+            free(aux->name);
+            free(aux);
+            l->total--;
+        }
+    }
+}
+
 
 // SE USA EN EL MAIN
 Node *
@@ -184,7 +303,17 @@ _searchbyname(List *l, char *name){
     return aux; 
 }
 
+// se usará para vaciar la lista
+void
+emptylist(List *l){
+    
+    while(!isempty(l)){
+        elimfirst(l);
+    }
+    pthread_mutex_destroy(&l->listmutex);
 
+    free(l);
+}
 
 // SE USA EN EL MAIN para cambiar la puntuación en ADDPLAYER
 void
@@ -195,10 +324,24 @@ changevalue(List *l, char *name, long long value){
 
     n = _searchbyname(l,name);
     if(n != NULL){
-        if(n->score < value || value == 0){
+        if(n->score < value){
             n->score = value;
         }
+    }
 
+    pthread_mutex_unlock(&l->listmutex);
+
+}
+
+void
+resetvalue(List *l, char *name, long long value){
+
+    Node *n;
+    pthread_mutex_lock(&l->listmutex);
+
+    n = _searchbyname(l,name);
+    if(n != NULL){
+        n->score = value;
     }
 
     pthread_mutex_unlock(&l->listmutex);
@@ -208,18 +351,20 @@ changevalue(List *l, char *name, long long value){
 void
 resetallvalues(List *l, long long value){
 
-    Node *aux;
-    aux = l->init;
 
+    Node *aux = l->init;
     pthread_mutex_lock(&l->listmutex);
+
     while (aux != NULL){
         aux->score  = value;
         aux=aux->next;
     }
+
     pthread_mutex_unlock(&l->listmutex);
 
 }
-
+// **************************************************************************
+// ******************* OPERACIONES PARA LOS COMANDOS ************************
 void
 usage(void)
 {
@@ -279,7 +424,9 @@ checkcmd(char *cmd){
 }
 
 // ASCII:
-// A = 65, Z = 90, a = 97, z = 122, 0 = 48, 9 = 57
+// A = 65, Z = 90
+// a = 97, z = 122
+// 0 = 48, 9 = 57
 int 
 isletter(char letter){
     return ((letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'));
@@ -377,6 +524,8 @@ getkindcommand(Command *cl, char *line){
     return valuecmd;
 }
 
+// *****************************************************************************
+
 long long
 getnumber(char *str)
 {
@@ -425,7 +574,7 @@ closethread(char *path) {
     // Abrir el fichero en modo de escritura
     file = fopen(path, "w");
     if (file == NULL) {
-        errx(EXIT_FAILURE, "Error: fopen failed %s\n", path);
+        errx(EXIT_FAILURE, "Error: fopen failed%s\n", path);
     }
 
     bytes_written = fwrite(data, sizeof(char), sizeof(data), file);
@@ -442,38 +591,86 @@ closethread(char *path) {
     printf("Datos escritos correctamente en el fichero %s\n", path);
 }
 
+void
+elimbyname(pthread_t thread,List *l, char *name){
+
+    int i;
+    Node *aux;
+    char fullpath[LineSz];
+
+    i = 0;
+    aux = l->init;
+
+    pthread_mutex_lock(&l->listmutex);
+
+    while(aux != NULL && strcmp(aux->name, name)!= 0){
+        aux = aux->next;
+        i++;
+    }
+    // Hemos encontrado el nodo y por lo tanto sabemos su índice
+    if(aux != NULL){
+
+        getcompletepath("/tmp", name, fullpath);
+
+        closethread(fullpath);
+        
+        if (unlink(fullpath) != 0) {
+            fprintf(stderr, "Error: unlink failed\n");
+        }
+
+        if (pthread_join(thread, NULL) != 0) {
+            fprintf(stderr, "Error: join failed\n");
+		}
+
+        elimbyindex(l,i);
+
+    }
+    pthread_mutex_unlock(&l->listmutex);
+
+}
+
+
 void 
 deleteplayer(List *l, char *name, int *id) {
+
+    //pthread_mutex_lock(&l->listmutex);
 
     char fullpath[LineSz];
     Node *n = searchbyname(l, name);
 
     // Si el jugador existe
     if (n != NULL) {
+        //n->running = 0;
+
         getcompletepath("/tmp", n->name, fullpath);
+
         closethread(fullpath);
+
+        //elimbyname(n->thread,l, name); 
+        //*id = *id - 1;
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
     free(name);
+    //pthread_mutex_unlock(&l->listmutex);
+
+
 }
+
 
 void 
 joindeadthreads(List *l) {
 
-    Node *current;
-    Node *previous;
-    Node *temp;
-    char fullpath[LineSz];
     
-    current = l->init;
-    previous = NULL;
-
     pthread_mutex_lock(&l->listmutex);
-    while (current != NULL) {
 
+    Node *current = l->init;
+    Node *previous = NULL;
+    char fullpath[LineSz];
+
+    while (current != NULL) {
         if (current->running == 0) {
-            temp = current;
+            Node *temp = current;
             current = current->next;
 
             getcompletepath("/tmp", temp->name, fullpath);
@@ -499,102 +696,11 @@ joindeadthreads(List *l) {
             current = current->next;
         }
     }
+
     pthread_mutex_unlock(&l->listmutex);
 }
 
-void 
-_joindeadthreads(List *l) {
 
-    Node *current;
-    Node *previous;
-    Node *temp;
-    char fullpath[LineSz];
-    
-    current = l->init;
-    previous = NULL;
-
-    //pthread_mutex_lock(&l->listmutex);
-    while (current != NULL) {
-
-        if (current->running == 0) {
-            temp = current;
-            current = current->next;
-
-            getcompletepath("/tmp", temp->name, fullpath);
-            closethread(fullpath);
-
-            if (unlink(fullpath) != 0) {
-                fprintf(stderr, "Error: unlink failed\n");
-            }
-            if (pthread_join(temp->thread, NULL) != 0) {
-                fprintf(stderr, "Error: join failed\n");
-            }
-
-            // Eliminar el nodo de la lista
-            if (previous == NULL) {
-                l->init = current;
-            } else {
-                previous->next = current;
-            }
-
-            // Liberar la memoria del nodo eliminado
-            free(temp->name);
-            free(temp);
-        } else {
-            previous = current;
-            current = current->next;
-        }
-    }
-    //pthread_mutex_unlock(&l->listmutex);
-}
-
-// ponerla como STATIC INT
-void
-elimfirst(List *l){
-
-    //pthread_mutex_lock(&l->listmutex);
-
-    Node *aux;
-
-    if(!isempty(l)){
-
-        aux = l->init;
-        aux->running = 0;
-        _joindeadthreads(l);
-
-        /*if(l->total == 1){
-            // usamos aux para eliminar la memoria de ese nodo
-            l->init = NULL;
-            l->last = NULL;
-        }else{
-            // nodo del principio de la lista 
-            // apunta al nodo siguiente 
-            l->init = l->init->next; 
-        }
-        // eliminamos la memoria del nodo a eliminar
-        //free(aux->name);
-        //free(aux);*/
-        l->total--;
-    }
-    fprintf(stderr, "Acabandooo\n");
-
-    //pthread_mutex_unlock(&l->listmutex);
-    fprintf(stderr, "Acabé\n");
-
-}
-
-
-void
-emptylist(List *l){
-    
-    while(!isempty(l)){
-        elimfirst(l);
-
-    }
-    pthread_mutex_destroy(&l->listmutex);
-
-    free(l);
-}
 void *
 scoreupdating(void *arg) {
 
@@ -651,10 +757,9 @@ scoreupdating(void *arg) {
             n = searchbyname(l,name);
             if(n != NULL){
                 n->running = 0;
-                //fprintf(stderr, "running a 0 %d\n", n->running);
+                fprintf(stderr, "running a 0 %d\n", n->running);
 
             }
-            fprintf(stderr, "running a 0! %d\n", n->running);
             break;
         }
         changevalue(l, name, number);
@@ -675,10 +780,19 @@ scoreupdating(void *arg) {
         pthread_exit((void *)1);
     }
     
+    //if(strcmp(line, "EXIT") == 0){
+    //    fprintf(stderr, "Lo he recibido por delplayer\n");
+    //    free(name);
+    //    free(args);
+    //}else{
+    //    fprintf(stderr, "break\n");
     free(name);
     free(args);
+        // hacer exit
+    //}
 
     return NULL;
+    //pthread_exit(NULL);
 }
 
 void 
@@ -732,6 +846,7 @@ addplayer(List *l, char *name, int *id) {
     }
 }
 
+
 void
 reset(List *l, char *name){
     Node *n;
@@ -741,7 +856,7 @@ reset(List *l, char *name){
         n=searchbyname(l, name);
         // significa que existe el usuario
         if(n!=NULL){
-            changevalue(l,name,0);
+            resetvalue(l,name,0);
         }else{
             fprintf(stderr, "Error: this user does not exist\n");
         }
@@ -826,7 +941,6 @@ main(int argc, char *argv[]){
 
     // hacer como un wait escribiendo a cada fifo una string para que acaben
     // hacer un write en el fifo adecuado
-    // NECESARIO ARREGLAR
     emptylist(l);
 
     fprintf(stderr,"YA ACABAO\n");
