@@ -156,6 +156,21 @@ printlist(List *l){
 
 }
 
+void
+_printlist(List *l){
+
+    Node *aux = l->init;
+
+    pthread_mutex_lock(&l->listmutex);
+
+    while (aux != NULL){
+        printf("soooy:    %s:%lld\n", aux->name,aux->score);
+        aux=aux->next;
+    }
+    pthread_mutex_unlock(&l->listmutex);
+
+}
+
 // SE USA EN EL MAIN
 Node *
 searchbyname(List *l, char *name){
@@ -438,8 +453,6 @@ closethread(char *path) {
     if (fclose(file) != 0) {
         errx(EXIT_FAILURE, "Error: fclose failed\n");
     }
-
-    printf("Datos escritos correctamente en el fichero %s\n", path);
 }
 
 void 
@@ -500,6 +513,7 @@ joindeadthreads(List *l) {
         }
     }
     pthread_mutex_unlock(&l->listmutex);
+    _printlist(l);
 }
 
 void 
@@ -513,7 +527,6 @@ _joindeadthreads(List *l) {
     current = l->init;
     previous = NULL;
 
-    //pthread_mutex_lock(&l->listmutex);
     while (current != NULL) {
 
         if (current->running == 0) {
@@ -545,7 +558,6 @@ _joindeadthreads(List *l) {
             current = current->next;
         }
     }
-    //pthread_mutex_unlock(&l->listmutex);
 }
 
 // ponerla como STATIC INT
@@ -562,25 +574,10 @@ elimfirst(List *l){
         aux->running = 0;
         _joindeadthreads(l);
 
-        /*if(l->total == 1){
-            // usamos aux para eliminar la memoria de ese nodo
-            l->init = NULL;
-            l->last = NULL;
-        }else{
-            // nodo del principio de la lista 
-            // apunta al nodo siguiente 
-            l->init = l->init->next; 
-        }
-        // eliminamos la memoria del nodo a eliminar
-        //free(aux->name);
-        //free(aux);*/
         l->total--;
     }
-    fprintf(stderr, "Acabandooo\n");
 
     //pthread_mutex_unlock(&l->listmutex);
-    fprintf(stderr, "Acabé\n");
-
 }
 
 
@@ -589,7 +586,6 @@ emptylist(List *l){
     
     while(!isempty(l)){
         elimfirst(l);
-
     }
     pthread_mutex_destroy(&l->listmutex);
 
@@ -614,14 +610,10 @@ scoreupdating(void *arg) {
     args = (ThreadArgs *)arg;
 
     name = args->name;
-    // puntero a la lista
     l = args->list;
     id = args->id;
     thread = args->thread;
 
-
-    // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
-    // hacerlo también de lectura
     getcompletepath("/tmp", name, fullpath);
     fd = fopen(fullpath, "r+");
 
@@ -633,7 +625,6 @@ scoreupdating(void *arg) {
     }
 
     insertatend(l, createnode(name, 0, id, thread));
-
 
     while (fgets(line, LineSz, fd) != NULL) {
         
@@ -651,10 +642,8 @@ scoreupdating(void *arg) {
             n = searchbyname(l,name);
             if(n != NULL){
                 n->running = 0;
-                //fprintf(stderr, "running a 0 %d\n", n->running);
-
             }
-            fprintf(stderr, "running a 0! %d\n", n->running);
+            fprintf(stderr, "running = 0!\n");
             break;
         }
         changevalue(l, name, number);
@@ -792,27 +781,31 @@ main(int argc, char *argv[]){
 
         kind = getkindcommand(&cl,line);
 
+        joindeadthreads(l);
+
         switch (kind) {
         case Newplayer:
             free(cl.command);
             addplayer(l, cl.arg, &id);
-
 		    break;
+
 	    case Delplayer:
             free(cl.command);
             deleteplayer(l, cl.arg, &id);
-
 		    break;
+
         case Highscore:
             printlist(l);
             free(cl.command);
             free(cl.arg);
 		    break;
+
 	    case Reset:
             reset(l,cl.arg);
             free(cl.command);
             free(cl.arg);
             break;
+
 	    default:
             fprintf(stderr, "Error: Incorrect command\n");
             free(cl.command);
@@ -824,12 +817,8 @@ main(int argc, char *argv[]){
 
     }
 
-    // hacer como un wait escribiendo a cada fifo una string para que acaben
-    // hacer un write en el fifo adecuado
-    // NECESARIO ARREGLAR
-    emptylist(l);
 
-    fprintf(stderr,"YA ACABAO\n");
+    emptylist(l);
 
     if(!feof(stdin)){
         errx(EXIT_FAILURE, "eof not reached\n");
