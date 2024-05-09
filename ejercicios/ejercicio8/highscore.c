@@ -19,7 +19,7 @@
 struct Node{
     long long score;
     char *name;
-    int id; // es el numero del thread
+    int id;
     FILE *fd;
     pthread_t thread;
 
@@ -387,7 +387,7 @@ getnumwords(char *line)
 
 		// si el carácter actual no es ninguno de los que buscamos
 		// y no estamos dentro de una palabra, aumentamos el número de palabra
-		// y decidimios que nos encontramos dentro de una palabra
+		// y decidimos que nos encontramos dentro de una palabra
 		if (line[i] != ' ' && line[i] != '\t' ) {
 
 			if(!inword){
@@ -510,7 +510,6 @@ getkindcommand(Command *cl, char *line){
     // solo nos quedamos con la primera palabra de la tokenización
     strcpy(cl->command, token);
 
-    // solo nos quedamos con el primero de la tokenización
     valueword = checkcmd(cl->command);
 
     token = strtok_r(NULL, " \t" , &saveptr);
@@ -527,8 +526,7 @@ getkindcommand(Command *cl, char *line){
 }
 
 // *****************************************************************************
-// Se usará para que el thread mire si es un número o no
-// se hagan las operaciones pertinentes
+
 long long
 getnumber(char *str)
 {
@@ -543,7 +541,6 @@ getnumber(char *str)
 
 	// Se comprueban posibles errores 
 	if (errno != 0) {
-		//err(EXIT_FAILURE, "strtol");
         return -1;
 	}
 	if (endptr == str) {
@@ -570,90 +567,12 @@ getcompletepath(char *path, char *dname, char *fullpath) {
     fullpath[lenfull - 1] = '\0';
 }
 
-
-// tengo que terminar de arreglar donde hay fugas de memoria
-void *
-scoreupdating(void *arg) {
-
-    ThreadArgs *args;
-    char *name;
-    List *l;
-    int id;
-
-    char line[LineSz];
-    long long number;
-    FILE *fd;
-    char *newline;
-    char fullpath[LineSz];
-    pthread_t thread;
-
-
-
-    args = (ThreadArgs *)arg;
-
-    name = args->name;
-    // puntero a la lista
-    l = args->list;
-    id = args->id;
-    thread = args->thread;
-
-
-    // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
-    // hacerlo también de lectura
-    getcompletepath("/tmp", name, fullpath);
-    fd = fopen(fullpath, "r+");
-    if (fd == NULL) {
-        fprintf(stderr, "Error: opening FIFO for player\n");
-        free(name);
-        free(args);
-        pthread_exit((void *)1);
-    }
-
-    insertatend(l, createnode(name, 0, id, fd, thread));
-
-    while (fgets(line, LineSz, fd) != NULL) {
-        if (line[strlen(line) - 1] != '\n') {
-            fprintf(stderr, "Exceeded path size\n");
-            continue;
-        }
-        newline = strrchr(line, '\n');
-        if (newline != NULL) {
-            *newline = '\0';
-        }
-        number = getnumber(line);
-        if (number < 0) {
-            fprintf(stderr, "break\n");
-            break;
-        }
-        changevalue(l, name, number);
-    }
-
-    if (ferror(fd)) {
-        fclose(fd);
-        free(name);
-        free(args);
-        fprintf(stderr, "Error: read error\n");
-        pthread_exit((void *)1);
-    }
-
-    if (fclose(fd) != 0) {
-        fprintf(stderr, "Error: fclose failed\n");
-    }
-
-    free(name);
-    free(args);
-
-    return NULL;
-}
-
-
-
 void 
 closethread(char *path) {
 
     FILE *file;
     size_t bytes_written;
-    char data[] = "Exit\n";
+    char data[] = "EXIT\n";
 
     // Abrir el archivo en modo de escritura ("w")
     file = fopen(path, "w");
@@ -729,22 +648,190 @@ deleteplayer(List *l, char *name, int *id) {
     if (n != NULL) {
 
         if (n->fd != NULL) {
-            // Cerrar el archivo si no está cerrado
-            // hacer un write de algo negativo
-
-            //pthread_cancel(threads[n->id]);
-            /*if (fclose(n->fd) != 0) {
-                fprintf(stderr, "Error: fclose failed\n");
-            }*/
             elimbyname(n->thread,l, name); 
             *id = *id - 1;
-
         }
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
     free(name);
 
+}
+
+
+
+void
+//elimbyname(List *l, char *name, pthread_t *threads){
+elimbyothername(pthread_t thread,List *l, char *name){
+
+    int i;
+    Node *aux;
+    char fullpath[LineSz];
+
+    i = 0;
+    aux = l->init;
+
+    pthread_mutex_lock(&l->listmutex);
+
+    while(aux != NULL && strcmp(aux->name, name)!= 0){
+        aux = aux->next;
+        i++;
+    }
+    // Hemos encontrado el nodo y por lo tanto sabemos su índice
+    if(aux != NULL){
+
+        getcompletepath("/tmp", name, fullpath);
+
+        
+        //closethread(fullpath);
+        
+        if (unlink(fullpath) != 0) {
+            fprintf(stderr, "Error: unlink failed\n");
+        }
+
+        //if (pthread_join(threads[aux->id], NULL) != 0) {
+        if (pthread_join(thread, NULL) != 0) {
+
+            fprintf(stderr, "Error: join failed\n");
+		}
+
+        elimbyindex(l,i);
+
+    }
+    pthread_mutex_unlock(&l->listmutex);
+
+}
+
+void
+deleteotherplayer(List *l, char *name, int *id) {
+
+    Node *n = searchbyname(l, name);
+
+    // Si el jugador existe
+    if (n != NULL) {
+
+        if (n->fd != NULL) {
+            elimbyothername(n->thread,l, name); 
+            *id = *id - 1;
+        }
+    } else {
+        fprintf(stderr, "%s does not exist\n", name);
+    }
+    free(name);
+
+}
+
+
+void *
+scoreupdating(void *arg) {
+
+    ThreadArgs *args;
+    char *name;
+    List *l;
+    int id;
+
+    char line[LineSz];
+    long long number;
+    FILE *fd;
+    char *newline;
+    char fullpath[LineSz];
+    pthread_t thread;
+
+    args = (ThreadArgs *)arg;
+
+    name = args->name;
+    // puntero a la lista
+    l = args->list;
+    id = args->id;
+    thread = args->thread;
+
+
+    // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
+    // hacerlo también de lectura
+    getcompletepath("/tmp", name, fullpath);
+    fd = fopen(fullpath, "r+");
+    if (fd == NULL) {
+        fprintf(stderr, "Error: opening FIFO for player\n");
+        free(name);
+        free(args);
+        pthread_exit((void *)1);
+    }
+
+    insertatend(l, createnode(name, 0, id, fd, thread));
+
+    while (fgets(line, LineSz, fd) != NULL) {
+        if (line[strlen(line) - 1] != '\n') {
+            fprintf(stderr, "Exceeded path size\n");
+            continue;
+        }
+        newline = strrchr(line, '\n');
+        if (newline != NULL) {
+            *newline = '\0';
+        }
+        number = getnumber(line);
+        
+        if(strcmp(line, "EXIT") == 0){
+            fprintf(stderr, "Lo he recibido por delplayer\n");
+            break;
+        }
+        // lo he recibido desde el propio thread
+        if (number < 0) {
+            fprintf(stderr, "break\n");
+
+            
+            //deleteotherplayer(l, name, &id);
+
+            /*if (fclose(fd) != 0) {
+                free(name);
+                free(args);
+                fprintf(stderr, "Error: fclose failed\n");
+                pthread_exit((void *)1);
+            }*/
+
+            //deleteotherplayer(l, name, &id);
+            
+            //free(name);
+            //free(args);
+            break;
+        }
+        changevalue(l, name, number);
+    }
+
+    if (ferror(fd)) {
+        fclose(fd);
+        free(name);
+        free(args);
+        fprintf(stderr, "Error: read error\n");
+        pthread_exit((void *)1);
+    }
+
+    if (fclose(fd) != 0) {
+        free(name);
+        free(args);
+        fprintf(stderr, "Error: fclose failed\n");
+        pthread_exit((void *)1);
+    }
+    
+    if(strcmp(line, "EXIT") == 0){
+
+        /*if (fclose(fd) != 0) {
+            free(name);
+            free(args);
+            fprintf(stderr, "Error: fclose failed\n");
+            pthread_exit((void *)1);
+        }*/
+
+        fprintf(stderr, "Lo he recibido por delplayer\n");
+        free(name);
+        free(args);
+    }else{
+        deleteotherplayer(l, name, &id);
+        free(args);
+
+
+    }
+
+    return NULL;
 }
 
 void 
