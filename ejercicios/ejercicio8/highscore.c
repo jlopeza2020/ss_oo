@@ -21,6 +21,8 @@ struct Node{
     char *name;
     int id; // es el numero del thread
     FILE *fd;
+    pthread_t thread;
+
     struct Node *next; 
 };
 typedef struct Node Node;
@@ -65,14 +67,14 @@ struct ThreadArgs {
     char *name;
     int id;
     //int *running;
-    //pthread_t *threads;
+    pthread_t thread;
 
 };
 typedef struct ThreadArgs ThreadArgs;
 // ***************************************************************************
 // ******************** OPERACIONES PARA EL NODO *****************************
 Node *
-createnode(char *name, long long score, int id, FILE *fd){
+createnode(char *name, long long score, int id, FILE *fd,pthread_t thread){
 
     Node *n = (Node *)malloc(sizeof(Node));
     if (n == NULL) {
@@ -89,6 +91,7 @@ createnode(char *name, long long score, int id, FILE *fd){
     n->score = score;
     n->id = id;
     n->fd = fd;
+    n->thread = thread;
     n->next = NULL;
 
     return n;
@@ -156,7 +159,7 @@ printlist(List *l){
 
     while (aux != NULL){
         printnode(aux);
-        fprintf(stderr,"valor id:%d\n", aux->id);
+        //fprintf(stderr,"valor id:%d\n", aux->id);
         aux=aux->next;
     }
     pthread_mutex_unlock(&l->listmutex);
@@ -582,6 +585,8 @@ scoreupdating(void *arg) {
     FILE *fd;
     char *newline;
     char fullpath[LineSz];
+    pthread_t thread;
+
 
 
     args = (ThreadArgs *)arg;
@@ -590,6 +595,7 @@ scoreupdating(void *arg) {
     // puntero a la lista
     l = args->list;
     id = args->id;
+    thread = args->thread;
 
 
     // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
@@ -603,7 +609,7 @@ scoreupdating(void *arg) {
         pthread_exit((void *)1);
     }
 
-    insertatend(l, createnode(name, 0, id, fd));
+    insertatend(l, createnode(name, 0, id, fd, thread));
 
     while (fgets(line, LineSz, fd) != NULL) {
         if (line[strlen(line) - 1] != '\n') {
@@ -674,7 +680,7 @@ closethread(char *path) {
 
 void
 //elimbyname(List *l, char *name, pthread_t *threads){
-elimbyname(pthread_t *threads,List *l, char *name){
+elimbyname(pthread_t thread,List *l, char *name){
 
     int i;
     Node *aux;
@@ -701,7 +707,9 @@ elimbyname(pthread_t *threads,List *l, char *name){
             fprintf(stderr, "Error: unlink failed\n");
         }
 
-        if (pthread_join(threads[aux->id], NULL) != 0) {
+        //if (pthread_join(threads[aux->id], NULL) != 0) {
+        if (pthread_join(thread, NULL) != 0) {
+
             fprintf(stderr, "Error: join failed\n");
 		}
 
@@ -713,7 +721,7 @@ elimbyname(pthread_t *threads,List *l, char *name){
 }
     
 void 
-deleteplayer(pthread_t *threads, List *l, char *name) {
+deleteplayer(List *l, char *name, int *id) {
 
     Node *n = searchbyname(l, name);
 
@@ -728,7 +736,8 @@ deleteplayer(pthread_t *threads, List *l, char *name) {
             /*if (fclose(n->fd) != 0) {
                 fprintf(stderr, "Error: fclose failed\n");
             }*/
-            elimbyname(threads,l, name); 
+            elimbyname(n->thread,l, name); 
+            *id = *id - 1;
 
         }
     } else {
@@ -740,11 +749,12 @@ deleteplayer(pthread_t *threads, List *l, char *name) {
 
 void 
 //addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id, int *running) {
-addplayer(pthread_t *threads, List *l, char *name, int *id) {
+addplayer(List *l, char *name, int *id) {
 
     //char *fullpath;
     ThreadArgs *args;
     char fullpath[LineSz];
+    //pthread_t thread;
 
 
     //fullpath = getcompletepath("/tmp", name);
@@ -774,9 +784,12 @@ addplayer(pthread_t *threads, List *l, char *name, int *id) {
                 args->name = name;
                 args->list = l;
                 args->id = *id;
+                //args->thread = thread;
         
                 
-                if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)args) != 0) {
+                //if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)args) != 0) {
+                if (pthread_create(&args->thread, NULL, scoreupdating, (void *)args) != 0) {
+
                     free(name);
                     free(args);
                     unlink(fullpath);
@@ -824,7 +837,7 @@ main(int argc, char *argv[]){
     Command cl;
     List *l;
     int id;
-    pthread_t threads[2];
+    //pthread_t threads[MaxPlayers];
 
     id = 0;
     argc--;
@@ -859,12 +872,16 @@ main(int argc, char *argv[]){
         switch (kind) {
         case Newplayer:
             free(cl.command);
-            addplayer(threads,l, cl.arg, &id);
+            //addplayer(threads,l, cl.arg, &id);
+            addplayer(l, cl.arg, &id);
+
 		    break;
 	    case Delplayer:
             free(cl.command);
-            deleteplayer(threads,l, cl.arg);
-            id--;
+            //deleteplayer(threads,l, cl.arg, &id);
+            deleteplayer(l, cl.arg, &id);
+
+            //id--;
 		    break;
         case Highscore:
             printlist(l);
