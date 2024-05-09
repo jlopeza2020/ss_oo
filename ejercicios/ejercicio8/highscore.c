@@ -20,8 +20,8 @@ struct Node{
     long long score;
     char *name;
     int id;
-    //FILE *fd;
     pthread_t thread;
+    int running;
 
     struct Node *next; 
 };
@@ -66,7 +66,6 @@ struct ThreadArgs {
 	List *list;
     char *name;
     int id;
-    //int *running;
     pthread_t thread;
 
 };
@@ -91,8 +90,8 @@ createnode(char *name, long long score, int id,pthread_t thread){
 
     n->score = score;
     n->id = id;
-    //n->fd = fd;
     n->thread = thread;
+    n->running = 1;
     n->next = NULL;
 
     return n;
@@ -381,8 +380,7 @@ getnumwords(char *line)
 
 	i = 0;
 	numwords = 0;
-	// inword se inicializa como falso e
-	// indica si nos encontramos dentro de una palabra
+	// inword (dentro de una palabra) se inicializa como falso
 	inword = 0;
 	while (line[i] != '\0') {
 
@@ -478,7 +476,6 @@ checkarg(char *arg, int value){
 		break;
     // opcionalmente recibe un nombre con numeros y letras
 	case Reset:
-
         if(strcmp(arg, "nocommand") != 0 && !isname(arg)){
             valuecmd = -1;
         }
@@ -541,21 +538,16 @@ getnumber(char *str)
 	val = strtoll(str, &endptr, base);
 
 	// Se comprueban posibles errores 
-	if (errno != 0) {
+	if (errno != 0 || endptr == str ||*endptr != '\0') {
         return -1;
 	}
-	if (endptr == str) {
-        return -1;
-	}
-	// Ahora es necesario comprobar si la string ha sido un número o no
-	if (*endptr != '\0') {
-        return -1;
-	}
+
 	return val;
 }
 
 void 
 getcompletepath(char *path, char *dname, char *fullpath) {
+    
     ssize_t lenpath;
     ssize_t lenname;
     ssize_t lenfull;
@@ -578,20 +570,19 @@ closethread(char *path) {
     size_t bytes_written;
     char data[] = "EXIT\n";
 
-    // Abrir el archivo en modo de escritura ("w")
+    // Abrir el fichero en modo de escritura
     file = fopen(path, "w");
     if (file == NULL) {
         errx(EXIT_FAILURE, "Error: fopen failed%s\n", path);
     }
 
-    // Escribir datos en el archivo usando fwrite
     bytes_written = fwrite(data, sizeof(char), sizeof(data), file);
     if (bytes_written != sizeof(data)) {
-        fclose(file); // Cerrar el archivo antes de salir
+        fclose(file);
         errx(EXIT_FAILURE, "Error: fwrite failed\n");
     }
 
-    // Cerrar el archivo después de escribir los datos
+    // Cerrar el fichero después de escribir los datos
     if (fclose(file) != 0) {
         errx(EXIT_FAILURE, "Error: fclose failed\n");
     }
@@ -600,7 +591,6 @@ closethread(char *path) {
 }
 
 void
-//elimbyname(List *l, char *name, pthread_t *threads){
 elimbyname(pthread_t thread,List *l, char *name){
 
     int i;
@@ -621,16 +611,13 @@ elimbyname(pthread_t thread,List *l, char *name){
 
         getcompletepath("/tmp", name, fullpath);
 
-        
         closethread(fullpath);
         
         if (unlink(fullpath) != 0) {
             fprintf(stderr, "Error: unlink failed\n");
         }
 
-        //if (pthread_join(threads[aux->id], NULL) != 0) {
         if (pthread_join(thread, NULL) != 0) {
-
             fprintf(stderr, "Error: join failed\n");
 		}
 
@@ -640,8 +627,10 @@ elimbyname(pthread_t thread,List *l, char *name){
     pthread_mutex_unlock(&l->listmutex);
 
 }
-    
-void 
+
+
+
+/*void 
 deleteplayer(List *l, char *name, int *id) {
 
     Node *n = searchbyname(l, name);
@@ -649,78 +638,122 @@ deleteplayer(List *l, char *name, int *id) {
     // Si el jugador existe
     if (n != NULL) {
 
-        //if (n->fd != NULL) {
         elimbyname(n->thread,l, name); 
         *id = *id - 1;
-        //}
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
     free(name);
 
-}
+}*/
 
+void 
+deleteplayer(List *l, char *name, int *id) {
 
-
-void
-//elimbyname(List *l, char *name, pthread_t *threads){
-elimbyothername(pthread_t thread,List *l, char *name){
-
-    int i;
-    Node *aux;
     char fullpath[LineSz];
-
-    i = 0;
-    aux = l->init;
-
-    pthread_mutex_lock(&l->listmutex);
-
-    while(aux != NULL && strcmp(aux->name, name)!= 0){
-        aux = aux->next;
-        i++;
-    }
-    // Hemos encontrado el nodo y por lo tanto sabemos su índice
-    if(aux != NULL){
-
-        getcompletepath("/tmp", name, fullpath);
-        //closethread(fullpath);
-        
-        if (unlink(fullpath) != 0) {
-            fprintf(stderr, "Error: unlink failed\n");
-        }
-
-        fprintf(stderr, "thread join value %p\n", (void *) thread);
-
-        if (pthread_join(thread, NULL) != 0) {
-
-            fprintf(stderr, "Error: join failed\n");
-		}
-
-        elimbyindex(l,i);
-
-    }
-    pthread_mutex_unlock(&l->listmutex);
-
-}
-
-void
-deleteotherplayer(List *l, char *name, int *id) {
-
     Node *n = searchbyname(l, name);
 
     // Si el jugador existe
     if (n != NULL) {
+        n->running = 0;
 
-        //if (n->fd != NULL) {
-        elimbyothername(n->thread,l, name); 
-        *id = *id - 1;
-        //}
+        getcompletepath("/tmp", n->name, fullpath);
+
+        closethread(fullpath);
+
+        //elimbyname(n->thread,l, name); 
+        //*id = *id - 1;
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
     free(name);
 
 }
+
+/*void 
+joindeadthreads(List *l){
+
+    char fullpath[LineSz];
+    Node *aux = l->init;
+
+
+    pthread_mutex_lock(&l->listmutex);
+
+    while (aux != NULL){
+
+        if(aux->running == 0){
+            
+        
+        //printnode(aux);
+        //fprintf(stderr,"valor id:%d\n", aux->id);
+
+            getcompletepath("/tmp", aux->name, fullpath);
+
+            //closethread(fullpath);
+        
+            if (unlink(fullpath) != 0) {
+                fprintf(stderr, "Error: unlink failed\n");
+            }
+
+            if (pthread_join(aux->thread, NULL) != 0) {
+                fprintf(stderr, "Error: join failed\n");
+		    }
+
+            elimbyindex(l,aux->id);
+        }
+
+        aux=aux->next;
+    }
+    pthread_mutex_unlock(&l->listmutex);
+
+}*/
+
+
+void 
+joindeadthreads(List *l) {
+    pthread_mutex_lock(&l->listmutex);
+
+    Node *current = l->init;
+    Node *previous = NULL;
+    char fullpath[LineSz];
+
+    while (current != NULL) {
+        if (current->running == 0) {
+            Node *temp = current;
+            current = current->next;
+
+            // Unlink y join antes de eliminar el nodo
+            //char fullpath[LineSz];
+            getcompletepath("/tmp", temp->name, fullpath);
+            if (unlink(fullpath) != 0) {
+                fprintf(stderr, "Error: unlink failed\n");
+            }
+            if (pthread_join(temp->thread, NULL) != 0) {
+                fprintf(stderr, "Error: join failed\n");
+            }
+
+            // Eliminar el nodo de la lista
+            if (previous == NULL) {
+                l->init = current;
+            } else {
+                previous->next = current;
+            }
+
+            // Liberar la memoria del nodo eliminado
+            free(temp->name); // Si name es un puntero dinámico, libéralo primero
+            free(temp);
+        } else {
+            previous = current;
+            current = current->next;
+        }
+    }
+
+    pthread_mutex_unlock(&l->listmutex);
+}
+
+
+
+
 
 
 void *
@@ -730,6 +763,7 @@ scoreupdating(void *arg) {
     char *name;
     List *l;
     int id;
+    //Node * n;
 
     char line[LineSz];
     long long number;
@@ -746,14 +780,12 @@ scoreupdating(void *arg) {
     id = args->id;
     thread = args->thread;
 
-    fprintf(stderr, "thread join update score value %p\n", (void *) thread);
-
-
 
     // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
     // hacerlo también de lectura
     getcompletepath("/tmp", name, fullpath);
     fd = fopen(fullpath, "r+");
+
     if (fd == NULL) {
         fprintf(stderr, "Error: opening FIFO for player\n");
         free(name);
@@ -761,11 +793,11 @@ scoreupdating(void *arg) {
         pthread_exit((void *)1);
     }
 
-    //insertatend(l, createnode(name, 0, id, fd, thread));
     insertatend(l, createnode(name, 0, id, thread));
 
 
     while (fgets(line, LineSz, fd) != NULL) {
+        
         if (line[strlen(line) - 1] != '\n') {
             fprintf(stderr, "Exceeded path size\n");
             continue;
@@ -803,70 +835,65 @@ scoreupdating(void *arg) {
         free(args);
     }else{
         fprintf(stderr, "break\n");
-        deleteotherplayer(l, name, &id);
+        //deleteotherplayer(l, name, &id);
+        //elimbyothername(thread,l, name); 
+        //id = id - 1;
+        free(name);
         free(args);
+        // hacer exit
     }
 
     return NULL;
 }
 
 void 
-//addplayer(ThreadArgs *args, pthread_t *threads, List *l, char *name, int *id, int *running) {
 addplayer(List *l, char *name, int *id) {
 
-    //char *fullpath;
     ThreadArgs *args;
     char fullpath[LineSz];
-    //pthread_t thread;
 
-
-    //fullpath = getcompletepath("/tmp", name);
     getcompletepath("/tmp", name, fullpath);
+    if (fullpath == NULL) {
+        return;
+    }
+    if (access(fullpath, F_OK) == 0) {
+        free(name);
+        fprintf(stderr, "Error: this file exists!\n");
+        return;
+    }
 
-    if (fullpath != NULL) {
+    if (mkfifo(fullpath, 0664) < 0) {
+        free(name);
+        err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
+    }
 
-        if (access(fullpath, F_OK) == 0) {
+    if (*id < MaxPlayers) {
+
+        args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
+
+        if(args == NULL) {
             free(name);
-            fprintf(stderr, "Error: this file exists\n");
-        } else {
-            if (mkfifo(fullpath, 0664) < 0) {
-                free(name);
-                err(EXIT_FAILURE, "cannot make fifo %s", fullpath);
-            }
-
-            if (*id < MaxPlayers) {
-
-
-                args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
-
-                if(args == NULL) {
-                    free(name);
-                    unlink(fullpath);
-                    errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
-                }
-                args->name = name;
-                args->list = l;
-                args->id = *id;
-                //args->thread = thread;
-        
-                
-                //if (pthread_create(&threads[args->id], NULL, scoreupdating, (void *)args) != 0) {
-                if (pthread_create(&args->thread, NULL, scoreupdating, (void *)args) != 0) {
-
-                    free(name);
-                    free(args);
-                    unlink(fullpath);
-                    fprintf(stderr, "Error creating thread\n");
-                }
-
-                *id = *id + 1;
-
-            } else {
-                fprintf(stderr, "Exceeded Maximum players\n");
-                free(name);
-                unlink(fullpath);
-            }
+            unlink(fullpath);
+            errx(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
         }
+        args->name = name;
+        args->list = l;
+        args->id = *id;
+           
+        if (pthread_create(&args->thread, NULL, scoreupdating, (void *)args) != 0) {
+
+            free(name);
+            free(args);
+            unlink(fullpath);
+            fprintf(stderr, "Error creating thread\n");
+        }
+
+        *id = *id + 1;
+
+    } else {
+        fprintf(stderr, "Exceeded Maximum players\n");
+        free(name);
+        unlink(fullpath);
     }
 }
 
@@ -900,7 +927,6 @@ main(int argc, char *argv[]){
     Command cl;
     List *l;
     int id;
-    //pthread_t threads[MaxPlayers];
 
     id = 0;
     argc--;
@@ -935,16 +961,13 @@ main(int argc, char *argv[]){
         switch (kind) {
         case Newplayer:
             free(cl.command);
-            //addplayer(threads,l, cl.arg, &id);
             addplayer(l, cl.arg, &id);
 
 		    break;
 	    case Delplayer:
             free(cl.command);
-            //deleteplayer(threads,l, cl.arg, &id);
             deleteplayer(l, cl.arg, &id);
 
-            //id--;
 		    break;
         case Highscore:
             printlist(l);
@@ -962,6 +985,10 @@ main(int argc, char *argv[]){
             free(cl.arg);
             continue;
 	    }
+        // hacer join de los threads muertos
+        joindeadthreads(l);
+
+
     }
 
     // hacer como un wait escribiendo a cada fifo una string para que acaben
