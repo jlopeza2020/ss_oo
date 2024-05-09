@@ -681,15 +681,14 @@ elimbyothername(pthread_t thread,List *l, char *name){
     if(aux != NULL){
 
         getcompletepath("/tmp", name, fullpath);
-
-        
         //closethread(fullpath);
         
         if (unlink(fullpath) != 0) {
             fprintf(stderr, "Error: unlink failed\n");
         }
 
-        //if (pthread_join(threads[aux->id], NULL) != 0) {
+        fprintf(stderr, "thread join value %p\n", (void *) thread);
+
         if (pthread_join(thread, NULL) != 0) {
 
             fprintf(stderr, "Error: join failed\n");
@@ -745,6 +744,9 @@ scoreupdating(void *arg) {
     id = args->id;
     thread = args->thread;
 
+    fprintf(stderr, "thread join update score value %p\n", (void *) thread);
+
+
 
     // revisar si hacerlo  dentro del bucle while tanto fopen como fclose 
     // hacerlo también de lectura
@@ -770,28 +772,8 @@ scoreupdating(void *arg) {
         }
         number = getnumber(line);
         
-        if(strcmp(line, "EXIT") == 0){
-            fprintf(stderr, "Lo he recibido por delplayer\n");
-            break;
-        }
         // lo he recibido desde el propio thread
         if (number < 0) {
-            fprintf(stderr, "break\n");
-
-            
-            //deleteotherplayer(l, name, &id);
-
-            /*if (fclose(fd) != 0) {
-                free(name);
-                free(args);
-                fprintf(stderr, "Error: fclose failed\n");
-                pthread_exit((void *)1);
-            }*/
-
-            //deleteotherplayer(l, name, &id);
-            
-            //free(name);
-            //free(args);
             break;
         }
         changevalue(l, name, number);
@@ -813,21 +795,13 @@ scoreupdating(void *arg) {
     }
     
     if(strcmp(line, "EXIT") == 0){
-
-        /*if (fclose(fd) != 0) {
-            free(name);
-            free(args);
-            fprintf(stderr, "Error: fclose failed\n");
-            pthread_exit((void *)1);
-        }*/
-
         fprintf(stderr, "Lo he recibido por delplayer\n");
         free(name);
         free(args);
     }else{
+        fprintf(stderr, "break\n");
         deleteotherplayer(l, name, &id);
         free(args);
-
 
     }
 
