@@ -20,7 +20,7 @@ struct Node{
     long long score;
     char *name;
     int id;
-    FILE *fd;
+    //FILE *fd;
     pthread_t thread;
 
     struct Node *next; 
@@ -74,7 +74,8 @@ typedef struct ThreadArgs ThreadArgs;
 // ***************************************************************************
 // ******************** OPERACIONES PARA EL NODO *****************************
 Node *
-createnode(char *name, long long score, int id, FILE *fd,pthread_t thread){
+//createnode(char *name, long long score, int id, FILE *fd,pthread_t thread){
+createnode(char *name, long long score, int id,pthread_t thread){
 
     Node *n = (Node *)malloc(sizeof(Node));
     if (n == NULL) {
@@ -90,7 +91,7 @@ createnode(char *name, long long score, int id, FILE *fd,pthread_t thread){
 
     n->score = score;
     n->id = id;
-    n->fd = fd;
+    //n->fd = fd;
     n->thread = thread;
     n->next = NULL;
 
@@ -553,12 +554,15 @@ getnumber(char *str)
 	return val;
 }
 
-
 void 
 getcompletepath(char *path, char *dname, char *fullpath) {
-    ssize_t lenpath = strlen(path);
-    ssize_t lenname = strlen(dname);
-    ssize_t lenfull = lenpath + lenname + 2;
+    ssize_t lenpath;
+    ssize_t lenname;
+    ssize_t lenfull;
+
+    lenpath = strlen(path);
+    lenname = strlen(dname);
+    lenfull = lenpath + lenname + 2;
 
     strncpy(fullpath, path, lenfull);
     fullpath[lenpath] = '/';
@@ -593,8 +597,6 @@ closethread(char *path) {
     }
 
     printf("Datos escritos correctamente en el fichero %s\n", path);
-
-
 }
 
 void
@@ -647,10 +649,10 @@ deleteplayer(List *l, char *name, int *id) {
     // Si el jugador existe
     if (n != NULL) {
 
-        if (n->fd != NULL) {
-            elimbyname(n->thread,l, name); 
-            *id = *id - 1;
-        }
+        //if (n->fd != NULL) {
+        elimbyname(n->thread,l, name); 
+        *id = *id - 1;
+        //}
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
@@ -709,10 +711,10 @@ deleteotherplayer(List *l, char *name, int *id) {
     // Si el jugador existe
     if (n != NULL) {
 
-        if (n->fd != NULL) {
-            elimbyothername(n->thread,l, name); 
-            *id = *id - 1;
-        }
+        //if (n->fd != NULL) {
+        elimbyothername(n->thread,l, name); 
+        *id = *id - 1;
+        //}
     } else {
         fprintf(stderr, "%s does not exist\n", name);
     }
@@ -759,7 +761,9 @@ scoreupdating(void *arg) {
         pthread_exit((void *)1);
     }
 
-    insertatend(l, createnode(name, 0, id, fd, thread));
+    //insertatend(l, createnode(name, 0, id, fd, thread));
+    insertatend(l, createnode(name, 0, id, thread));
+
 
     while (fgets(line, LineSz, fd) != NULL) {
         if (line[strlen(line) - 1] != '\n') {
@@ -772,7 +776,6 @@ scoreupdating(void *arg) {
         }
         number = getnumber(line);
         
-        // lo he recibido desde el propio thread
         if (number < 0) {
             break;
         }
@@ -802,7 +805,6 @@ scoreupdating(void *arg) {
         fprintf(stderr, "break\n");
         deleteotherplayer(l, name, &id);
         free(args);
-
     }
 
     return NULL;
