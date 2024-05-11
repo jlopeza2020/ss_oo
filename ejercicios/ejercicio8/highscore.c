@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-// ******************* DEFINICIONES PARA LA TABLA ****************************
+// ******************* DEFINICIONES PARA LA TABLA **************************
 struct Node{
     long long score;
     char *name;
@@ -30,14 +30,12 @@ struct List{
 
 };
 typedef struct List List;
-
-// ***************************************************************************
+// *************************************************************************
 // ***************** DEFINICIÓN PARA COMANDOS ******************************
 enum {
     MaxPlayers = 50,
-    NameSz = 1024,
+    //NameSz = 1024,
     LineSz = 2*1024,
-
 };
 
 enum {
@@ -74,7 +72,7 @@ createnode(char *name, long long score, int id,pthread_t thread){
 		errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
 	}
 
-    n->name = (char *)malloc(sizeof(char)*NameSz);
+    n->name = (char *)malloc(sizeof(char)*LineSz);
     if (name == NULL) {
 		errx(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
 	}
@@ -84,6 +82,7 @@ createnode(char *name, long long score, int id,pthread_t thread){
     n->score = score;
     n->id = id;
     n->thread = thread;
+    // inicialmente el thread está ejecutando
     n->running = 1;
     n->next = NULL;
 
@@ -95,8 +94,8 @@ printnode(Node *n){
     printf("%s:%lld\n", n->name,n->score);
 }
 
-List 
-*createlist(){
+List *
+createlist(void){
 
     List *l = (List *)malloc(sizeof(List));
     if (l == NULL) {
@@ -110,8 +109,6 @@ List
     return l;
 }
 
-// es vacío si el nodo inicial no apunta a nada
-// Ponerlo como STATIC INT
 int 
 isempty(List *l){
     
@@ -121,57 +118,44 @@ isempty(List *l){
     return 0;
 }
 
-// insertar al final de la lista cuando se hace ADDPLAYER
+// Inserta un nuevo nodo en la lista
 void 
 insertatend(List *l, Node *n){
     
     pthread_mutex_lock(&l->listmutex);
-    // tanto principio como fin apuntan al mismo nodo
+    // Tanto principio como fin apuntan al mismo nodo
     if(isempty(l)){
         l->init = n;
         l->last = n;
     }else{
-        // la siguiente posición del último nodo pasa de NULL a n
+        // La siguiente posición del último nodo pasa de NULL a n
         l->last->next = n;
-        // el nodo final de la lista apunta al nuevo nodo insertado
+        // El nodo final de la lista apunta al nuevo nodo insertado
         l->last = n;
     }
     l->total++;
     pthread_mutex_unlock(&l->listmutex);
 
 }
-// lo usamos par imprimir HIGHSCORE
+
 void
 printlist(List *l){
 
-    Node *aux = l->init;
+    Node *aux;
+    //Node *aux = l->init;
 
     pthread_mutex_lock(&l->listmutex);
 
-    while (aux != NULL){
+    //while (aux != NULL){
+    for(aux = l->init; aux != NULL; aux=aux->next){
+
         printnode(aux);
-        aux=aux->next;
+        //aux=aux->next;
     }
     pthread_mutex_unlock(&l->listmutex);
-
 }
 
-void
-_printlist(List *l){
-
-    Node *aux = l->init;
-
-    pthread_mutex_lock(&l->listmutex);
-
-    while (aux != NULL){
-        printf("soooy:    %s:%lld\n", aux->name,aux->score);
-        aux=aux->next;
-    }
-    pthread_mutex_unlock(&l->listmutex);
-
-}
-
-// SE USA EN EL MAIN
+// Devuelve el nodo que pertenece a ese nombre
 Node *
 searchbyname(List *l, char *name){
 
@@ -199,9 +183,6 @@ _searchbyname(List *l, char *name){
     return aux; 
 }
 
-
-
-// SE USA EN EL MAIN para cambiar la puntuación en ADDPLAYER
 void
 changevalue(List *l, char *name, long long value){
 
@@ -210,12 +191,24 @@ changevalue(List *l, char *name, long long value){
 
     n = _searchbyname(l,name);
     if(n != NULL){
-        if(n->score < value || value == 0){
+        if(n->score < value){
             n->score = value;
         }
 
     }
+    pthread_mutex_unlock(&l->listmutex);
+}
 
+void
+resetvalue(List *l, char *name, long long value){
+
+    Node *n;
+    pthread_mutex_lock(&l->listmutex);
+
+    n = _searchbyname(l,name);
+    if(n != NULL){
+        n->score = value;
+    }
     pthread_mutex_unlock(&l->listmutex);
 
 }
@@ -224,12 +217,14 @@ void
 resetallvalues(List *l, long long value){
 
     Node *aux;
-    aux = l->init;
+    //aux = l->init;
 
     pthread_mutex_lock(&l->listmutex);
-    while (aux != NULL){
+    //while (aux != NULL){
+    for(aux = l->init; aux != NULL; aux=aux->next){
+
         aux->score  = value;
-        aux=aux->next;
+        //aux=aux->next;
     }
     pthread_mutex_unlock(&l->listmutex);
 
@@ -455,13 +450,15 @@ closethread(char *path) {
     }
 }
 
+// Apunta al usuario como muerto para que joindeadthreads()
+// se encargue de matar su estado
 void 
 deleteplayer(List *l, char *name, int *id) {
 
     char fullpath[LineSz];
     Node *n = searchbyname(l, name);
 
-    // Si el jugador existe
+    // Si el jugador existe, mandamos EXIT al thread
     if (n != NULL) {
         getcompletepath("/tmp", n->name, fullpath);
         closethread(fullpath);
@@ -471,6 +468,14 @@ deleteplayer(List *l, char *name, int *id) {
     free(name);
 }
 
+// Esta función se usa para encontrar aquellos threads que
+// se hayan marcado como muertos, es decir, que se haya hecho 
+// delplayer o se reciba algo != número por el thread, y hacer
+// que acaben su ejecución correctamente. 
+// Esta se usa antes y después de la iteración del bucle para 
+// hacer una actualización correcta. Si solo lo ponía al principio 
+// o al final, tenia que ejecutar otro comando después de la eliminación
+// para que se hiciese la actualización correcta 
 void 
 joindeadthreads(List *l) {
 
@@ -486,6 +491,9 @@ joindeadthreads(List *l) {
     while (current != NULL) {
 
         if (current->running == 0) {
+            // El nodo a eliminar es el actual, por lo que tenemos
+            // que crear un nodo temporal que apunte a él y actualizar
+            // el nodo anterior y el nodo posterior
             temp = current;
             current = current->next;
 
@@ -497,26 +505,32 @@ joindeadthreads(List *l) {
                 fprintf(stderr, "Error: join failed\n");
             }
 
-            // Eliminar el nodo de la lista
+            // Actualizamos el nodo previo
             if (previous == NULL) {
                 l->init = current;
             } else {
                 previous->next = current;
             }
 
-            // Liberar la memoria del nodo eliminado
             free(temp->name);
             free(temp);
         } else {
+            // Al no haber nodo a eliminar, actualizamos posiciones
             previous = current;
             current = current->next;
         }
     }
     pthread_mutex_unlock(&l->listmutex);
-    _printlist(l);
 }
 
-void 
+// Esta función se usa para encontrar aquellos threads que
+// se hayan marcado como muertos, es decir, que se haya hecho 
+// delplayer o se reciba algo != número por el thread, y hacer
+// que acaben su ejecución correctamente. 
+// Esta se usa cuando se hace Ctrl+D para acabar con todos los
+// que queden vivos y para que funcione tuve que quitar el
+// mecanismo de sincronización
+static void 
 _joindeadthreads(List *l) {
 
     Node *current;
@@ -530,6 +544,9 @@ _joindeadthreads(List *l) {
     while (current != NULL) {
 
         if (current->running == 0) {
+            // El nodo a eliminar es el actual, por lo que tenemos
+            // que crear un nodo temporal que apunte a él y actualizar
+            // el nodo anterior y el nodo posterior
             temp = current;
             current = current->next;
 
@@ -542,29 +559,25 @@ _joindeadthreads(List *l) {
             if (pthread_join(temp->thread, NULL) != 0) {
                 fprintf(stderr, "Error: join failed\n");
             }
-
-            // Eliminar el nodo de la lista
+            // Actualizamos el nodo previo
             if (previous == NULL) {
                 l->init = current;
             } else {
                 previous->next = current;
             }
 
-            // Liberar la memoria del nodo eliminado
             free(temp->name);
             free(temp);
         } else {
+            // Al no haber nodo a eliminar, actualizamos posiciones
             previous = current;
             current = current->next;
         }
     }
 }
 
-// ponerla como STATIC INT
 void
-elimfirst(List *l){
-
-    //pthread_mutex_lock(&l->listmutex);
+elimnode(List *l){
 
     Node *aux;
 
@@ -576,21 +589,19 @@ elimfirst(List *l){
 
         l->total--;
     }
-
-    //pthread_mutex_unlock(&l->listmutex);
 }
-
 
 void
 emptylist(List *l){
     
     while(!isempty(l)){
-        elimfirst(l);
+        elimnode(l);
     }
     pthread_mutex_destroy(&l->listmutex);
 
     free(l);
 }
+
 void *
 scoreupdating(void *arg) {
 
@@ -599,11 +610,12 @@ scoreupdating(void *arg) {
     List *l;
     int id;
     Node * n;
+    int c;
 
     char line[LineSz];
     long long number;
     FILE *fd;
-    char *newline;
+    //char *newline;
     char fullpath[LineSz];
     pthread_t thread;
 
@@ -630,22 +642,28 @@ scoreupdating(void *arg) {
         
         if (line[strlen(line) - 1] != '\n') {
             fprintf(stderr, "Exceeded path size\n");
+            while ((c = getchar()) != '\n' && c != EOF);
             continue;
         }
-        newline = strrchr(line, '\n');
+        /*newline = strrchr(line, '\n');
         if (newline != NULL) {
             *newline = '\0';
-        }
+        }*/
+        line[strlen(line) -1] = '\0';
+
         number = getnumber(line);
         
         if (number < 0) {
             n = searchbyname(l,name);
             if(n != NULL){
+                // al nodo que pertenece ese nombre
+                // le marcamos como muerto y salimos del bucle
                 n->running = 0;
             }
-            fprintf(stderr, "running = 0!\n");
             break;
         }
+        // Cambiamos el valor de la puntuación
+        // si es mayor al que se encuentre en ese momento
         changevalue(l, name, number);
     }
 
@@ -730,7 +748,7 @@ reset(List *l, char *name){
         n=searchbyname(l, name);
         // significa que existe el usuario
         if(n!=NULL){
-            changevalue(l,name,0);
+            resetvalue(l,name,0);
         }else{
             fprintf(stderr, "Error: this user does not exist\n");
         }
@@ -739,8 +757,6 @@ reset(List *l, char *name){
     }
 }
 
-
-// TENGO QUE MIRAR LO DE THREADS Y ARGS
 int 
 main(int argc, char *argv[]){
 
@@ -812,11 +828,8 @@ main(int argc, char *argv[]){
             free(cl.arg);
             continue;
 	    }
-        // hacer join de los threads muertos
         joindeadthreads(l);
-
     }
-
 
     emptylist(l);
 
