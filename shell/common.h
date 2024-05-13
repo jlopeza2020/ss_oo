@@ -23,5 +23,9 @@ struct CommandLine{
 	int numpipes;
     int status;
     int statusred; // si es error, si hay redirección entrada, salida o las 2
+    // status del builtin si solo hay commandos sin pipes
+    int statusbt; // inicializada a -1
+    // status de cadad comando si hay pipes y son builtins
+    int *statuspipesbt;
 };
 typedef struct CommandLine CommandLine;

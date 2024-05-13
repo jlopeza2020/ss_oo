@@ -504,6 +504,8 @@ freememory(CommandLine * cl)
     	free(cl->commands);
 		// libero el array de ints
 		free(cl->numsubcommands);
+		// libero el array de builtinstatus
+		free(cl->statuspipesbt);
 	}
 }
 

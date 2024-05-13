@@ -10,17 +10,16 @@
 
 char *builtins[NbuiltIn] = {"cd"};
 
-// 	- builtin
-//  - fichero ejecutable del dir de trabajo 
-//  - fichero ejecutable de alguno de la variable PATH
 int
-isbuiltin(char *cmd){
+isbuiltin(char *cmd, int *statusbt){
 
 	int i;
 
 	for(i = 0; i < NbuiltIn; i++){
 
         if(strcmp(cmd, builtins[i]) == 0){
+			*statusbt = i;
+			fprintf(stderr, "valor de statusbt: %d\n", *statusbt);
             return 1;
         }
     }
@@ -201,23 +200,17 @@ setpath(char *cmd){
 
 }
 
-// setbuitlin
-// hacer swicth case e incluir todas las funciones
 void  
-findtypecommand(CommandLine *cl, char *cmd){
+findtypecommand(CommandLine *cl, char *cmd, int *statusbt){
 
 	int isbt; 
 	int ispwd;
 	int ispath;
 
-	isbt = isbuiltin(cmd);
+	// no ejecutamos el built in porque así vemos si hay errores o no
+	isbt = isbuiltin(cmd, statusbt);
 	ispwd = setpwd(cmd);
 	ispath = setpath(cmd);
-
-	if(isbt){
-		fprintf(stderr,"soy built in\n");
-		//setbuiltin(cmd);
-	}
 
 	if(!isbt && !ispwd && !ispath){
 
@@ -225,26 +218,98 @@ findtypecommand(CommandLine *cl, char *cmd){
 	}		
 }
 
+// se mira si es un builtin, pertenece a $PWD o a $PATH
+// si pertenece a $PWD o $PATH cambia el path 
 void
 findcommands(CommandLine *cl){
     
-	
-	// Apartir de aquí podemos hacer:
-	// 	mirar el primer elemento de cada array y ver si se trata de: 
-		// 	- builtin
-		//  - fichero ejecutable del dir de trabajo 
-		//  - fichero ejecutable de alguno de la variable PATH
-
 	// Para ello distinguir si se trata de un pipeline o no
 
 	long long j;
 
 	if(cl->numpipes > 0){
+		// inicializamos memoria para cl->statusbt;
+		cl->statuspipesbt = (int *)malloc(sizeof(int) * (cl->numcommands));
+
+
 		for(j = 0; j < cl->numcommands; j++){
-			findtypecommand(cl,cl->commands[j][0]);
+			// inicialmente como no sabemos si existe o no, 
+			// lo inicializamos a -1
+			cl->statuspipesbt[j] = -1;
+			findtypecommand(cl,cl->commands[j][0], &cl->statuspipesbt[j]);
+			// Así evitamos iteraciones innecesarias REVISAR DE ACUERDO AL ENUNCIADO
 		}
 	}else{
 
-		findtypecommand(cl,cl->words[0]);
+		findtypecommand(cl,cl->words[0], &cl->statusbt);
 	}
+}
+
+
+void 
+executecd(char **cl, long long numwords){
+	
+	char cdvar[MaxWord];
+	if(numwords == 1){
+		strcpy(cdvar, getenv("HOME"));
+	}else{
+		strcpy(cdvar, cl[1]);
+	}
+
+	if(chdir(cdvar) != 0){
+		fprintf(stderr,"cd: %s not such file or directory\n", cdvar);
+		// fijar el valor de cl->status para lo de ifok
+	}
+}
+
+void
+executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords){
+
+	switch (type) {
+	case cd:
+		if(numwords > 2){
+			fprintf(stderr,"cd: too many arguments\n");
+			// añadir el error en cl status para lo de ifok
+			return;
+		}
+		executecd(comandline, numwords);
+		break;
+	default:
+	}
+	// AQUÍ AÑADIR EL RESTO DE BUILTINS
+}
+
+void 
+executecommand(CommandLine *cl, char **comandline){
+	// revisar lo de fork exec...
+	// mirar redirecciones 
+	// mirar lo de bg
+	fprintf(stderr,"soy comando\n");
+}
+void
+executecommands(CommandLine *cl){
+	
+	long long j;
+
+	if(cl->numpipes > 0){
+		for(j = 0; j < cl->numcommands; j++){
+			if(cl->statuspipesbt[j] >= 0){
+				executebuiltin(cl,cl->commands[j], cl->statuspipesbt[j], cl->numsubcommands[j]);
+			}else{
+				executecommand(cl,cl->commands[j]);
+			}
+			// fijar redirecciones y bg 
+		}
+	}else{
+
+		if(cl->statusbt >= 0){
+			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
+		}else{
+			executecommand(cl,cl->words);
+		}
+
+		// fijar redirecciones y bg 
+
+	}
+
 }

@@ -30,6 +30,7 @@ initcl(CommandLine *cl){
 	cl->numpipes = 0;
 	cl->status = 0;
 	cl->statusred = 0;
+	cl->statusbt = -1;
 }
 
 int
@@ -111,9 +112,12 @@ main(int argc, char *argv[])
 		// escribirlo en executor.c 
 		findcommands(&cl);
 
+		// si algún comando falla, no se ejecuta, da error 
+		// y pasa a la siguiente ejecución 
 		if(cl.status==FINDERROR){
 			freememory(&cl);
 			fprintf(stderr,"Command not found\n");
+			// almacenar si ha acabado con fallo o no !!!! HACER
 			// paso a la siguiente ejecución
 			continue;
 		}
@@ -122,21 +126,24 @@ main(int argc, char *argv[])
 		for(i = 0; i < cl.numwords; i++){
 			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
 		}
+		
+		fprintf(stderr,"builtin valor : %d\n", cl.statusbt);		
+
 
 		if(cl.numpipes > 0){
 			for(j = 0; j < cl.numcommands; j++){
 				for(k = 0; k < cl.numsubcommands[j]; k++){
 
 					fprintf(stderr,"soy el subcommando: %s\n", cl.commands[j][k]);		
+					fprintf(stderr,"builtin valor : %d\n", cl.statuspipesbt[j]);		
+
 				}
 			}
-
 		}
 		if(cl.bg){
 			fprintf(stderr, "Hay bg\n");
 
 		}
-
 
 		// trazas
 		if(cl.statusred == INPUTRED){
@@ -151,7 +158,8 @@ main(int argc, char *argv[])
 		}
 
 
-		//executecommands(&cl);
+		// a partir de aquí no hay errores y se puede ejecutar todo perfectamente
+		executecommands(&cl);
 
 		freememory(&cl);
 	}
