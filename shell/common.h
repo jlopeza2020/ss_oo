@@ -8,6 +8,10 @@ enum {
     FINDERROR = -1,
 };
 
+enum {
+    READ = 0,
+    WRITE = 1,
+};
 struct CommandLine{
 
     char **words; // eje: [cat, /tmp/a, |, wc -c, >, x, <, y, &]

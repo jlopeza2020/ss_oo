@@ -40,8 +40,8 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
-	int i;
-	int j,k;
+	//int i;
+	//int j,k;
 
 	// así está bien
 	CommandLine cl;
@@ -123,7 +123,7 @@ main(int argc, char *argv[])
 		}
 
 		// trazas
-		for(i = 0; i < cl.numwords; i++){
+		/*for(i = 0; i < cl.numwords; i++){
 			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
 		}
 		
@@ -155,7 +155,7 @@ main(int argc, char *argv[])
 		if(cl.statusred == BOTHRED){
 			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
 			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-		}
+		}*/
 
 
 		// a partir de aquí no hay errores y se puede ejecutar todo perfectamente

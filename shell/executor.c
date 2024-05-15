@@ -4,6 +4,9 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <err.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include "common.h"
 #include "executor.h"
 
@@ -253,6 +256,11 @@ executecd(char **cl, long long numwords){
 	if(numwords == 1){
 		strcpy(cdvar, getenv("HOME"));
 	}else{
+		if(strlen(cl[1]) > MaxWord){
+			fprintf(stderr,"file or directory too long\n");
+			// fijar el valor de cl->status para lo de ifok
+			return;
+		}
 		strcpy(cdvar, cl[1]);
 	}
 
@@ -279,37 +287,92 @@ executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords)
 	// AQUÍ AÑADIR EL RESTO DE BUILTINS
 }
 
-void 
-executecommand(CommandLine *cl, char **comandline){
-	// revisar lo de fork exec...
-	// mirar redirecciones 
-	// mirar lo de bg
-	fprintf(stderr,"soy comando\n");
+void executecommand(CommandLine *cl, char ***comandline, long long *numwords) {
+    // Revisar lo de fork exec...
+    // Mirar redirecciones
+    // Mirar lo de bg
+
+	pid_t pid;
+	pid_t waitpid;
+    int sts;
+
+	// se aumenta para añadir NULL al final del array de palabras
+    (*numwords)++;
+    *comandline = (char **)realloc(*comandline, sizeof(char *) * (*numwords + 1));
+
+    if (*comandline == NULL) {
+        err(EXIT_FAILURE, "Error: realloc\n");
+    }
+
+    (*comandline)[*numwords - 1] = NULL;
+
+    pid = fork();
+
+    switch (pid) {
+        case -1:
+            err(EXIT_FAILURE, "Error: fork failed");
+            // Actualizar cl->status
+            // exit(EXIT_FAILURE);
+        case 0:
+
+			// duplicar si hay entradas
+            execv((*comandline)[0], *comandline);
+			fprintf(stderr, "Error: command failed\n");
+            break;
+        default:
+
+		
+		// esto tiene que ir fuera y devolver el valor de status
+		while ((waitpid = wait(&sts)) != -1) {
+			if (pid == waitpid) {
+				if (!WIFEXITED(sts)) {
+					// actualizar el valor de cl.status
+					// liberar memoria y salir
+					//errx(EXIT_FAILURE, "Error: wait failed\n");
+				}
+			}
+		}
+    }
 }
+
 void
 executecommands(CommandLine *cl){
 	
 	long long j;
 
+	// trato el fichero de entrada
+	
 	if(cl->numpipes > 0){
+
 		for(j = 0; j < cl->numcommands; j++){
 			if(cl->statuspipesbt[j] >= 0){
 				executebuiltin(cl,cl->commands[j], cl->statuspipesbt[j], cl->numsubcommands[j]);
 			}else{
-				executecommand(cl,cl->commands[j]);
+				
+				executecommand(cl,&cl->commands[j], &cl->numsubcommands[j]);
 			}
 			// fijar redirecciones y bg 
 		}
+
+
+		// hacer el wait aquí si no hay bg
+
 	}else{
 
 		if(cl->statusbt >= 0){
 			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
 		}else{
-			executecommand(cl,cl->words);
+			executecommand(cl,&cl->words, &cl->numwords);
 		}
 
 		// fijar redirecciones y bg 
+		// hacer el wait aquí
+
 
 	}
+
+	// trato el fichero de salida 
+	// probar a hacer el wait aquí  si no hay &
+
 
 }

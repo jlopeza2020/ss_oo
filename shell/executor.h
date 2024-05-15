@@ -16,7 +16,7 @@ char **tokenpath(char *path, long long times);
 // EXECUTOR
 // setbuiltin
 void executecommands(CommandLine *cl);
-void executecommand(CommandLine *cl, char **comandline);
+void executecommand(CommandLine *cl, char ***comandline, long long *numwords);
 void executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords);
 void executecd(char **cl, long long numwords);
 
