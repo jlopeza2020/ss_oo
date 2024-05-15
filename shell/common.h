@@ -25,6 +25,7 @@ struct CommandLine{
     int stdored;
     char *outred; // eje: x
 	int numpipes;
+    int **pipesfd;
     int status;
     int statusred; // si es error, si hay redirección entrada, salida o las 2
     // status del builtin si solo hay commandos sin pipes

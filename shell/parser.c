@@ -466,6 +466,7 @@ freememory(CommandLine * cl)
 {
 	long long i;
 	long long j;
+	int k;
 
 	// liberamos el array de strings 
 	for (i = 0; i < cl->numwords; i++) {
@@ -504,8 +505,16 @@ freememory(CommandLine * cl)
     	free(cl->commands);
 		// libero el array de ints
 		free(cl->numsubcommands);
-		// libero el array de builtinstatus
+		// libero el array de builtinstatus que me dice si hay y el tipo de built in
 		free(cl->statuspipesbt);
+		
+		// llega hasta el punto de executecommands
+		if(cl->status != FINDERROR){
+			for (k = 0; k < cl->numpipes; k++) {
+        		free(cl->pipesfd[k]);
+    		}
+    		free(cl->pipesfd);
+		}
 	}
 }
 
