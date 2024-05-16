@@ -107,7 +107,11 @@ main(int argc, char *argv[])
 			continue;
 		}
 
-		
+		if(cl.numwords == 0){
+			freememory(&cl);
+			continue;
+		}
+
 		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
 		// escribirlo en executor.c 
 		findcommands(&cl);
@@ -143,7 +147,7 @@ main(int argc, char *argv[])
 		if(cl.bg){
 			fprintf(stderr, "Hay bg\n");
 
-		}
+		}*/
 
 		// trazas
 		if(cl.statusred == INPUTRED){
@@ -155,7 +159,7 @@ main(int argc, char *argv[])
 		if(cl.statusred == BOTHRED){
 			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
 			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-		}*/
+		}
 
 
 		// a partir de aquí no hay errores y se puede ejecutar todo perfectamente

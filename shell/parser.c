@@ -48,8 +48,9 @@ setequal(char *str){
 	strcpy(value, saveptr);
 
 	//fprintf(stderr, " name: %s  = value: %s\n", name, value);
-
-	if (setenv(name, value, 0) != 0){
+	// el valor de overwrite es 1 porque sino no se va a sobreescribor
+	// el valor si se modifica
+	if (setenv(name, value, 1) != 0){
 		fprintf(stderr,"Env var %s could not be set\n", name);
 	}
 }
@@ -64,7 +65,7 @@ caseequal(CommandLine *cl){
 		for(i = 0; i < cl->numwords; i++){
 
 			if(isequal(cl->words[i])){
-				fprintf(stderr, "tengo un igual\n");
+				//fprintf(stderr, "tengo un igual\n");
 				// hacer la sustitución correspondiente
 				setequal(cl->words[i]);
 				elimstr(cl,i);
@@ -152,7 +153,6 @@ caseenv(CommandLine *cl){
 	for(i = 0; i < cl->numwords; i++){
 		// ir comprobando si cada palabra son variables de entorno 
 		if(isenv(cl->words[i])){
-			fprintf(stderr, "soy una variable de entorno\n");
 			// hacer la sustitución correspondiente
 			setenvvar(cl, cl->words[i]);
 		}

@@ -22,7 +22,7 @@ isbuiltin(char *cmd, int *statusbt){
 
         if(strcmp(cmd, builtins[i]) == 0){
 			*statusbt = i;
-			fprintf(stderr, "valor de statusbt: %d\n", *statusbt);
+			//fprintf(stderr, "valor de statusbt: %d\n", *statusbt);
             return 1;
         }
     }
@@ -375,7 +375,7 @@ executecommands(CommandLine *cl){
 	if(cl->numpipes > 0){
 
 		// inicializar pipes
-		cl->pipesfd = malloc((cl->numpipes) * sizeof(int *));
+		cl->pipesfd = malloc(sizeof(int *) * cl->numpipes);
     	if (cl->pipesfd == NULL) {
         	perror("malloc");
         	exit(EXIT_FAILURE);
@@ -383,7 +383,7 @@ executecommands(CommandLine *cl){
 
     	// Crear los pipes
     	for (i = 0; i < cl->numpipes; i++) {
-        	cl->pipesfd[i] = malloc(2 * sizeof(int));
+        	cl->pipesfd[i] = malloc(sizeof(int)* 2);
         	if (cl->pipesfd[i] == NULL) {
             	perror("malloc");
             	exit(EXIT_FAILURE);
@@ -427,7 +427,7 @@ executecommands(CommandLine *cl){
 		// hacer el wait aquí
 	}
 
-	// si ha recibido un pid y si no hay '&'
+	// si ha recibido un pid y si no hay '&' en la linea 
 	if(pid != 0 && cl->bg == 0){
 
 		// esto tiene que ir fuera y devolver el valor de status
