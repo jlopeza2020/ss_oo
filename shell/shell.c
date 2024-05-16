@@ -28,7 +28,7 @@ initcl(CommandLine *cl){
     cl->inrednum = 0;
 	cl->inredfd = -1;
 	cl->outredfd = -1;
-    cl->inrednum = 0;
+    cl->outrednum = 0;
 	cl->numpipes = 0;
 	cl->status = 0;
 	cl->statusred = 0;

@@ -322,13 +322,20 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
         case 0:
 
 			
-			if(cl->statusred == INPUTRED && *pos == 0){
+			if((cl->statusred == INPUTRED || cl->statusred == BOTHRED) && *pos == 0){
 
-				fprintf(stderr, "ESTOY AQUÍ\n");
-				if (dup2(cl->inredfd, 0) == -1) {
+				if (dup2(cl->inredfd, STDIN_FILENO) == -1) {
 					fprintf(stderr,"Error: dup2 failed\n");
 				}
 				close(cl->inredfd);
+			}
+
+			if((cl->statusred == OUTPUTRED || cl->statusred == BOTHRED) && *pos == cl->numpipes){
+
+				if (dup2(cl->outredfd, STDOUT_FILENO) == -1) {
+					fprintf(stderr,"Error: dup2 failed\n");
+				}
+				close(cl->outredfd);
 			}
 
 			if(cl->numpipes > 0){
@@ -336,7 +343,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 		
 				if (*pos != 0) { // Redireccionar la entrada del pipe anterior
                 
-                	if (dup2(cl->pipesfd[*pos - 1][READ], 0) == -1) {
+                	if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
                 	    perror("dup2");
                 	    exit(EXIT_FAILURE);
                	 	}
@@ -344,7 +351,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
             	if (*pos != cl->numpipes) { // Redireccionar la salida al pipe actual
                 
             	    
-					if (dup2(cl->pipesfd[*pos][WRITE], 1) == -1) {
+					if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
                	    	perror("dup2");
                   	 	exit(EXIT_FAILURE);
                	 	}
@@ -467,15 +474,6 @@ openredin(CommandLine *cl){
 		cl->status = REDERROR;
 		return;
     }
-
-    //hacerlo en el proceso hijo
-	/*if (dup2(fd, STDIN_FILENO) == -1) {
-		fprintf(stderr,"Error: dup2 failed\n");
-		cl->status = REDERROR;
-		close(fd);
-		return;
-    }*/
-
 }
 
 void 
@@ -487,16 +485,6 @@ openredout(CommandLine *cl){
 		cl->status = REDERROR;
 		return;
     }
-
-	// hacerlo en el proceso hijo
-    /*if (dup2(fd, STDOUT_FILENO) == -1) {
-    	fprintf(stderr,"Error: dup2 failed\n");
-		cl->status = REDERROR;
-		close(fd);
-		return;
-    }*/
-
-    //close(fd);
 }
 
 void 
@@ -504,17 +492,12 @@ handleredirecctions(CommandLine *cl){
 
 	if(cl->statusred == INPUTRED){
 		openredin(cl);
-		fprintf(stderr,"fichero de entrada: %s\n", cl->inred);
 	}
 	if(cl->statusred == OUTPUTRED){
-		fprintf(stderr,"fichero de salida: %s\n", cl->outred);
 		openredout(cl);
 	}
 	if(cl->statusred == BOTHRED){
 		openredin(cl);
 		openredout(cl);
-
-		fprintf(stderr,"fichero de entrada: %s\n", cl->inred);
-		fprintf(stderr,"fichero de salida: %s\n", cl->outred);
 	}
 }
