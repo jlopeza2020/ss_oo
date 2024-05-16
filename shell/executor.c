@@ -6,7 +6,8 @@
 #include <err.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "common.h"
 #include "executor.h"
 
@@ -321,19 +322,29 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
         case 0:
 
 			
+			if(cl->statusred == INPUTRED && *pos == 0){
+
+				fprintf(stderr, "ESTOY AQUÍ\n");
+				if (dup2(cl->inredfd, 0) == -1) {
+					fprintf(stderr,"Error: dup2 failed\n");
+				}
+				close(cl->inredfd);
+			}
+
 			if(cl->numpipes > 0){
 
 		
 				if (*pos != 0) { // Redireccionar la entrada del pipe anterior
                 
-                	if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
+                	if (dup2(cl->pipesfd[*pos - 1][READ], 0) == -1) {
                 	    perror("dup2");
                 	    exit(EXIT_FAILURE);
                	 	}
             	}
             	if (*pos != cl->numpipes) { // Redireccionar la salida al pipe actual
                 
-            	    if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
+            	    
+					if (dup2(cl->pipesfd[*pos][WRITE], 1) == -1) {
                	    	perror("dup2");
                   	 	exit(EXIT_FAILURE);
                	 	}
@@ -350,7 +361,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
             execv((*comandline)[0], *comandline);
 			fprintf(stderr, "Error: command failed\n");
             break;
-        default:
+        default:	
 
     }
 	return pid;
@@ -366,7 +377,7 @@ executecommands(CommandLine *cl){
 	int i;
 	long long novalue; 
 
-	novalue = -1;
+	novalue = 0;
 
 
 	// trato el fichero de entrada
@@ -442,13 +453,68 @@ executecommands(CommandLine *cl){
 		}
 	}
 	// terminar de mirar lo de /dev/null
-
-
-	
-	
-
 	// trato el fichero de salida 
 	// probar a hacer el wait aquí  si no hay &
+}
+
+void 
+openredin(CommandLine *cl){
 
 
+    cl->inredfd = open(cl->inred, O_RDONLY);
+    if ( cl->inredfd == -1) {
+        fprintf(stderr,"Error: open this file failed\n");
+		cl->status = REDERROR;
+		return;
+    }
+
+    //hacerlo en el proceso hijo
+	/*if (dup2(fd, STDIN_FILENO) == -1) {
+		fprintf(stderr,"Error: dup2 failed\n");
+		cl->status = REDERROR;
+		close(fd);
+		return;
+    }*/
+
+}
+
+void 
+openredout(CommandLine *cl){
+
+	cl->outredfd = open(cl->outred, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if (cl->outredfd == -1) {
+        fprintf(stderr,"Error: open this file failed\n");
+		cl->status = REDERROR;
+		return;
+    }
+
+	// hacerlo en el proceso hijo
+    /*if (dup2(fd, STDOUT_FILENO) == -1) {
+    	fprintf(stderr,"Error: dup2 failed\n");
+		cl->status = REDERROR;
+		close(fd);
+		return;
+    }*/
+
+    //close(fd);
+}
+
+void 
+handleredirecctions(CommandLine *cl){
+
+	if(cl->statusred == INPUTRED){
+		openredin(cl);
+		fprintf(stderr,"fichero de entrada: %s\n", cl->inred);
+	}
+	if(cl->statusred == OUTPUTRED){
+		fprintf(stderr,"fichero de salida: %s\n", cl->outred);
+		openredout(cl);
+	}
+	if(cl->statusred == BOTHRED){
+		openredin(cl);
+		openredout(cl);
+
+		fprintf(stderr,"fichero de entrada: %s\n", cl->inred);
+		fprintf(stderr,"fichero de salida: %s\n", cl->outred);
+	}
 }

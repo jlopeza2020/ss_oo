@@ -4,10 +4,17 @@ enum {
 };
 
 enum {
-    PARSINGERROR = -2,
-    FINDERROR = -1,
+    REDERROR = -3,
+    PARSINGERROR,
+    FINDERROR,
 };
 
+enum {
+    //PARSINGERROR = -1,
+    INPUTRED = 2,
+    OUTPUTRED,
+    BOTHRED = 5,
+};
 enum {
     READ = 0,
     WRITE = 1,
@@ -20,9 +27,11 @@ struct CommandLine{
     long long *numsubcommands; // eje: [2,2]
     long long numcommands; // eje: 2
     int bg;
-    int stdired;
+    int inrednum;
+    int inredfd;
     char *inred; // eje: y
-    int stdored;
+    int outrednum;
+    int outredfd;
     char *outred; // eje: x
 	int numpipes;
     int **pipesfd;

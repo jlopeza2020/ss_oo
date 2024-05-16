@@ -1,12 +1,4 @@
 
-// manejar errores parsing
-enum {
-    //PARSINGERROR = -1,
-    INPUTRED = 2,
-    OUTPUTRED,
-    BOTHRED = 5,
-};
-
 long long getnumwords(char *line);
 void handlespecialchars(CommandLine *cl, char *word, long long *pos);
 void tokenize(CommandLine *cl, char *line);

@@ -20,3 +20,7 @@ pid_t executecommand(CommandLine *cl, char ***comandline, long long *numwords, l
 void executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords);
 void executecd(char **cl, long long numwords);
 
+// redirections 
+void handleredirecctions(CommandLine *cl);
+void openredout(CommandLine *cl);
+void openredin(CommandLine *cl);

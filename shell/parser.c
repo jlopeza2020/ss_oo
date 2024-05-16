@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
+#include <unistd.h>
 #include "common.h"
 #include "parser.h"
 
@@ -277,23 +278,23 @@ casered(CommandLine *cl){
 	long long i;
 	// Pueden aparecer en cualquier orden
 	for (i = 0; i < cl->numwords; i++) {
-		if (isred(cl, "<") && cl->stdired == 0){
+		if (isred(cl, "<") && cl->inrednum == 0){
 			
 			cl->inred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->inred == NULL) {
 				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
-			handlered(cl, cl->inred, cl->stdired++, INPUTRED);
+			handlered(cl, cl->inred, cl->inrednum++, INPUTRED);
 		}
 
-		if(isred(cl, ">") && cl->stdored == 0){
+		if(isred(cl, ">") && cl->outrednum == 0){
 
 			// almacenar la string en algún lado
 			cl->outred = (char *)malloc(sizeof(char) * MaxWord);
 			if (cl->outred == NULL) {
 				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
-			handlered(cl, cl->outred, cl->stdored++, OUTPUTRED);
+			handlered(cl, cl->outred, cl->outrednum++, OUTPUTRED);
 
 		}
 	
@@ -477,16 +478,31 @@ freememory(CommandLine * cl)
 	// solo se ha creado el de entrada 
 	if(cl->statusred == INPUTRED){
 		free(cl->inred);
+		if(cl->inredfd >= 0){
+			close(cl->inredfd);
+		}
 	}
 
 	// solo se ha creado el de salida
 	if(cl->statusred == OUTPUTRED){
 		free(cl->outred);
+		if(cl->outred >= 0){
+			close(cl->outredfd);
+
+		}
 	}
 	// se han creado los dos
 	if (cl->statusred == BOTHRED){
 		free(cl->inred);
 		free(cl->outred);
+
+		if(cl->inredfd >= 0){
+			close(cl->inredfd);
+		}
+
+		if(cl->outred >= 0){
+			close(cl->outredfd);
+		}
 	}
 
 	if(cl->numpipes > 0){
@@ -509,7 +525,7 @@ freememory(CommandLine * cl)
 		free(cl->statuspipesbt);
 		
 		// llega hasta el punto de executecommands
-		if(cl->status != FINDERROR){
+		if(cl->status != FINDERROR && cl->status != REDERROR){
 			for (k = 0; k < cl->numpipes; k++) {
         		free(cl->pipesfd[k]);
     		}

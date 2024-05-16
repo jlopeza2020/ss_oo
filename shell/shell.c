@@ -25,8 +25,10 @@ initcl(CommandLine *cl){
     cl->numwords = 0;
 	cl->numcommands = 0;
     cl->bg = 0;
-    cl->stdired = 0;
-    cl->stdored = 0;
+    cl->inrednum = 0;
+	cl->inredfd = -1;
+	cl->outredfd = -1;
+    cl->inrednum = 0;
 	cl->numpipes = 0;
 	cl->status = 0;
 	cl->statusred = 0;
@@ -149,21 +151,20 @@ main(int argc, char *argv[])
 
 		}*/
 
-		// trazas
-		if(cl.statusred == INPUTRED){
-			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
-		}
-		if(cl.statusred == OUTPUTRED){
-			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-		}
-		if(cl.statusred == BOTHRED){
-			fprintf(stderr,"fichero de entrada: %s\n", cl.inred);
-			fprintf(stderr,"fichero de salida: %s\n", cl.outred);
-		}
+		handleredirecctions(&cl);
 
+		if(cl.status==REDERROR){
+			freememory(&cl);
+			fprintf(stderr,"Redirections failed\n");
 
+			// almacenar si ha acabado con fallo o no !!!! HACER
+			// paso a la siguiente ejecución
+			continue;
+		}
 		// a partir de aquí no hay errores y se puede ejecutar todo perfectamente
 		executecommands(&cl);
+
+		//setbg(cl);
 
 		freememory(&cl);
 	}
