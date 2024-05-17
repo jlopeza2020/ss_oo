@@ -305,7 +305,6 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
     (*comandline)[*numwords - 1] = NULL;
 
     pid = fork();
-	//fprintf(stderr, "pid en fun :%d\n", pid);
 
     switch (pid) {
         case -1:
@@ -344,7 +343,9 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
                 	    err(EXIT_FAILURE,"Error: dup2 failed\n");
                	 	}
             	}
-            	if (*pos != cl->numpipes) { // Redireccionar la salida al pipe actual
+				// si no estamos en la última posición, hay que redireccionar el 
+				// la salida al pipe actual
+            	if (*pos != cl->numpipes) {
                 
             	    
 					if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
@@ -359,11 +360,10 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
             	}
 			}
 
-			// si hay background se fija
+			// si hay background se fija en el hijo
 			setbg(cl);
 
             execv((*comandline)[0], *comandline);
-			//freememory(&cl); // mirar cómo liberar la memoria
 			errx(EXIT_FAILURE, "Error: command failed\n");
             break;
         default:	
@@ -371,23 +371,50 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 	return pid;
 }
 
+void 
+setwait(pid_t *waitpids, long long childs){
+
+	pid_t wpid;
+	int sts;
+	long long i;
+
+	wpid = 0;
+
+	while (childs > 0 && wpid != -1) {
+
+		wpid = wait(&sts);
+
+		for(i = 0; i < childs; i++){
+			if(wpid == waitpids[i]){
+				// si ha acabado el pid del wpid actual, 
+				// hay que decrecer el valor de childs
+				if(WIFEXITED(sts)){
+					childs--;
+					break;
+				}
+			}
+		}
+	}
+}
+
 void
 executecommands(CommandLine *cl){
 	
 	long long j;
-	int sts;
+	//int sts;
 	pid_t pid;
-	pid_t wpid;
+	//pid_t wpid;
 	int i;
 	long long novalue; 
-	long long childs;
+	//long long childs;
 
 	// se usa para decir que no hay pipes y para las redirecciones (dup2)
 	// es necesario fijar este valor a 0
 	novalue = 0;
 	pid = 0;
 	pid_t *waitpids;
-	// fijamos previamente el valor de numcommands
+
+	// fijamos previamente el valor de numcommands necesario para background
 	if (cl->numpipes == 0){
 		cl->numcommands = 1;
 	}
@@ -432,6 +459,7 @@ executecommands(CommandLine *cl){
     	}
 
 	}else{
+		// en este caso el comando es sin pipes
 		// significa que el comando actual es un builtin
 		if(cl->statusbt >= 0){
 			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
@@ -442,64 +470,30 @@ executecommands(CommandLine *cl){
 
 	}
 
-	childs = cl->numcommands;
+	// aquí se hace el wait
+	//childs = cl->numcommands;
 	// si no he ejecutado un builtin y no hay que hacer background: hacemos wait
 	if(pid != 0 && !cl->bg){
 
-		// inicializo con malloc y hago free
-		wpid = 0;
+		setwait(waitpids,cl->numcommands);
+		
+		/*wpid = 0;
 		while (childs > 0 && wpid != -1) {
 
-			wpid = wait(&sts); // Esperar a cualquier proceso hijo
-
-			/*if (wpid == -1) {
-            	perror("wait");
-            	exit(EXIT_FAILURE);
-        	}*/
+			wpid = wait(&sts);
 
 			for(i = 0; i < childs; i++){
 				if(wpid == waitpids[i]){
+					// si ha acabado el pid del wpid actual, 
+					// hay que decrecer el valor de childs
 					if(WIFEXITED(sts)){
 						childs--;
 						break;
 					}
 				}
 			}
-
-			/*}
-			if(wpid == waitpids[i]){
-				if(WIFEXITED(sts)){
-					childs--;
-				}
-			}*/
-
-		}
-		/*for(i = 0; i < cl->numcommands; i++){
-
-			if()
-			fprintf(stderr, "pid :%d\n", waitpids[i]);
-			wait(&sts);
 		}*/
-		
 	}
-
-		/*while ((pid = wait(&sts)) > 0) {
-			if(WIFEXITED(sts))
-        		fprintf(stderr, "El proceso hijo con PID %d ha terminado.\n", pid);
-    	}*/
-
-		// el problema es wait
-		/*while ((waitpid = wait(&sts)) != -1) {
-			//fprintf(stderr, "pid :%d\n", pid);
-			if (pid == waitpid) {
-				if (!WIFEXITED(sts)) {
-					// actualizar el valor de cl.status
-					// liberar memoria y salir REVISAR
-					errx(EXIT_FAILURE, "Error: wait failed\n");
-				}
-			}
-		}*/
-	//}
 
 	free(waitpids);
 }

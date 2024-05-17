@@ -27,3 +27,5 @@ void openredin(CommandLine *cl);
 
 // backgroud 
 void setbg(CommandLine *cl);
+// wait
+void setwait(pid_t *waitpids, long long childs);
