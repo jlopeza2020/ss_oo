@@ -23,7 +23,6 @@ isbuiltin(char *cmd, int *statusbt){
 
         if(strcmp(cmd, builtins[i]) == 0){
 			*statusbt = i;
-			//fprintf(stderr, "valor de statusbt: %d\n", *statusbt);
             return 1;
         }
     }
@@ -84,7 +83,6 @@ setpwd(char *cmd){
 	if (value != NULL) {
 		strcpy(pwdpath, value);
 	}
-	// crear una función 
 
 	fullpath = getcompletepath(pwdpath, cmd);
     if(fullpath != NULL){
@@ -227,16 +225,13 @@ findtypecommand(CommandLine *cl, char *cmd, int *statusbt){
 void
 findcommands(CommandLine *cl){
     
-	// Para ello distinguir si se trata de un pipeline o no
-
 	long long j;
 
 	if(cl->numpipes > 0){
-		// inicializamos memoria para cl->statusbt;
+		// almacenamos el status de cada comando para facilitarnos a la hora de los pipes
 		cl->statuspipesbt = (int *)malloc(sizeof(int) * (cl->numcommands));
 		
 		if(cl->statuspipesbt == NULL){
-			// cambiar el valor de cl.status
 			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 		}
 
@@ -246,7 +241,6 @@ findcommands(CommandLine *cl){
 			// lo inicializamos a -1
 			cl->statuspipesbt[j] = -1;
 			findtypecommand(cl,cl->commands[j][0], &cl->statuspipesbt[j]);
-			// Así evitamos iteraciones innecesarias REVISAR DE ACUERDO AL ENUNCIADO
 		}
 	}else{
 
@@ -296,14 +290,11 @@ executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords)
 // numwords, son las palabras que se le pasan como argumento
 pid_t
 executecommand(CommandLine *cl, char ***comandline, long long *numwords, long long *pos) {
-    // Revisar lo de fork exec...
-    // Mirar redirecciones
-    // Mirar lo de bg
 
 	pid_t pid;
 	long long j;
 
-	// se aumenta para añadir NULL al final del array de palabras
+	// se aumenta el tamaño de commandline para añadir NULL al final del array de palabras
     (*numwords)++;
     *comandline = (char **)realloc(*comandline, sizeof(char *) * (*numwords + 1));
 
@@ -314,46 +305,50 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
     (*comandline)[*numwords - 1] = NULL;
 
     pid = fork();
+	//fprintf(stderr, "pid en fun :%d\n", pid);
 
     switch (pid) {
         case -1:
             err(EXIT_FAILURE, "Error: fork failed");
-            // Actualizar cl->status
         case 0:
 
-			
+			// si nos encontramos en la primera iteración y tenemos una redirección
+			// de entrada, es necesario duplicar la entrada estándar en el descriptor de esa redirección
 			if((cl->statusred == INPUTRED || cl->statusred == BOTHRED) && *pos == 0){
 
 				if (dup2(cl->inredfd, STDIN_FILENO) == -1) {
-					fprintf(stderr,"Error: dup2 failed\n");
+					err(EXIT_FAILURE,"Error: dup2 failed\n");
 				}
 				close(cl->inredfd);
 			}
 
+			// si nos encontramos en la última iteración y tenemos una redirección
+			// de salida, es necesario duplicar la salida estándar en el descriptor de esa redirección
 			if((cl->statusred == OUTPUTRED || cl->statusred == BOTHRED) && *pos == cl->numpipes){
 
 				if (dup2(cl->outredfd, STDOUT_FILENO) == -1) {
-					fprintf(stderr,"Error: dup2 failed\n");
+					err(EXIT_FAILURE,"Error: dup2 failed\n");
 				}
 				close(cl->outredfd);
 			}
 
+			// si hay pipes, hay que hacer más redirecciones
 			if(cl->numpipes > 0){
 
 		
-				if (*pos != 0) { // Redireccionar la entrada del pipe anterior
+				// mientras no estemos en la primera posición, 
+				// hay que redireccionar la entrada del pipe anterior 
+				if (*pos != 0) {
                 
                 	if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
-                	    perror("dup2");
-                	    exit(EXIT_FAILURE);
+                	    err(EXIT_FAILURE,"Error: dup2 failed\n");
                	 	}
             	}
             	if (*pos != cl->numpipes) { // Redireccionar la salida al pipe actual
                 
             	    
 					if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
-               	    	perror("dup2");
-                  	 	exit(EXIT_FAILURE);
+               	    	err(EXIT_FAILURE,"Error: dup2 failed\n");
                	 	}
             	}
 
@@ -364,12 +359,14 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
             	}
 			}
 
-			// duplicar si hay entradas
+			// si hay background se fija
+			setbg(cl);
+
             execv((*comandline)[0], *comandline);
-			fprintf(stderr, "Error: command failed\n");
+			//freememory(&cl); // mirar cómo liberar la memoria
+			errx(EXIT_FAILURE, "Error: command failed\n");
             break;
         default:	
-
     }
 	return pid;
 }
@@ -380,50 +377,52 @@ executecommands(CommandLine *cl){
 	long long j;
 	int sts;
 	pid_t pid;
-	pid_t waitpid;
+	pid_t wpid;
 	int i;
 	long long novalue; 
+	long long childs;
 
+	// se usa para decir que no hay pipes y para las redirecciones (dup2)
+	// es necesario fijar este valor a 0
 	novalue = 0;
-
-
-	// trato el fichero de entrada
-	
 	pid = 0;
+	pid_t *waitpids;
+	// fijamos previamente el valor de numcommands
+	if (cl->numpipes == 0){
+		cl->numcommands = 1;
+	}
+
+	waitpids = (pid_t *)malloc(sizeof(pid_t) * cl->numcommands);
+	// Si hay pipes
 	if(cl->numpipes > 0){
 
-		// inicializar pipes
-		cl->pipesfd = malloc(sizeof(int *) * cl->numpipes);
+		// inicializar descriptores de fichero para pipes
+		cl->pipesfd = (int **)malloc(sizeof(int *) * cl->numpipes);
     	if (cl->pipesfd == NULL) {
-        	perror("malloc");
-        	exit(EXIT_FAILURE);
+        	err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
     	}
-
-    	// Crear los pipes
+ 
     	for (i = 0; i < cl->numpipes; i++) {
-        	cl->pipesfd[i] = malloc(sizeof(int)* 2);
+        	cl->pipesfd[i] = (int *)malloc(sizeof(int)* 2);
         	if (cl->pipesfd[i] == NULL) {
-            	perror("malloc");
-            	exit(EXIT_FAILURE);
+				free(cl->pipesfd);
+            	err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
         	}
 
         	if (pipe(cl->pipesfd[i]) == -1) {
-           	 	perror("pipe");
-            	exit(EXIT_FAILURE);
+           	 	err(EXIT_FAILURE,"Error: pipe failed");
         	}
    		}	
 
-		// preguntar si con pipes se puede usar builtins
 		for(j = 0; j < cl->numcommands; j++){
 
-			// significa que es un tipo de built in
+			// significa que el comando actual es un builtin
 			if(cl->statuspipesbt[j] >= 0){
 				executebuiltin(cl,cl->commands[j], cl->statuspipesbt[j], cl->numsubcommands[j]);
-			}else{
-							
+			}else{					
 				pid = executecommand(cl,&cl->commands[j], &cl->numsubcommands[j], &j);
+				waitpids[j] = pid;
 			}
-			// fijar redirecciones y bg 
 		}
 
 		// cerramos los descriptores del padre
@@ -433,46 +432,87 @@ executecommands(CommandLine *cl){
     	}
 
 	}else{
-
+		// significa que el comando actual es un builtin
 		if(cl->statusbt >= 0){
 			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
 		}else{
-			// el parámetro -1 no nos afecta
 			pid = executecommand(cl,&cl->words, &cl->numwords, &novalue);
+			waitpids[0] = pid;
 		}
 
-		// fijar redirecciones y bg 
-		// hacer el wait aquí
 	}
 
-	// si ha recibido un pid y si no hay '&' en la linea 
-	if(pid != 0 && cl->bg == 0){
+	childs = cl->numcommands;
+	// si no he ejecutado un builtin y no hay que hacer background: hacemos wait
+	if(pid != 0 && !cl->bg){
 
-		// esto tiene que ir fuera y devolver el valor de status
-		while ((waitpid = wait(&sts)) != -1) {
+		// inicializo con malloc y hago free
+		wpid = 0;
+		while (childs > 0 && wpid != -1) {
+
+			wpid = wait(&sts); // Esperar a cualquier proceso hijo
+
+			/*if (wpid == -1) {
+            	perror("wait");
+            	exit(EXIT_FAILURE);
+        	}*/
+
+			for(i = 0; i < childs; i++){
+				if(wpid == waitpids[i]){
+					if(WIFEXITED(sts)){
+						childs--;
+						break;
+					}
+				}
+			}
+
+			/*}
+			if(wpid == waitpids[i]){
+				if(WIFEXITED(sts)){
+					childs--;
+				}
+			}*/
+
+		}
+		/*for(i = 0; i < cl->numcommands; i++){
+
+			if()
+			fprintf(stderr, "pid :%d\n", waitpids[i]);
+			wait(&sts);
+		}*/
+		
+	}
+
+		/*while ((pid = wait(&sts)) > 0) {
+			if(WIFEXITED(sts))
+        		fprintf(stderr, "El proceso hijo con PID %d ha terminado.\n", pid);
+    	}*/
+
+		// el problema es wait
+		/*while ((waitpid = wait(&sts)) != -1) {
+			//fprintf(stderr, "pid :%d\n", pid);
 			if (pid == waitpid) {
 				if (!WIFEXITED(sts)) {
 					// actualizar el valor de cl.status
-					// liberar memoria y salir
+					// liberar memoria y salir REVISAR
 					errx(EXIT_FAILURE, "Error: wait failed\n");
 				}
 			}
-		}
-	}
-	// terminar de mirar lo de /dev/null
-	// trato el fichero de salida 
-	// probar a hacer el wait aquí  si no hay &
+		}*/
+	//}
+
+	free(waitpids);
 }
 
+// Lo estamos abriendo en el proceso padre y habrá que
+// cerrarlo en el proceso padre e hijo
 void 
 openredin(CommandLine *cl){
-
 
     cl->inredfd = open(cl->inred, O_RDONLY);
     if ( cl->inredfd == -1) {
         fprintf(stderr,"Error: open this file failed\n");
 		cl->status = REDERROR;
-		return;
     }
 }
 
@@ -483,7 +523,6 @@ openredout(CommandLine *cl){
     if (cl->outredfd == -1) {
         fprintf(stderr,"Error: open this file failed\n");
 		cl->status = REDERROR;
-		return;
     }
 }
 
@@ -499,5 +538,25 @@ handleredirecctions(CommandLine *cl){
 	if(cl->statusred == BOTHRED){
 		openredin(cl);
 		openredout(cl);
+	}
+}
+
+void 
+setbg(CommandLine *cl){
+
+	int fdbg;
+	// significa que hay background y no ha sido redirigida la entrada
+	// a un fichero, entonces hay que redirigirla a /dev/null
+	if(cl->inredfd < 0 && cl->bg > 0){
+
+		fdbg = open("/dev/null", O_RDONLY);
+    	if (fdbg == -1) {
+        	fprintf(stderr,"Error: open /dev/null failed\n");
+			return;
+    	}
+		if (dup2(fdbg, STDIN_FILENO) == -1) {
+			err(EXIT_FAILURE,"Error: dup2 failed\n");
+		}
+		close(fdbg);
 	}
 }

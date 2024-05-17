@@ -24,3 +24,6 @@ void executecd(char **cl, long long numwords);
 void handleredirecctions(CommandLine *cl);
 void openredout(CommandLine *cl);
 void openredin(CommandLine *cl);
+
+// backgroud 
+void setbg(CommandLine *cl);

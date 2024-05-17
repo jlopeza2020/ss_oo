@@ -10,7 +10,6 @@ enum {
 };
 
 enum {
-    //PARSINGERROR = -1,
     INPUTRED = 2,
     OUTPUTRED,
     BOTHRED = 5,
@@ -28,18 +27,18 @@ struct CommandLine{
     long long numcommands; // eje: 2
     int bg;
     int inrednum;
-    int inredfd;
+    int inredfd; // eje: decriptor de fichero creado para y
     char *inred; // eje: y
     int outrednum;
-    int outredfd;
+    int outredfd; // eje: descriptor de fichero creado para x
     char *outred; // eje: x
 	int numpipes;
     int **pipesfd;
     int status;
-    int statusred; // si es error, si hay redirección entrada, salida o las 2
-    // status del builtin si solo hay commandos sin pipes
+    int statusred;
+    // status del comando si  es un builtin sin pipes 
     int statusbt; // inicializada a -1
-    // status de cadad comando si hay pipes y son builtins
-    int *statuspipesbt;
+    // status de cada comando si hay pipes y son builtins
+    int *statuspipesbt; // eje: [-1, -1] al ser ningún comando un builtin
 };
 typedef struct CommandLine CommandLine;

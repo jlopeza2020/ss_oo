@@ -23,7 +23,7 @@ int isred(CommandLine *cl, char *typered);
 int isambiguoischar(char letter);
 int isname(char *word);
 int isstr(char *word);
-void handlered(CommandLine *cl, char *file, int value, int status);
+void setred2struct(CommandLine *cl, char *file, int value, int status);
 
 // |
 void casepipes(CommandLine * cl);

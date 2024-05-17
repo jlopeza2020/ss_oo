@@ -48,14 +48,16 @@ setequal(char *str){
 	strcpy(name, token);
 	strcpy(value, saveptr);
 
-	//fprintf(stderr, " name: %s  = value: %s\n", name, value);
-	// el valor de overwrite es 1 porque sino no se va a sobreescribor
-	// el valor si se modifica
+	// el valor de overwrite es 1 porque sino, no 
+	// se va a sobreescribir el valor si se modifica
 	if (setenv(name, value, 1) != 0){
 		fprintf(stderr,"Env var %s could not be set\n", name);
 	}
 }
 
+
+// si hay pipes se tomará los iguales como palabras
+// si en la palabra hay más de un igual también se tratará como palabras
 void 
 caseequal(CommandLine *cl){
 
@@ -66,7 +68,6 @@ caseequal(CommandLine *cl){
 		for(i = 0; i < cl->numwords; i++){
 
 			if(isequal(cl->words[i])){
-				//fprintf(stderr, "tengo un igual\n");
 				// hacer la sustitución correspondiente
 				setequal(cl->words[i]);
 				elimstr(cl,i);
@@ -76,10 +77,9 @@ caseequal(CommandLine *cl){
 			}
 		}
 	}
-	// si hay pipes se tomará los iguales como palabras
-	// si en la palabra hay más de un igual también se tratará como palabras
 }
-// comprueba que hay uno y sólo al principio de la palabra
+
+// Comprueba que hay uno y sólo al principio de la palabra
 int
 isenv(char *str)
 {
@@ -127,15 +127,12 @@ setenvvar(CommandLine *cl, char *str){
 
 	char *value;
 
+	// elimina '$'
 	elimfirstchar(str);
-	//fprintf(stderr, " name: %s \n", str);
 
 	value = getenv(str);
 	if (value != NULL) {
-		//fprintf(stderr, " value: %s \n", value);
 		strcpy(str, value);
-		// sustituir el valor de value en str para hacer
-		// la ejecución de los comandos 
 	}else{
 		fprintf(stderr, "error: var %s does not exist\n", str);
 		cl->status = PARSINGERROR;
@@ -145,7 +142,7 @@ setenvvar(CommandLine *cl, char *str){
 // sustitución de $ 
 // Solo funciona para $cualquiercosa (menos |, >,<)
 // si le introduces $cualquier$cosa o $ NO lo identifica.
-// Lo como una palabra
+// Lo toma como una palabra
 void
 caseenv(CommandLine *cl){
 
@@ -256,7 +253,7 @@ isred(CommandLine *cl, char *typered)
 }
 
 void
-handlered(CommandLine *cl, char *file, int value, int status){
+setred2struct(CommandLine *cl, char *file, int value, int status){
 
 	// almacenar la string en algún lado
 	strcpy(file,cl->words[cl->numwords-1]);
@@ -269,14 +266,14 @@ handlered(CommandLine *cl, char *file, int value, int status){
 	cl->statusred += status; 
 }
 
-// si recibo una linea estlo: echo hola > eje > eje2
+// si recibo una linea estilo: echo hola > eje > eje2
 // tomará como descriptor de fichero eje2  y '>', 'eje' se 
 // tomarán como palabras
 void 
 casered(CommandLine *cl){
 
 	long long i;
-	// Pueden aparecer en cualquier orden
+	// Pueden aparecer en cualquier orden de '<' o '>' y viceversa
 	for (i = 0; i < cl->numwords; i++) {
 		if (isred(cl, "<") && cl->inrednum == 0){
 			
@@ -284,7 +281,7 @@ casered(CommandLine *cl){
 			if (cl->inred == NULL) {
 				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
-			handlered(cl, cl->inred, cl->inrednum++, INPUTRED);
+			setred2struct(cl, cl->inred, cl->inrednum++, INPUTRED);
 		}
 
 		if(isred(cl, ">") && cl->outrednum == 0){
@@ -294,16 +291,12 @@ casered(CommandLine *cl){
 			if (cl->outred == NULL) {
 				err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 			}
-			handlered(cl, cl->outred, cl->outrednum++, OUTPUTRED);
-
+			setred2struct(cl, cl->outred, cl->outrednum++, OUTPUTRED);
 		}
 	
 		if(cl->status == PARSINGERROR){
 			break;
 		}
-		//fprintf(stderr,"%s, %s\n", cl->inred, cl->outred);
-
-
 	}
 }
 
@@ -311,7 +304,6 @@ casered(CommandLine *cl){
 void
 setcommands(CommandLine *cl){
 
-	
 	long long i; 
 	long long posc;
 	long long possubc;
@@ -371,7 +363,7 @@ handlepipes(CommandLine * cl){
 	setcommands(cl);
 }
 
-// contar el número de comandos y sub commandos tiene cada comando
+// contar el número de comandos y subcommandos tiene cada comando
 // almacenarlo de un array de ints para poder crear un char ***
 void 
 setnumcommands(CommandLine *cl){
@@ -395,6 +387,8 @@ setnumcommands(CommandLine *cl){
 		if (strcmp(cl->words[i], "|") == 0) {
 			cl->numsubcommands[numcommands] = numsubcommands;
             numcommands++;
+			// se reinicia el número de subcomandos 
+			// porque hemos llegado a un pipe
             numsubcommands = 0;
         } else {
             numsubcommands++;
@@ -405,6 +399,8 @@ setnumcommands(CommandLine *cl){
 
 }
 
+// comprueba que no haya pipes seguidos o puestos al principio
+// o al final de la línea
 void 
 checkpipessyntax(CommandLine *cl){
 
@@ -431,6 +427,7 @@ casepipes(CommandLine * cl){
 
 	if(cl->status != PARSINGERROR){
 		
+		// cuenta el número de pipes
 		for (i = 0;  i < cl->numwords; i++){
 
 			if (strcmp(cl->words[i], "|") == 0) {
@@ -443,7 +440,6 @@ casepipes(CommandLine * cl){
 			setnumcommands(cl);
 			handlepipes(cl);
 		}
-	
 	}
 }
 
@@ -486,7 +482,7 @@ freememory(CommandLine * cl)
 	// solo se ha creado el de salida
 	if(cl->statusred == OUTPUTRED){
 		free(cl->outred);
-		if(cl->outred >= 0){
+		if(cl->outredfd >= 0){
 			close(cl->outredfd);
 
 		}
@@ -500,7 +496,7 @@ freememory(CommandLine * cl)
 			close(cl->inredfd);
 		}
 
-		if(cl->outred >= 0){
+		if(cl->outredfd >= 0){
 			close(cl->outredfd);
 		}
 	}
@@ -547,7 +543,7 @@ setspecialchar(CommandLine *cl, char *delim, long long *pos, long long *tpos)
 		// se reinicio la posición para el siguiente token
         *tpos = 0; 
     }
-    // Agrega el delimitador '|' como un token adicional
+    // Agrega el delimitador como un token adicional
     strcpy(cl->words[*pos], delim);
     *pos = *pos + 1;
 }
@@ -562,7 +558,8 @@ handlespecialchars(CommandLine *cl, char *word, long long *pos) {
 	tpos = 0;
 
     while (word[wpos] != '\0') {
-        // Si el caracter actual es '|', se acaba el token actual y avanza al siguiente
+        // Si el caracter actual es '|', '<' o '>', se acaba el token actual 
+		// y avanza al siguiente
 		switch (word[wpos]) {
 
 		case '|':
@@ -584,7 +581,7 @@ handlespecialchars(CommandLine *cl, char *word, long long *pos) {
         // Avanza al siguiente caracter de la palabra
         wpos++;
     }
-    // Termina el último token si la palabra no termina con '|'
+    // Termina el último token si la palabra no termina con algún caracter especial
     if (tpos > 0) {
         cl->words[*pos][tpos] = '\0';
 		// incrementa el valor de la posición del array ya que lo
@@ -609,12 +606,15 @@ tokenize(CommandLine *cl, char *line)
 	cl->words =
 	    (char **)malloc(sizeof(char *) * cl->numwords);
 	if (cl->words == NULL) {
+		free(aux);
 		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 	}
 	// inicializamos cada elemento del array
 	for (i = 0; i < cl->numwords; i++) {
 		cl->words[i] = (char *)malloc(sizeof(char) * MaxWord);
 		if (cl->words[i] == NULL) {
+			free(aux);
+			free(cl->words);
 			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 		}
 	}
@@ -653,7 +653,7 @@ getnumwords(char *line)
 
 		// si el carácter actual no es ninguno de los que buscamos
 		// y no estamos dentro de una palabra, aumentamos el número de palabra
-		// y decimios que nos encontramos dentro de una palabra
+		// y decidimos que nos encontramos dentro de una palabra
 		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|' && line[i] != '<' && line[i] != '>') {
 
 			if(!inword){

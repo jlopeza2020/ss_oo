@@ -18,7 +18,6 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-// los valores de words
 void
 initcl(CommandLine *cl){
 
@@ -42,8 +41,6 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
-	//int i;
-	//int j,k;
 
 	// así está bien
 	CommandLine cl;
@@ -61,6 +58,8 @@ main(int argc, char *argv[])
 	while (1) {
 
 		initcl(&cl);
+
+		printf("# ");
 
 		if (fgets(line, MaxLine, stdin) == NULL) {
 			break;
@@ -91,6 +90,7 @@ main(int argc, char *argv[])
 			fprintf(stderr,"Line too long\n");
 			continue;
 		}
+
 		if(cl.numwords == 0){
 			continue;
 		}
@@ -105,66 +105,41 @@ main(int argc, char *argv[])
 		if(cl.status==PARSINGERROR){
 			freememory(&cl);
 			fprintf(stderr,"Syntax error near unexpected token\n");
-			// paso a la siguiente ejecución
+			// almacenar si ha acabado con fallo o no !!!! HACER PARA OPCIONAL
 			continue;
 		}
 
+		// por si ha habido alguna línea con redirecciones, '=' o '&'
+		// y al guardarse en la estructura se han eliminado, para no llegar
+		// al punto de ejecutar una línea sin comandos 
 		if(cl.numwords == 0){
 			freememory(&cl);
 			continue;
 		}
 
-		// A partir de aquí todo está parseado y decidido para lo que queremos ejecutar
-		// escribirlo en executor.c 
+		// buscamos que lo que ha sido parseado correctamente sea un builtin
+		// o encuentre su path correcto para ejecutar  
 		findcommands(&cl);
 
-		// si algún comando falla, no se ejecuta, da error 
-		// y pasa a la siguiente ejecución 
+		// si no se ha encontrado, salta un error para no llegar a ejecutar
 		if(cl.status==FINDERROR){
 			freememory(&cl);
 			fprintf(stderr,"Command not found\n");
-			// almacenar si ha acabado con fallo o no !!!! HACER
-			// paso a la siguiente ejecución
+			// almacenar si ha acabado con fallo o no !!!! HACER PARA OPCIONAL
 			continue;
 		}
 
-		// trazas
-		/*for(i = 0; i < cl.numwords; i++){
-			fprintf(stderr, "Palabra: %s\n", cl.words[i]);
-		}
-		
-		fprintf(stderr,"builtin valor : %d\n", cl.statusbt);		
-
-
-		if(cl.numpipes > 0){
-			for(j = 0; j < cl.numcommands; j++){
-				for(k = 0; k < cl.numsubcommands[j]; k++){
-
-					fprintf(stderr,"soy el subcommando: %s\n", cl.commands[j][k]);		
-					fprintf(stderr,"builtin valor : %d\n", cl.statuspipesbt[j]);		
-
-				}
-			}
-		}
-		if(cl.bg){
-			fprintf(stderr, "Hay bg\n");
-
-		}*/
-
+		// antes de ejecutar, decido abrir los ficheros para comprobar 
+		// que no dan errores las redirecciones 
 		handleredirecctions(&cl);
 
 		if(cl.status==REDERROR){
 			freememory(&cl);
-			fprintf(stderr,"Redirections failed\n");
-
-			// almacenar si ha acabado con fallo o no !!!! HACER
-			// paso a la siguiente ejecución
+			// almacenar si ha acabado con fallo o no !!!! HACER PARA OPCIONAL
 			continue;
 		}
-		// a partir de aquí no hay errores y se puede ejecutar todo perfectamente
+		// Si has llegado aquí se puede ejecutar todo perfectamente
 		executecommands(&cl);
-
-		//setbg(cl);
 
 		freememory(&cl);
 	}
