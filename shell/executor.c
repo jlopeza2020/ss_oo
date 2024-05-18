@@ -280,7 +280,6 @@ executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords)
 			// añadir el error en cl status para lo de ifok
 			return;
 		}
-		//fprintf(stderr,"in builtin :%s\n", comandline[0]);
 		executecd(comandline, numwords);
 		break;
 	default:
@@ -294,7 +293,11 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 
 	pid_t pid;
 	long long j;
+	//long long tempread;
+	//long long tempwrite;
 	//int fd;
+	//tempread = -1;
+	//tempwrite = -1;
 
 	// se aumenta el tamaño de commandline para añadir NULL al final del array de palabras
     (*numwords)++;
@@ -305,6 +308,14 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
     }
 
     (*comandline)[*numwords - 1] = NULL;
+
+	if(typebuiltin >= 0 && *pos < cl->numcommands){
+
+		//tempread = *pos;
+		//tempwrite = *pos;
+		*pos = *pos +1;
+		return 0;
+	}
 
     pid = fork();
 
@@ -340,22 +351,45 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 			if(cl->numpipes > 0){
 
 				
+				/*if(typebuiltin >= 0 && *pos < cl->numcommands){
+
+					tempread = *pos;
+					tempwrite = *pos;
+					*pos = *pos +1;
+					return pid;
+				}*/
 				// mientras no estemos en la primera posición, 
 				// hay que redireccionar la entrada del pipe anterior 
-				if (*pos != 0) {
+				if (*pos != 0 && *pos < cl->numcommands) {
             
-					
+					fprintf(stderr, "valor de pos %lld\n", *pos);
+					//if(tempread == -1){
 					if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
-                	    err(EXIT_FAILURE,"Error: dup2 this failed\n");
+                		err(EXIT_FAILURE,"Error: dup2 this failed\n");
                	 	}
+					//}else{
+					//	tempread = -1;
+					//}
+					/*if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
+                	    err(EXIT_FAILURE,"Error: dup2 this failed\n");
+               	 	}*/
             	}
 				// si no estamos en la última posición, hay que redireccionar el 
 				// la salida al pipe actual
-            	if (*pos != cl->numpipes) {
+            	if (*pos != cl->numpipes && *pos < cl->numcommands) {
                 
+					fprintf(stderr, "valor de posi %lld\n", *pos);
+					//if(tempwrite == -1){
 					if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
                	    	err(EXIT_FAILURE,"Error: dup2 that failed\n");
                	 	}
+					//}else{
+					//	tempwrite = -1;
+					//}
+					
+					/*if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
+               	    	err(EXIT_FAILURE,"Error: dup2 that failed\n");
+               	 	}*/
             	}
 
             	// Cerrar los extremos del pipe en el proceso hijo
@@ -368,24 +402,24 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 			// cuando hay un pipeline, el builtin se ejecuta en el hijo
 			// he tenido que quitar una unidad al número de palabras porque aquí no 
 			// es necesario tener en cuenta NULL del array de palabras
-			if(typebuiltin >= 0){
-				executebuiltin(cl,*comandline, typebuiltin, (*numwords-1));
-				return 0;
-			}
+			//if(typebuiltin >= 0){
+				//executebuiltin(cl,*comandline, typebuiltin, (*numwords-1));
+			//	return 0;
+			//}
 			
 			execv((*comandline)[0], *comandline);
 			errx(EXIT_FAILURE, "Error: command failed\n");
             break;
         default:
 
-			if (cl->numpipes > 0) {
+			/*if (cl->numpipes > 0) {
                 if (*pos != 0) {
                     close(cl->pipesfd[*pos - 1][READ]);
                 }
                 if (*pos != cl->numpipes) {
                     close(cl->pipesfd[*pos][WRITE]);
                 }
-            }	
+            }*/	
     }
 	return pid;
 }
@@ -423,11 +457,8 @@ executecommands(CommandLine *cl){
 	pid_t pid;
 	int i;
 	long long novalue; 
-	//long long numwaitprocess;
-	//long long poswait;
 	pid_t *waitpids;
-
-	//poswait = 0;
+	long long pos;
 
 	// se usa para decir que no hay pipes y para las redirecciones (dup2)
 	// es necesario fijar este valor a 0
@@ -439,21 +470,6 @@ executecommands(CommandLine *cl){
 		cl->numcommands = 1;
 	}
 
-	/*numwaitprocess = 0;
-	for(j = 0; j < cl->numcommands; i++){
-		//fprintf(stderr, "valor de cada pipe si es comadno (-1) o pipe %d\n", cl->statuspipesbt[j]);
-		if(cl->numpipes > 0){
-			if(cl->statuspipesbt[j] == -1){
-				numwaitprocess++;
-			}
-		}
-
-		if(cl->statusbt == -1){
-			numwaitprocess++;
-		}
-	}*/
-
-	//waitpids = (pid_t *)malloc(sizeof(pid_t) * numwaitprocess);
 	waitpids = (pid_t *)malloc(sizeof(pid_t) * cl->numcommands);
 
 	// Si hay pipes
@@ -477,25 +493,20 @@ executecommands(CommandLine *cl){
         	}
    		}	
 
+		pos = 0;
 		for(j = 0; j < cl->numcommands; j++){
-
-			// significa que el comando actual es un builtin
-			//if(cl->statuspipesbt[j] >= 0){
-			//	executebuiltin(cl,cl->commands[j], cl->statuspipesbt[j], cl->numsubcommands[j]);
-			//}else{					
-			pid = executecommand(cl,&cl->commands[j], &cl->numsubcommands[j], &j, cl->statuspipesbt[j]);
-			//if(pid != 0){
+					
+			pid = executecommand(cl,&cl->commands[j], &cl->numsubcommands[j], &pos, cl->statuspipesbt[j]);
 			waitpids[j] = pid;
-			//poswait++;
-			//}
-			//}
+			pos++;
 		}
 
 		// cerramos los descriptores del padre
-		/*for (i = 0; i < cl->numpipes; i++) {
+		for (i = 0; i < cl->numpipes; i++) {
    	 	    close(cl->pipesfd[i][READ]);
     	    close(cl->pipesfd[i][WRITE]);
-    	}*/
+    	}
+
 
 	}else{
 		// en este caso el comando es sin pipes
@@ -504,10 +515,7 @@ executecommands(CommandLine *cl){
 			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
 		}else{
 			pid = executecommand(cl,&cl->words, &cl->numwords, &novalue, -1);
-			//if(pid != 0){
 			waitpids[0] = pid;
-			//poswait++;
-			//}
 		}
 
 	}
@@ -515,7 +523,6 @@ executecommands(CommandLine *cl){
 	// aquí se hace el wait si no he ejecutado 
 	// un builtin y no hay que hacer background: hacemos wait
 	if(pid != 0 && !cl->bg){
-		//setwait(waitpids,numwaitprocess);
 		setwait(waitpids, cl->numcommands);
 	}
 
