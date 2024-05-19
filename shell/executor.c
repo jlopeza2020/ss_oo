@@ -356,8 +356,6 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 				// la salida al pipe actual
             	if (*pos != cl->numpipes && *pos < cl->numcommands) {
                 
-					fprintf(stderr, "valor de posi %lld\n", *pos);
-					//if(tempwrite == -1){
 					if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
                	    	err(EXIT_FAILURE,"Error: dup2 that failed\n");
                	 	}

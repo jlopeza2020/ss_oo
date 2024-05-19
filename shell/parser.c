@@ -141,118 +141,67 @@ setenvvar(CommandLine *cl, char *str){
 	}
 
 }
+
 // sustitución de $ 
 // Solo funciona para $cualquiercosa (menos |, >,<)
-// tambieén funciona para sd$fsfd$d
-
-/*void 
-caseenv(CommandLine *cl) {
-    long long i;
-    char *token;
-    char *saveptr;
-
-    char *aux;
-
-    for (i = 0; i < cl->numwords; i++) {
-        if (isenv(cl->words[i])) {
-            aux = (char *)malloc(sizeof(char) * MaxWord);
-            if (aux == NULL) {
-                err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
-            }
-
-            // Initialize aux as an empty string
-            aux[0] = '\0';
-
-            token = strtok_r(cl->words[i], "$", &saveptr);
-			fprintf(stderr, "first token value: %s and saveptr %s\n", token, saveptr);
-            while (token != NULL) {
-
-                strcat(aux, token);
-                token = strtok_r(NULL, "$", &saveptr);
-            }
-
-            // Replace the original word with the processed word
-            strcpy(cl->words[i], aux);
-
-            free(aux);
-        }
-    }
-}*/
-
-
+// Si aparece $ a solas se trata como una palabra normal.
+// En el resto de cosas funciona perfectamente
 void 
 caseenv(CommandLine *cl) {
     long long i;
-    //char *token;
-    //char *saveptr;
     char *aux;
-    //char *env_value;
+	char *original;
+	char *pos;
+	char tmpenvvar[MaxWord];
+	char *firstenvironchar;
 
     for (i = 0; i < cl->numwords; i++) {
-        if (isenv(cl->words[i])) {
+        
+		if (isenv(cl->words[i])) {
             aux = (char *)malloc(sizeof(char) * MaxWord);
             if (aux == NULL) {
                 err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
             }
-
-            // Initialize aux as an empty string
+			// inicializa aux con '/0' para que no de errores de memoria sin inicializar
             aux[0] = '\0';
 
-            char *original = cl->words[i];
-            char *pos = strchr(original, '$');
+            // Apunta al principio de la palabra
+			original = cl->words[i];
+			// apunta al final de la palabra
+            pos = strchr(original, '$');
 
             while (pos != NULL) {
-                // Copy part before $
+                // se va copiando lo que no tiene asignado variable de entorno
                 strncat(aux, original, pos - original);
 
-                // Find the end of the variable name
+                // se aumenta el valor de posición para que no apunte a '$'
                 pos++;
-                char *var_start = pos;
+				// se deja en el primer caracter de la variable de entorno
+                firstenvironchar = pos;
+				// se va aumentando el puntero hasta que llegue a final
+				// de linea o a otra variable de entorno
                 while (*pos != '\0' && *pos != '$') {
                     pos++;
                 }
+				// en tmpenvvar almacenamos temporalmente la variable de entorno
+                strncpy(tmpenvvar, firstenvironchar, pos - firstenvironchar);
+                tmpenvvar[pos - firstenvironchar] = '\0';
 
-                // Null-terminate the variable name temporarily
-                char var_name[MaxWord];
-                strncpy(var_name, var_start, pos - var_start);
-                var_name[pos - var_start] = '\0';
+				// copiamos a tmpenvvar el valor de la variable de entorno
+				setenvvar(cl, tmpenvvar);
+				// concatenamos a aux, el valor de la variable de entorno
+				strcat(aux, tmpenvvar);
 
-				setenvvar(cl, var_name);
-
-				strcat(aux, var_name);
-
-
-                // Get the value of the variable
-                /*env_value = getenv(var_name);
-                if (env_value != NULL) {
-                    strcat(aux, env_value);
-                } else {
-                    strcat(aux, var_name);
-                }*/
-
-
-                // Move the original pointer past the variable name
+                // Para seguir buscando más, actualizamos la posición de original a donde apunta pos
                 original = pos;
 
-                // Find the next $
+                // Se encuentra el siguiente string 
                 pos = strchr(original, '$');
             }
 
-            // Copy any remaining part after the last $
+            // Copia cualquier cosa que falte del último '$'
             strcat(aux, original);
-
-            // Ensure cl->words[i] has enough space for the new content
-            /*size_t new_length = strlen(aux) + 1;
-            char *new_word = (char *)malloc(new_length);
-            if (new_word == NULL) {
-                free(aux);
-                err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
-            }
-            strcpy(new_word, aux);
-
-            // Replace the original word with the processed word
-            cl->words[i] = new_word;*/
-
+			// Copiamos la string final a la palabra actual
 			strcpy(cl->words[i], aux);
             free(aux);
         }
