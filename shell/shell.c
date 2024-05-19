@@ -41,6 +41,7 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
+	//long long i;
 
 	// así está bien
 	CommandLine cl;
@@ -100,6 +101,11 @@ main(int argc, char *argv[])
 			
 		// una vez tokenizado hay que distinguir cada caso
 		parse(&cl);
+
+		/*for(i = 0; i < cl.numwords; i++){
+			fprintf(stderr, "%s ", cl.words[i]);
+		}
+		fprintf(stderr, "\n");*/
 
 		// paro de ejecutar porque en el parsing ha habido algun error
 		if(cl.status==PARSINGERROR){

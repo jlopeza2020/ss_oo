@@ -79,7 +79,8 @@ caseequal(CommandLine *cl){
 	}
 }
 
-// Comprueba que hay uno y sólo al principio de la palabra
+// Comprueba que la palabra contiene un $ y si es $ solo, 
+// no se trata como una variable de entorno
 int
 isenv(char *str)
 {
@@ -90,23 +91,23 @@ isenv(char *str)
 	len = strlen(str);
 
 	// Si primer carácter no es '$' devuelve falso
-	if (str[0] != '$') {
+	/*if (str[0] != '$') {
 		return 0;
-	}
+	}*/
 	// si el primer caracter es '$' y no hay nada más
-	if(str[0] == '$' && strlen(str) == 1){
+	if(str[0] == '$' && len == 1){
 		return 0;
 	}
 
-	// Verifica si el carácter '$' aparece más de una vez
-	for (i = 1; i < len; i++) {
+	// Verifica si el carácter '$' aparece a lo largo de la palabra
+	for (i = 0; i < len; i++) {
 		if (str[i] == '$') {
-			return 0;
+			return 1;
 		}
 	}
 
 	// la cadena comienza con '$' y solo aparece una vez
-	return 1;
+	return 0;
 }
 
 void 
@@ -128,11 +129,12 @@ setenvvar(CommandLine *cl, char *str){
 	char *value;
 
 	// elimina '$'
-	elimfirstchar(str);
+	//elimfirstchar(str);
 
 	value = getenv(str);
 	if (value != NULL) {
 		strcpy(str, value);
+		//strcat(str,value);
 	}else{
 		fprintf(stderr, "error: var %s does not exist\n", str);
 		cl->status = PARSINGERROR;
@@ -141,20 +143,120 @@ setenvvar(CommandLine *cl, char *str){
 }
 // sustitución de $ 
 // Solo funciona para $cualquiercosa (menos |, >,<)
-// si le introduces $cualquier$cosa o $ NO lo identifica.
-// Lo toma como una palabra
-void
-caseenv(CommandLine *cl){
+// tambieén funciona para sd$fsfd$d
 
-	long long i;
+/*void 
+caseenv(CommandLine *cl) {
+    long long i;
+    char *token;
+    char *saveptr;
 
-	for(i = 0; i < cl->numwords; i++){
-		// ir comprobando si cada palabra son variables de entorno 
-		if(isenv(cl->words[i])){
-			// hacer la sustitución correspondiente
-			setenvvar(cl, cl->words[i]);
-		}
-	}
+    char *aux;
+
+    for (i = 0; i < cl->numwords; i++) {
+        if (isenv(cl->words[i])) {
+            aux = (char *)malloc(sizeof(char) * MaxWord);
+            if (aux == NULL) {
+                err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
+            }
+
+            // Initialize aux as an empty string
+            aux[0] = '\0';
+
+            token = strtok_r(cl->words[i], "$", &saveptr);
+			fprintf(stderr, "first token value: %s and saveptr %s\n", token, saveptr);
+            while (token != NULL) {
+
+                strcat(aux, token);
+                token = strtok_r(NULL, "$", &saveptr);
+            }
+
+            // Replace the original word with the processed word
+            strcpy(cl->words[i], aux);
+
+            free(aux);
+        }
+    }
+}*/
+
+
+void 
+caseenv(CommandLine *cl) {
+    long long i;
+    //char *token;
+    //char *saveptr;
+    char *aux;
+    //char *env_value;
+
+    for (i = 0; i < cl->numwords; i++) {
+        if (isenv(cl->words[i])) {
+            aux = (char *)malloc(sizeof(char) * MaxWord);
+            if (aux == NULL) {
+                err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
+            }
+
+            // Initialize aux as an empty string
+            aux[0] = '\0';
+
+            char *original = cl->words[i];
+            char *pos = strchr(original, '$');
+
+            while (pos != NULL) {
+                // Copy part before $
+                strncat(aux, original, pos - original);
+
+                // Find the end of the variable name
+                pos++;
+                char *var_start = pos;
+                while (*pos != '\0' && *pos != '$') {
+                    pos++;
+                }
+
+                // Null-terminate the variable name temporarily
+                char var_name[MaxWord];
+                strncpy(var_name, var_start, pos - var_start);
+                var_name[pos - var_start] = '\0';
+
+				setenvvar(cl, var_name);
+
+				strcat(aux, var_name);
+
+
+                // Get the value of the variable
+                /*env_value = getenv(var_name);
+                if (env_value != NULL) {
+                    strcat(aux, env_value);
+                } else {
+                    strcat(aux, var_name);
+                }*/
+
+
+                // Move the original pointer past the variable name
+                original = pos;
+
+                // Find the next $
+                pos = strchr(original, '$');
+            }
+
+            // Copy any remaining part after the last $
+            strcat(aux, original);
+
+            // Ensure cl->words[i] has enough space for the new content
+            /*size_t new_length = strlen(aux) + 1;
+            char *new_word = (char *)malloc(new_length);
+            if (new_word == NULL) {
+                free(aux);
+                err(EXIT_FAILURE, "Error: dynamic memory cannot be allocated");
+            }
+            strcpy(new_word, aux);
+
+            // Replace the original word with the processed word
+            cl->words[i] = new_word;*/
+
+			strcpy(cl->words[i], aux);
+            free(aux);
+        }
+    }
 }
 
 // libera memoria y decrementa los valores

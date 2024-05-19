@@ -287,18 +287,13 @@ executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords)
 	// AQUÍ AÑADIR EL RESTO DE BUILTINS
 }
 
-// numwords, son las palabras que se le pasan como argumento
+// numwords, son las palabras que tiene el comando que se le pasa como argumento
 pid_t
 executecommand(CommandLine *cl, char ***comandline, long long *numwords, long long *pos, int typebuiltin) {
 
 	pid_t pid;
 	long long j;
-	//long long tempread;
-	//long long tempwrite;
-	//int fd;
-	//tempread = -1;
-	//tempwrite = -1;
-
+	
 	// se aumenta el tamaño de commandline para añadir NULL al final del array de palabras
     (*numwords)++;
     *comandline = (char **)realloc(*comandline, sizeof(char *) * (*numwords + 1));
@@ -309,10 +304,8 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 
     (*comandline)[*numwords - 1] = NULL;
 
+	// si hay un built-in pasamos de iteración
 	if(typebuiltin >= 0 && *pos < cl->numcommands){
-
-		//tempread = *pos;
-		//tempwrite = *pos;
 		*pos = *pos +1;
 		return 0;
 	}
@@ -351,28 +344,13 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 			if(cl->numpipes > 0){
 
 				
-				/*if(typebuiltin >= 0 && *pos < cl->numcommands){
-
-					tempread = *pos;
-					tempwrite = *pos;
-					*pos = *pos +1;
-					return pid;
-				}*/
 				// mientras no estemos en la primera posición, 
 				// hay que redireccionar la entrada del pipe anterior 
 				if (*pos != 0 && *pos < cl->numcommands) {
             
-					fprintf(stderr, "valor de pos %lld\n", *pos);
-					//if(tempread == -1){
 					if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
                 		err(EXIT_FAILURE,"Error: dup2 this failed\n");
                	 	}
-					//}else{
-					//	tempread = -1;
-					//}
-					/*if (dup2(cl->pipesfd[*pos - 1][READ], STDIN_FILENO) == -1) {
-                	    err(EXIT_FAILURE,"Error: dup2 this failed\n");
-               	 	}*/
             	}
 				// si no estamos en la última posición, hay que redireccionar el 
 				// la salida al pipe actual
@@ -383,13 +361,6 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 					if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
                	    	err(EXIT_FAILURE,"Error: dup2 that failed\n");
                	 	}
-					//}else{
-					//	tempwrite = -1;
-					//}
-					
-					/*if (dup2(cl->pipesfd[*pos][WRITE], STDOUT_FILENO) == -1) {
-               	    	err(EXIT_FAILURE,"Error: dup2 that failed\n");
-               	 	}*/
             	}
 
             	// Cerrar los extremos del pipe en el proceso hijo
@@ -397,29 +368,12 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
                 	close(cl->pipesfd[j][READ]);
                 	close(cl->pipesfd[j][WRITE]);
             	}
+			}	
 
-			}
-			// cuando hay un pipeline, el builtin se ejecuta en el hijo
-			// he tenido que quitar una unidad al número de palabras porque aquí no 
-			// es necesario tener en cuenta NULL del array de palabras
-			//if(typebuiltin >= 0){
-				//executebuiltin(cl,*comandline, typebuiltin, (*numwords-1));
-			//	return 0;
-			//}
-			
 			execv((*comandline)[0], *comandline);
 			errx(EXIT_FAILURE, "Error: command failed\n");
             break;
         default:
-
-			/*if (cl->numpipes > 0) {
-                if (*pos != 0) {
-                    close(cl->pipesfd[*pos - 1][READ]);
-                }
-                if (*pos != cl->numpipes) {
-                    close(cl->pipesfd[*pos][WRITE]);
-                }
-            }*/	
     }
 	return pid;
 }
@@ -493,6 +447,7 @@ executecommands(CommandLine *cl){
         	}
    		}	
 
+		// los builtins se encuentran dentro del hijo
 		pos = 0;
 		for(j = 0; j < cl->numcommands; j++){
 					
@@ -520,8 +475,8 @@ executecommands(CommandLine *cl){
 
 	}
 
-	// aquí se hace el wait si no he ejecutado 
-	// un builtin y no hay que hacer background: hacemos wait
+	// aquí se hace el wait: si no he ejecutado 
+	// un builtin y no hay que hacer background
 	if(pid != 0 && !cl->bg){
 		setwait(waitpids, cl->numcommands);
 	}
@@ -541,6 +496,8 @@ openredin(CommandLine *cl){
     }
 }
 
+// Lo estamos abriendo en el proceso padre y habrá que
+// cerrarlo en el proceso padre e hijo
 void 
 openredout(CommandLine *cl){
 
