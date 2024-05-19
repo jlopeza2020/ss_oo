@@ -287,13 +287,100 @@ executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords)
 	// AQUÍ AÑADIR EL RESTO DE BUILTINS
 }
 
+/*void 
+sethere(int *herepipe){
+
+	char buffer[MaxLine];
+	char *newline;
+	int c;
+	
+	close(herepipe[READ]);
+	do{
+		fgets(buffer, MaxLine, stdin);
+
+		if (buffer[strlen(buffer) - 1] != '\n'){
+            fprintf(stderr, "Exceeded path size\n");
+            // Limpia el buffer de entrada
+            while ((c = getchar()) != '\n' && c != EOF);
+            break;
+        }
+
+		// Elimina el '\n' de la string
+		newline = strrchr(buffer, '\n');
+
+		if (newline != NULL) {
+			// donde apunta newline poner un '\0'
+			*newline = '\0';
+		}
+        if (write(herepipe[WRITE], buffer, strlen(buffer)) != strlen(buffer)) {
+            err(EXIT_FAILURE, "Error: write error");
+        }
+		
+    }while(strcmp(buffer, "}") != 0);
+	close(herepipe[WRITE]);
+}*/
+// OPCIONAL 1
+void 
+sethere(int *herepipe) {
+    char buffer[MaxLine];
+    char *newline;
+    int c;
+	char *tmpline;
+    int totallen = 0;
+
+    close(herepipe[READ]);
+
+    // Usamos un buffer dinámico para almacenar todas las líneas
+    tmpline = (char *)malloc(sizeof(char) * MaxLine);
+    if (tmpline == NULL) {
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+    }
+
+    do {
+        fgets(buffer, MaxLine, stdin);
+
+        if (buffer[strlen(buffer) - 1] != '\n') {
+            fprintf(stderr, "Exceeded path size\n");
+            // Limpia el buffer de entrada
+            while ((c = getchar()) != '\n' && c != EOF);
+            break;
+        }
+
+        // Elimina el '\n' de la string
+        newline = strrchr(buffer, '\n');
+        if (newline != NULL) {
+            *newline = '\0';
+        }
+		tmpline[0] = '\0';
+
+        // Concatena la línea al buffer que almacena todas las líneas
+        strcat(tmpline + totallen, buffer);
+        totallen += strlen(buffer);
+		// si nos pasamos de tamaño máximo, cortamos la str
+		if(totallen > MaxLine){
+			totallen = MaxLine;
+			break;
+		}
+
+    } while(strcmp(buffer, "}") != 0);
+    // Escribir todo el contenido del buffer en el pipe
+    if (write(herepipe[WRITE], tmpline, totallen) != totallen) {
+        err(EXIT_FAILURE, "Error: write error");
+    }
+
+    close(herepipe[WRITE]);
+    free(tmpline); 
+}
+
 // numwords, son las palabras que tiene el comando que se le pasa como argumento
 pid_t
 executecommand(CommandLine *cl, char ***comandline, long long *numwords, long long *pos, int typebuiltin) {
 
 	pid_t pid;
 	long long j;
-	
+	//int herepipe[2];
+
+
 	// se aumenta el tamaño de commandline para añadir NULL al final del array de palabras
     (*numwords)++;
     *comandline = (char **)realloc(*comandline, sizeof(char *) * (*numwords + 1));
@@ -309,6 +396,12 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 		*pos = *pos +1;
 		return 0;
 	}
+
+	// HAY OPCIONAL1: es necesario abrir el pipe en el padre
+	/*if(cl->heredoc > 0){
+		
+	
+	}*/
 
     pid = fork();
 
@@ -338,6 +431,15 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 					err(EXIT_FAILURE,"Error: dup2 failed\n");
 				}
 				close(cl->outredfd);
+			}
+
+			// OPCIONAL 1: dentro del hijo
+			if(cl->heredoc > 0){
+				close(cl->herepipe[WRITE]);
+				if (dup2(cl->herepipe[READ], STDIN_FILENO) == -1) {
+					err(EXIT_FAILURE,"Error: dup2 here failed\n");
+				}
+				close(cl->herepipe[READ]);
 			}
 
 			// si hay pipes, hay que hacer más redirecciones
@@ -411,18 +513,43 @@ executecommands(CommandLine *cl){
 	long long novalue; 
 	pid_t *waitpids;
 	long long pos;
+	long long wppos;
+	long long numwaitprocess;
+	
+	numwaitprocess = 0;
 
 	// se usa para decir que no hay pipes y para las redirecciones (dup2)
 	// es necesario fijar este valor a 0
 	novalue = 0;
 	pid = 0;
 
-	// fijamos previamente el valor de numcommands necesario para background
-	if (cl->numpipes == 0){
-		cl->numcommands = 1;
+	// se fijan la cantidad de procesos que va a ser necesarios esperar por ellos
+	if (cl->numpipes> 0){
+		for (j = 0; j < cl->numcommands; j++) {
+        	if (cl->numpipes> 0){
+				if(cl->statuspipesbt[j] == -1 ){
+					numwaitprocess++;
+				}
+			}
+   		}	
+	}else{
+		if(cl->statusbt == -1){
+			numwaitprocess++;
+		}
+	}
+		
+	waitpids = (pid_t *)malloc(sizeof(pid_t) * numwaitprocess);
+	if(waitpids == NULL){
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 	}
 
-	waitpids = (pid_t *)malloc(sizeof(pid_t) * cl->numcommands);
+	//HAY OPCIONAL 1
+	if(cl->heredoc > 0){
+		cl->herepipe = (int *)malloc(sizeof(int ) * 2);
+		if (pipe(cl->herepipe) == -1) {
+           	err(EXIT_FAILURE,"Error: pipe failed");
+   		}
+	}
 
 	// Si hay pipes
 	if(cl->numpipes > 0){
@@ -447,10 +574,15 @@ executecommands(CommandLine *cl){
 
 		// los builtins se encuentran dentro del hijo
 		pos = 0;
+		wppos = 0;
 		for(j = 0; j < cl->numcommands; j++){
 					
 			pid = executecommand(cl,&cl->commands[j], &cl->numsubcommands[j], &pos, cl->statuspipesbt[j]);
-			waitpids[j] = pid;
+			if(pid != 0){
+				waitpids[wppos] = pid;
+				wppos++;
+
+			}
 			pos++;
 		}
 
@@ -468,15 +600,23 @@ executecommands(CommandLine *cl){
 			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
 		}else{
 			pid = executecommand(cl,&cl->words, &cl->numwords, &novalue, -1);
-			waitpids[0] = pid;
+			if(pid != 0){
+				waitpids[0] = pid;
+
+			}
 		}
 
 	}
 
+	if(cl->heredoc > 0){
+		sethere(cl->herepipe);
+	}
+
 	// aquí se hace el wait: si no he ejecutado 
 	// un builtin y no hay que hacer background
-	if(pid != 0 && !cl->bg){
-		setwait(waitpids, cl->numcommands);
+	if(!cl->bg){
+
+		setwait(waitpids, numwaitprocess);
 	}
 
 	free(waitpids);

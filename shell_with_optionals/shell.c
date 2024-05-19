@@ -6,11 +6,6 @@
 #include "parser.h"
 #include "executor.h"
 
-enum {
-	ZeroArgs,
-	MaxLine = 4*1024, // 4k  
-};
-
 void
 usage(void)
 {
@@ -32,6 +27,9 @@ initcl(CommandLine *cl){
 	cl->status = 0;
 	cl->statusred = 0;
 	cl->statusbt = -1;
+
+	// OPCIONALES 
+	cl->heredoc = 0;
 }
 
 int
@@ -41,7 +39,6 @@ main(int argc, char *argv[])
 	char line[MaxLine];
 	char *newline;
 	int c;
-	//long long i;
 
 	// así está bien
 	CommandLine cl;

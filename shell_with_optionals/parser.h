@@ -36,3 +36,7 @@ void setcommands(CommandLine *cl);
 void caseequal(CommandLine *cl);
 void setequal(char *str);
 int isequal(char *str);
+
+
+//OPCIONAL 1
+void casehere(CommandLine *cl);

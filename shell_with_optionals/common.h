@@ -4,6 +4,11 @@ enum {
 };
 
 enum {
+	ZeroArgs,
+	MaxLine = 4*1024, // 4k  
+};
+
+enum {
 	REDERROR = -3,
 	PARSINGERROR,
 	FINDERROR,
@@ -20,7 +25,7 @@ enum {
 };
 struct CommandLine {
 
-	char **words;		// eje: [cat, /tmp/a, |, wc -c, >, x, <, y, &]
+	char **words;		// eje: [cat, /tmp/a, |, wc, -c, >, x, <, y, &]
 	long long numwords;	// eje: 10
 	char ***commands;	// eje: [[cat, /tmp/a], [wc, -c]]
 	long long *numsubcommands;	// eje: [2,2]
@@ -40,5 +45,9 @@ struct CommandLine {
 	int statusbt;		// inicializada a -1
 	// status de cada comando si hay pipes y son builtins
 	int *statuspipesbt;	// eje: [-1, -1] al ser ningún comando un builtin
+	
+	// OPCIONALES
+	int heredoc;
+	int *herepipe;
 };
 typedef struct CommandLine CommandLine;

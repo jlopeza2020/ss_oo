@@ -412,8 +412,8 @@ executecommands(CommandLine *cl){
 	pid_t *waitpids;
 	long long pos;
 	long long wppos;
-
 	long long numwaitprocess;
+	
 	numwaitprocess = 0;
 
 	// se usa para decir que no hay pipes y para las redirecciones (dup2)
@@ -421,11 +421,7 @@ executecommands(CommandLine *cl){
 	novalue = 0;
 	pid = 0;
 
-	// fijamos previamente el valor de numcommands necesario para background
-	/*if (cl->numpipes == 0){
-		cl->numcommands = 1;
-	}*/
-
+	// se fijan la cantidad de procesos que va a ser necesarios esperar por ellos
 	if (cl->numpipes> 0){
 		for (j = 0; j < cl->numcommands; j++) {
         	if (cl->numpipes> 0){
@@ -440,10 +436,7 @@ executecommands(CommandLine *cl){
 		}
 	}
 		
-
-	//waitpids = (pid_t *)malloc(sizeof(pid_t) * cl->numcommands);
 	waitpids = (pid_t *)malloc(sizeof(pid_t) * numwaitprocess);
-
 
 	// Si hay pipes
 	if(cl->numpipes > 0){
@@ -477,7 +470,6 @@ executecommands(CommandLine *cl){
 				wppos++;
 
 			}
-			//waitpids[j] = pid;
 			pos++;
 		}
 
@@ -495,7 +487,6 @@ executecommands(CommandLine *cl){
 			executebuiltin(cl,cl->words, cl->statusbt, cl->numwords);
 		}else{
 			pid = executecommand(cl,&cl->words, &cl->numwords, &novalue, -1);
-			//waitpids[0] = pid;
 			if(pid != 0){
 				waitpids[0] = pid;
 
@@ -506,7 +497,6 @@ executecommands(CommandLine *cl){
 
 	// aquí se hace el wait: si no he ejecutado 
 	// un builtin y no hay que hacer background
-	//if(pid != 0 && !cl->bg){
 	if(!cl->bg){
 
 		setwait(waitpids, numwaitprocess);

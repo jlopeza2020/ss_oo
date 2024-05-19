@@ -32,3 +32,6 @@ void setbg(CommandLine *cl);
 
 // wait
 void setwait(pid_t * waitpids, long long childs);
+
+//OPCIONAL 1
+void sethere(int *herepipe);

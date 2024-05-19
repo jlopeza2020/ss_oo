@@ -90,10 +90,6 @@ isenv(char *str)
 
 	len = strlen(str);
 
-	// Si primer carácter no es '$' devuelve falso
-	/*if (str[0] != '$') {
-		return 0;
-	}*/
 	// si el primer caracter es '$' y no hay nada más
 	if(str[0] == '$' && len == 1){
 		return 0;
@@ -494,6 +490,18 @@ casepipes(CommandLine * cl){
 	}
 }
 
+void 
+casehere(CommandLine *cl){
+
+	if(cl->bg == 0 && cl->inrednum == 0 && cl->outrednum == 0){
+		
+		if(strcmp(cl->words[cl->numwords -1], "HERE{") == 0){
+			// hay un here document
+			cl->heredoc++;
+			elimstr(cl,cl->numwords-1);
+		} 
+	}
+}
 void
 parse(CommandLine * cl)
 {
@@ -503,10 +511,15 @@ parse(CommandLine * cl)
 	casebg(cl);
 	// 3º: > o <
 	casered(cl);
+
+	// OPCIONALES
+	casehere(cl);
+
 	// 4º: |
 	casepipes(cl);
 	// 5º: =
-	caseequal(cl); 
+	caseequal(cl);
+
 }
 
 void
@@ -578,6 +591,9 @@ freememory(CommandLine * cl)
     		}
     		free(cl->pipesfd);
 		}
+	}
+	if(cl->heredoc > 0){
+		free(cl->herepipe);
 	}
 }
 
