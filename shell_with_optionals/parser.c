@@ -124,13 +124,9 @@ setenvvar(CommandLine *cl, char *str){
 
 	char *value;
 
-	// elimina '$'
-	//elimfirstchar(str);
-
 	value = getenv(str);
 	if (value != NULL) {
 		strcpy(str, value);
-		//strcat(str,value);
 	}else{
 		fprintf(stderr, "error: var %s does not exist\n", str);
 		cl->status = PARSINGERROR;
@@ -347,7 +343,7 @@ casered(CommandLine *cl){
 	}
 }
 
-// fijar los valores de cl->words en cl->commands
+// fijar los valores de cl->words en cl->commands si hay pipes entre medias
 void
 setcommands(CommandLine *cl){
 
@@ -512,7 +508,7 @@ parse(CommandLine * cl)
 	// 3º: > o <
 	casered(cl);
 
-	// OPCIONALES
+	// OPCIONAL 1
 	casehere(cl);
 
 	// 4º: |

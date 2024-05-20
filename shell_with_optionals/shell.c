@@ -40,7 +40,6 @@ main(int argc, char *argv[])
 	char *newline;
 	int c;
 
-	// así está bien
 	CommandLine cl;
 
 	argc--;
@@ -52,6 +51,12 @@ main(int argc, char *argv[])
 
 	printf("Shell made by Julia López Augusto\n");
 	printf("Write EXIT to leave\n");
+
+	// OPCIONAL 2: Inicialmente ponemos result a 1 porque todavia
+	// no ha fallado ningún comando
+	// RESULT == 1 -> comando ha fallado
+	// RESULT == 0 -> comando ha tenido éxito
+	setenv("RESULT", "0",1);
 
 	while (1) {
 
@@ -66,6 +71,7 @@ main(int argc, char *argv[])
 		if (line[strlen(line) - 1] != '\n'){
             fprintf(stderr, "Exceeded path size\n");
             // Limpia el buffer de entrada
+			setenv("RESULT", "1",1);
             while ((c = getchar()) != '\n' && c != EOF);
             continue;
         }
@@ -86,6 +92,7 @@ main(int argc, char *argv[])
 
 		if (cl.numwords > MaxWords){
 			fprintf(stderr,"Line too long\n");
+			setenv("RESULT", "1",1);
 			continue;
 		}
 
@@ -103,7 +110,7 @@ main(int argc, char *argv[])
 		if(cl.status==PARSINGERROR){
 			freememory(&cl);
 			fprintf(stderr,"Syntax error near unexpected token\n");
-			// almacenar si ha acabado con fallo o no !!!! HACER PARA OPCIONAL
+			setenv("RESULT", "1",1);
 			continue;
 		}
 
@@ -123,7 +130,7 @@ main(int argc, char *argv[])
 		if(cl.status==FINDERROR){
 			freememory(&cl);
 			fprintf(stderr,"Command not found\n");
-			// almacenar si ha acabado con fallo o no !!!! HACER PARA OPCIONAL
+			setenv("RESULT", "1",1);
 			continue;
 		}
 
@@ -133,12 +140,13 @@ main(int argc, char *argv[])
 
 		if(cl.status==REDERROR){
 			freememory(&cl);
-			// almacenar si ha acabado con fallo o no !!!! HACER PARA OPCIONAL
+			setenv("RESULT", "1",1);
 			continue;
 		}
 		// Si has llegado aquí se puede ejecutar todo perfectamente
 		executecommands(&cl);
-
+		// el comando ha tenido éxito
+		setenv("RESULT", "0",1);
 		freememory(&cl);
 	}
 	if(!feof(stdin)){

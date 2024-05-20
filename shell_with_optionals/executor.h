@@ -1,6 +1,8 @@
 
 enum {
 	cd,
+	ifok,
+	ifnot,
 	NbuiltIn,
 };
 
@@ -14,7 +16,7 @@ long long getnumpathtokens(char *line);
 char **tokenpath(char *path, long long times);
 
 // EXECUTOR
-// setbuiltin
+// builtins
 void executecommands(CommandLine *cl);
 pid_t executecommand(CommandLine *cl, char ***comandline, long long *numwords,
 		     long long *pos, int typebuiltin);
@@ -35,3 +37,6 @@ void setwait(pid_t * waitpids, long long childs);
 
 //OPCIONAL 1
 void sethere(int *herepipe);
+//OPCIONAL 2
+long long getnumber(char *str);
+void execifcommand(CommandLine *cl);

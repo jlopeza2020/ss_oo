@@ -4,6 +4,7 @@ void handlespecialchars(CommandLine *cl, char *word, long long *pos);
 void tokenize(CommandLine *cl, char *line);
 void freememory(CommandLine *cl);
 
+
 void parse(CommandLine *cl);
 
 // $

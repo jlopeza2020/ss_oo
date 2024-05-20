@@ -8,11 +8,13 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "common.h"
 #include "executor.h"
+#include "parser.h" // lo permito por no duplicar código con freememory
+					// y para casepipes porque lo necesito en el opcional 2
 
-
-char *builtins[NbuiltIn] = {"cd"};
+char *builtins[NbuiltIn] = {"cd", "ifok", "ifnot"};
 
 int
 isbuiltin(char *cmd, int *statusbt){
@@ -258,7 +260,7 @@ executecd(char **cl, long long numwords){
 	}else{
 		if(strlen(cl[1]) > MaxWord){
 			fprintf(stderr,"file or directory too long\n");
-			// fijar el valor de cl->status para lo de ifok
+			setenv("RESULT", "1",1);
 			return;
 		}
 		strcpy(cdvar, cl[1]);
@@ -266,8 +268,166 @@ executecd(char **cl, long long numwords){
 
 	if(chdir(cdvar) != 0){
 		fprintf(stderr,"cd: %s not such file or directory\n", cdvar);
-		// fijar el valor de cl->status para lo de ifok
+		setenv("RESULT", "1",1);
+
 	}
+}
+
+// añadirlo a un .c compartido de los 2
+static void 
+_elimstr(CommandLine *cl, long long index) {
+    
+	long long i;
+	// indice fuera de lo buscado, no se puede eliminar
+	if (index < 0 || index >= cl->numwords) {
+        return;
+    }
+	// eliminar la memoria de la palabra 
+    free(cl->words[index]);
+
+	// desplazar las palabras a la izquierda
+    for (i = index; i < cl->numwords - 1; i++) {
+        cl->words[i] = cl->words[i + 1];
+    }
+    cl->numwords--;
+}
+
+long long
+getnumber(char *str)
+{
+	int base;
+	char *endptr;
+	long val;
+
+	base = 10;
+
+	errno = 0;
+	val = strtoll(str, &endptr, base);
+
+	// Se comprueban posibles errores 
+	if (errno != 0 || endptr == str || *endptr != '\0') {
+		return -1;
+	}
+
+	return val;
+}
+
+//Se usa en el OPCIONAL 2
+void
+_initcl(CommandLine *cl){
+
+    cl->numwords = 0;
+	cl->numcommands = 0;
+    cl->bg = 0;
+    cl->inrednum = 0;
+	cl->inredfd = -1;
+	cl->outredfd = -1;
+    cl->outrednum = 0;
+	cl->numpipes = 0;
+	cl->status = 0;
+	cl->statusred = 0;
+	cl->statusbt = -1;
+
+	// OPCIONALES 
+	cl->heredoc = 0;
+}
+// OPCIONAL 2: tanto las variables de entorno comos los iguales
+// se produce la sustitución antes de llegar aquí, así que no 
+// lo puedo controlar
+void
+execifcommand(CommandLine *cl){
+
+	CommandLine auxcl;
+	long long i;
+
+	// meterlo en uno compartido
+	_initcl(&auxcl);
+
+	auxcl.words = (char **)malloc(sizeof(char *) * cl->numwords);
+	if (auxcl.words == NULL) {
+		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+	}
+	// inicializamos cada elemento del array
+	for (i = 0; i < cl->numwords; i++) {
+		auxcl.words[i] = (char *)malloc(sizeof(char) * MaxWord);
+		if (auxcl.words[i] == NULL) {
+			free(auxcl.words);
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+		}
+		strcpy(auxcl.words[i], cl->words[i]);
+	}
+	auxcl.numwords = cl->numwords;
+	auxcl.bg = cl->bg;
+	// hay que hacer esto por que en este punto las redirecciones 
+	// ya se han almacenado y no lo va a detectar la nueva estructura
+	auxcl.inrednum = cl->inrednum;
+	if(cl->statusred == INPUTRED){
+				
+		auxcl.statusred = INPUTRED;
+		auxcl.inred = (char *)malloc(sizeof(char) * MaxWord);
+		if (auxcl.inred == NULL) {
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+		}
+		strcpy(auxcl.inred, cl->inred);
+	}
+
+	auxcl.outrednum = cl->outrednum;
+	if(cl->statusred == OUTPUTRED){
+				
+		auxcl.statusred = OUTPUTRED;
+		auxcl.outred = (char *)malloc(sizeof(char) * MaxWord);
+		if (auxcl.outred == NULL) {
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+		}
+		strcpy(auxcl.outred, cl->outred);
+	}
+	if(cl->statusred == BOTHRED){
+
+		auxcl.inred = (char *)malloc(sizeof(char) * MaxWord);
+		if (auxcl.inred == NULL) {
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+		}
+		strcpy(auxcl.inred, cl->inred);
+
+		auxcl.outred = (char *)malloc(sizeof(char) * MaxWord);
+		if (auxcl.outred == NULL) {
+			err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
+		}
+		strcpy(auxcl.outred, cl->outred);
+
+		auxcl.statusred = BOTHRED;
+	}
+	auxcl.numpipes = cl->numpipes;
+	auxcl.status = cl->status;
+	auxcl.heredoc = cl->heredoc;
+			
+	// lo hago porque en esta línea probablemente por las
+	// variables de entorno y los iguales se han producido las
+	// sustituciones y se que la línea sin palabras
+	if(auxcl.numwords == 0){
+		freememory(&auxcl);
+		return;
+	}
+
+	casepipes(&auxcl);
+
+	findcommands(&auxcl);
+	if(auxcl.status == FINDERROR){
+		fprintf(stderr,"Command not found\n");
+		freememory(&auxcl);
+		setenv("RESULT", "1",1);
+		return;
+	}
+	handleredirecctions(&auxcl);
+
+	if(auxcl.status==REDERROR){
+		freememory(&auxcl);
+		setenv("RESULT", "1",1);
+		return;
+	}
+
+	executecommands(&auxcl);
+	freememory(&auxcl);
 }
 
 void
@@ -277,48 +437,35 @@ executebuiltin(CommandLine *cl, char **comandline, int type, long long numwords)
 	case cd:
 		if(numwords > 2){
 			fprintf(stderr,"cd: too many arguments\n");
-			// añadir el error en cl status para lo de ifok
-			return;
+			setenv("RESULT", "1",1);
+			break;
 		}
 		executecd(comandline, numwords);
 		break;
+
+	case ifok:
+
+		_elimstr(cl,0);
+		if(getnumber(getenv("RESULT")) == 0){
+			execifcommand(cl);
+		}
+		break;
+
+	case ifnot:
+
+		_elimstr(cl, 0);
+		if(getnumber(getenv("RESULT")) == 1){
+			execifcommand(cl);
+		}
+
+		break; 
+
 	default:
 	}
 	// AQUÍ AÑADIR EL RESTO DE BUILTINS
 }
 
-/*void 
-sethere(int *herepipe){
 
-	char buffer[MaxLine];
-	char *newline;
-	int c;
-	
-	close(herepipe[READ]);
-	do{
-		fgets(buffer, MaxLine, stdin);
-
-		if (buffer[strlen(buffer) - 1] != '\n'){
-            fprintf(stderr, "Exceeded path size\n");
-            // Limpia el buffer de entrada
-            while ((c = getchar()) != '\n' && c != EOF);
-            break;
-        }
-
-		// Elimina el '\n' de la string
-		newline = strrchr(buffer, '\n');
-
-		if (newline != NULL) {
-			// donde apunta newline poner un '\0'
-			*newline = '\0';
-		}
-        if (write(herepipe[WRITE], buffer, strlen(buffer)) != strlen(buffer)) {
-            err(EXIT_FAILURE, "Error: write error");
-        }
-		
-    }while(strcmp(buffer, "}") != 0);
-	close(herepipe[WRITE]);
-}*/
 // OPCIONAL 1
 void 
 sethere(int *herepipe) {
@@ -341,11 +488,12 @@ sethere(int *herepipe) {
 
         if (buffer[strlen(buffer) - 1] != '\n') {
             fprintf(stderr, "Exceeded path size\n");
+			setenv("RESULT", "1",1);
+
             // Limpia el buffer de entrada
             while ((c = getchar()) != '\n' && c != EOF);
             break;
         }
-
         // Elimina el '\n' de la string
         newline = strrchr(buffer, '\n');
         if (newline != NULL) {
@@ -393,15 +541,15 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 
 	// si hay un built-in pasamos de iteración
 	if(typebuiltin >= 0 && *pos < cl->numcommands){
-		*pos = *pos +1;
+		if(typebuiltin == cd){
+			*pos = *pos +1;
+		}else{
+			executebuiltin(cl,*comandline, typebuiltin, *numwords);
+		}
+		//*pos = *pos +1;
 		return 0;
 	}
 
-	// HAY OPCIONAL1: es necesario abrir el pipe en el padre
-	/*if(cl->heredoc > 0){
-		
-	
-	}*/
 
     pid = fork();
 
@@ -433,7 +581,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 				close(cl->outredfd);
 			}
 
-			// OPCIONAL 1: dentro del hijo
+			// HAY OPCIONAL 1: dentro del hijo
 			if(cl->heredoc > 0){
 				close(cl->herepipe[WRITE]);
 				if (dup2(cl->herepipe[READ], STDIN_FILENO) == -1) {
@@ -471,6 +619,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 			}	
 
 			execv((*comandline)[0], *comandline);
+			setenv("RESULT", "1",1);
 			errx(EXIT_FAILURE, "Error: command failed\n");
             break;
         default:
@@ -498,6 +647,8 @@ setwait(pid_t *waitpids, long long childs){
 				if(WIFEXITED(sts)){
 					childs--;
 					break;
+				}else{
+					setenv("RESULT", "1",1);
 				}
 			}
 		}
@@ -602,12 +753,12 @@ executecommands(CommandLine *cl){
 			pid = executecommand(cl,&cl->words, &cl->numwords, &novalue, -1);
 			if(pid != 0){
 				waitpids[0] = pid;
-
 			}
 		}
 
 	}
 
+	// HAY OPCIONAL 1: dentro del padre
 	if(cl->heredoc > 0){
 		sethere(cl->herepipe);
 	}
@@ -615,7 +766,6 @@ executecommands(CommandLine *cl){
 	// aquí se hace el wait: si no he ejecutado 
 	// un builtin y no hay que hacer background
 	if(!cl->bg){
-
 		setwait(waitpids, numwaitprocess);
 	}
 
