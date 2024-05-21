@@ -41,3 +41,7 @@ int isequal(char *str);
 
 //OPCIONAL 1
 void casehere(CommandLine *cl);
+
+//OPCIONAL 3
+void caseglob(CommandLine *cl);
+void setglobbing(CommandLine *cl, char *token, long long *pos);

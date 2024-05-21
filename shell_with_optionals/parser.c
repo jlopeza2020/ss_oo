@@ -7,7 +7,6 @@
 #include "common.h"
 #include "parser.h"
 
-
 int
 isequal(char *str)
 {
@@ -501,30 +500,6 @@ casehere(CommandLine *cl){
 	}
 }
 
-
-
-// OPCIONAL 3
-int
-is_glob(char *token)
-{
-	int found = 0;
-
-	if (strchr(token, '*')) {
-		found = 1;
-	}
-	if (strchr(token, '?')) {
-		found = 1;
-	}
-	if (strchr(token, '[')) {
-		found = 1;
-	}
-	if (strchr(token, ']')) {
-		found = 1;
-	}
-	// añadir corchetes y exclamación 
-	return found;
-}
-
 // OPCIONAL 3
 void
 setglobbing(CommandLine *cl, char *token, long long *pos)
@@ -565,10 +540,7 @@ caseglob(CommandLine *cl){
 
 	long long i;
 	for(i = 0; i < cl->numwords; i++){
-
-		//if (is_glob(cl->words[i]) != 0) {
 		setglobbing(cl, cl->words[i], &i);
-		//}
 	}
 }
 
@@ -593,7 +565,6 @@ parse(CommandLine * cl)
 	casepipes(cl);
 	// 5º: =
 	caseequal(cl);
-
 }
 
 void
@@ -712,7 +683,9 @@ handlespecialchars(CommandLine *cl, char *word, long long *pos) {
 		case '<':
 			setspecialchar(cl, "<", pos, &tpos);
 			break;
-
+		case '&':
+			setspecialchar(cl, "&", pos, &tpos);
+			break;
 		default:
 		 	// Si no es un delimitador, agrega el caracter al token actual
         	cl->words[*pos][tpos] = word[wpos];
@@ -795,7 +768,7 @@ getnumwords(char *line)
 		// si el carácter actual no es ninguno de los que buscamos
 		// y no estamos dentro de una palabra, aumentamos el número de palabra
 		// y decidimos que nos encontramos dentro de una palabra
-		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|' && line[i] != '<' && line[i] != '>') {
+		if (line[i] != ' ' && line[i] != '\t' &&  line[i] != '|' && line[i] != '<' && line[i] != '>' && line[i] != '&') {
 
 			if(!inword){
 				numwords++;
@@ -814,7 +787,7 @@ getnumwords(char *line)
 		
 		// si a lo largo de la linea hay algún caracter que buscamos:
 		// inicializamos una palabra nueva 
-		if(line[i] == '|' || line[i] == '<' || line[i] == '>'){
+		if(line[i] == '|' || line[i] == '<' || line[i] == '>' || line[i] == '&'){
 			numwords++;
 			inword = 0;
 		}
