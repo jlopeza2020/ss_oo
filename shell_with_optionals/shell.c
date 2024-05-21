@@ -156,5 +156,5 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, "fgets got an error\n");
 	}
 
-	exit(EXIT_SUCCESS);
+	exit(atoi(getenv("RESULT")));
 }
