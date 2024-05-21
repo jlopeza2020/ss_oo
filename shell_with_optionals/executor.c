@@ -534,7 +534,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
     *comandline = (char **)realloc(*comandline, sizeof(char *) * (*numwords + 1));
 
     if (*comandline == NULL) {
-        err(EXIT_FAILURE, "Error: realloc\n");
+        err(EXIT_FAILURE, "Error: realloc failed\n");
     }
 
     (*comandline)[*numwords - 1] = NULL;
