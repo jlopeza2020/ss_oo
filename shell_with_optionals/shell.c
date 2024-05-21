@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
+#include <unistd.h>
 #include "common.h"
 #include "parser.h"
 #include "executor.h"
@@ -62,7 +63,9 @@ main(int argc, char *argv[])
 
 		initcl(&cl);
 
-		printf("# ");
+		if (isatty(fileno(stderr))) {
+        	fprintf(stderr, "# ");
+    	}
 
 		if (fgets(line, MaxLine, stdin) == NULL) {
 			break;

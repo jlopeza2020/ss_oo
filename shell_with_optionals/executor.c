@@ -526,8 +526,6 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 
 	pid_t pid;
 	long long j;
-	//int herepipe[2];
-
 
 	// se aumenta el tamaño de commandline para añadir NULL al final del array de palabras
     (*numwords)++;
@@ -539,17 +537,13 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 
     (*comandline)[*numwords - 1] = NULL;
 
-	// si hay un built-in pasamos de iteración
+	// si hay cd, pasamos de iteración 
 	if(typebuiltin >= 0 && *pos < cl->numcommands){
 		if(typebuiltin == cd){
 			*pos = *pos +1;
-		}else{
-			executebuiltin(cl,*comandline, typebuiltin, *numwords);
 		}
-		//*pos = *pos +1;
 		return 0;
 	}
-
 
     pid = fork();
 
@@ -558,6 +552,9 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
             err(EXIT_FAILURE, "Error: fork failed");
         case 0:
 
+			if(typebuiltin == ifok || typebuiltin == ifnot){
+				executebuiltin(cl,*comandline, typebuiltin, *numwords);
+			}
 			// si hay background se fija en el hijo
 			setbg(cl);
 
