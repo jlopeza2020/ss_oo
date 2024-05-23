@@ -46,7 +46,7 @@ struct CommandLine {
 	// status de cada comando si hay pipes y son builtins
 	int *statuspipesbt;	// eje: [-1, -1] al ser ningún comando un builtin
 	// SOLO se actualiza SI hay PIPES 
-	pid_t *waitpids; // array que contiene todosl os pids de los comandos
+	pid_t *waitpids; // array que contiene todos los pids de los comandos
 	// que no son builtn ins
 
 	// OPCIONALES
