@@ -273,6 +273,7 @@ executecd(char **cl, long long numwords){
 	}
 }
 
+// añadirlo a un .c compartido de los 2
 static void 
 _elimstr(CommandLine *cl, long long index) {
     
@@ -498,13 +499,10 @@ sethere(int *herepipe) {
         if (newline != NULL) {
             *newline = '\0';
         }
+		tmpline[0] = '\0';
 
-		if(totallen == 0){
-			strcpy(tmpline, buffer);
-		}else{
-        	strcat(tmpline + totallen, buffer);
-		}
-
+        // Concatena la línea al buffer que almacena todas las líneas
+        strcat(tmpline + totallen, buffer);
         totallen += strlen(buffer);
 		// si nos pasamos de tamaño máximo, cortamos la str
 		if(totallen > MaxLine){
@@ -513,7 +511,6 @@ sethere(int *herepipe) {
 		}
 
     } while(strcmp(buffer, "}") != 0);
-	
     // Escribir todo el contenido del buffer en el pipe
     if (write(herepipe[WRITE], tmpline, totallen) != totallen) {
         err(EXIT_FAILURE, "Error: write error");
@@ -540,8 +537,11 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 
     (*comandline)[*numwords - 1] = NULL;
 
-	// si hay built in, pasamos de iteración 
+	// si hay cd, pasamos de iteración 
 	if(typebuiltin >= 0 && *pos < cl->numcommands){
+		if(typebuiltin == cd){
+			*pos = *pos +1;
+		}
 		return 0;
 	}
 
@@ -551,6 +551,10 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
         case -1:
             err(EXIT_FAILURE, "Error: fork failed");
         case 0:
+
+			if(typebuiltin == ifok || typebuiltin == ifnot){
+				executebuiltin(cl,*comandline, typebuiltin, *numwords);
+			}
 			// si hay background se fija en el hijo
 			setbg(cl);
 
@@ -586,6 +590,7 @@ executecommand(CommandLine *cl, char ***comandline, long long *numwords, long lo
 			// si hay pipes, hay que hacer más redirecciones
 			if(cl->numpipes > 0){
 
+				
 				// mientras no estemos en la primera posición, 
 				// hay que redireccionar la entrada del pipe anterior 
 				if (*pos != 0 && *pos < cl->numcommands) {
@@ -654,6 +659,7 @@ executecommands(CommandLine *cl){
 	pid_t pid;
 	int i;
 	long long novalue; 
+	pid_t *waitpids;
 	long long pos;
 	long long wppos;
 	long long numwaitprocess;
@@ -680,8 +686,8 @@ executecommands(CommandLine *cl){
 		}
 	}
 		
-	cl->waitpids = (pid_t *)malloc(sizeof(pid_t) * numwaitprocess);
-	if(cl->waitpids == NULL){
+	waitpids = (pid_t *)malloc(sizeof(pid_t) * numwaitprocess);
+	if(waitpids == NULL){
 		err(EXIT_FAILURE,"Error: dynamic memory cannot be allocated");
 	}
 
@@ -721,7 +727,7 @@ executecommands(CommandLine *cl){
 					
 			pid = executecommand(cl,&cl->commands[j], &cl->numsubcommands[j], &pos, cl->statuspipesbt[j]);
 			if(pid != 0){
-				cl->waitpids[wppos] = pid;
+				waitpids[wppos] = pid;
 				wppos++;
 
 			}
@@ -743,7 +749,7 @@ executecommands(CommandLine *cl){
 		}else{
 			pid = executecommand(cl,&cl->words, &cl->numwords, &novalue, -1);
 			if(pid != 0){
-				cl->waitpids[0] = pid;
+				waitpids[0] = pid;
 			}
 		}
 
@@ -757,8 +763,10 @@ executecommands(CommandLine *cl){
 	// aquí se hace el wait: si no he ejecutado 
 	// un builtin y no hay que hacer background
 	if(!cl->bg){
-		setwait(cl->waitpids, numwaitprocess);
+		setwait(waitpids, numwaitprocess);
 	}
+
+	free(waitpids);
 }
 
 // Lo estamos abriendo en el proceso padre y habrá que
@@ -767,7 +775,7 @@ void
 openredin(CommandLine *cl){
 
     cl->inredfd = open(cl->inred, O_RDONLY);
-    if (cl->inredfd == -1) {
+    if ( cl->inredfd == -1) {
         fprintf(stderr,"Error: open this file failed\n");
 		cl->status = REDERROR;
     }

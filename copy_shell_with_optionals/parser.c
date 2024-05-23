@@ -57,8 +57,8 @@ setequal(char *str){
 }
 
 
-// si hay pipes, se tomará los iguales como palabras
-// si en la misma palabra hay más de un igual también se tratará como palabras
+// si hay pipes se tomará los iguales como palabras
+// si en la palabra hay más de un igual también se tratará como palabras
 void 
 caseequal(CommandLine *cl){
 
@@ -136,9 +136,9 @@ setenvvar(CommandLine *cl, char *str){
 }
 
 // sustitución de $ 
-// Solo funciona para $cualquiercosa (menos |, >,<,&)
+// Solo funciona para $cualquiercosa (menos |, >,<)
 // Si aparece $ a solas se trata como una palabra normal.
-// En el resto de casos funciona perfectamente
+// En el resto de cosas funciona perfectamente
 void 
 caseenv(CommandLine *cl) {
     long long i;
@@ -517,7 +517,7 @@ setglobbing(CommandLine *cl, char *token, long long *pos)
 		if (cl->words == NULL) {
         	err(EXIT_FAILURE, "Error: realloc failed\n");
     	}
-		// se libera la posición que contiene los carcteres de globbing
+		// se libera la posición que contiene el globbing
 		free(cl->words[*pos]);
         // Desplazar elementos para hacer espacio para el nuevo contenido
         for (i = cl->numwords - 1; i >= *pos + 1; i--) {
@@ -525,6 +525,7 @@ setglobbing(CommandLine *cl, char *token, long long *pos)
         }
         // Insertar el nuevo contenido en el array
         for (i = 0; i < glob_result.gl_pathc; i++) {
+			//strcpy(cl->words[*pos + i], glob_result.gl_pathv[i]);
             cl->words[*pos + i] = strdup(glob_result.gl_pathv[i]);
         }
         // Actualizar la longitud del array
@@ -578,13 +579,6 @@ freememory(CommandLine * cl)
 		free(cl->words[i]);
 	}
 	free(cl->words);
-	
-	if(cl->status != FINDERROR && cl->status != REDERROR && cl->status != PARSINGERROR){
-	
-		// ha llegado a ejecutar el comando y ha recibido su pid
-		free(cl->waitpids);
-	}
-
 
 	// solo se ha creado el de entrada 
 	if(cl->statusred == INPUTRED){
@@ -676,7 +670,7 @@ handlespecialchars(CommandLine *cl, char *word, long long *pos) {
 	tpos = 0;
 
     while (word[wpos] != '\0') {
-        // Si el caracter actual es '|', '<', '>' o '&, se acaba el token actual 
+        // Si el caracter actual es '|', '<' o '>', se acaba el token actual 
 		// y avanza al siguiente
 		switch (word[wpos]) {
 
@@ -744,14 +738,14 @@ tokenize(CommandLine *cl, char *line)
 	token = strtok_r(line, " \t" , &saveptr);
 	strcpy(aux, token);
 
-	// tokeniza la palabra usando '|', '<', '>', '&'
+	// tokeniza la palabra usando '|', '<', '>'
 	handlespecialchars(cl, aux, &i);
 
 	while (token != NULL && i < cl->numwords) {
 
 		token = strtok_r(NULL, " \t", &saveptr);
 		strcpy(aux, token);
-		// tokeniza la palabra usando '|', '<', '>','&'
+		// tokeniza la palabra usando '|', '<', '>'
 		handlespecialchars(cl, aux, &i);
 	}
 	free(aux);
@@ -766,7 +760,7 @@ getnumwords(char *line)
 
 	i = 0;
 	numwords = 0;
-	// inword se inicializa como falso ya que 
+	// inword se inicializa como falso
 	// indica si nos encontramos dentro de una palabra
 	inword = 0;
 	while (line[i] != '\0') {
