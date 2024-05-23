@@ -5,7 +5,7 @@ enum {
 
 enum {
 	ZeroArgs,
-	MaxLine = 4*1024, // 4k  
+	MaxLine = 4 * 1024,	// 4k  
 };
 
 enum {
@@ -38,7 +38,7 @@ struct CommandLine {
 	int outredfd;		// eje: descriptor de fichero creado para x
 	char *outred;		// eje: x
 	int numpipes;
-	int **pipesfd;      // hay un pipe con 2 partes[READ, WRITE]
+	int **pipesfd;		// hay un pipe con 2 partes[READ, WRITE]
 	int status;
 	int statusred;
 	// status del comando si  es un builtin sin pipes 
@@ -46,7 +46,7 @@ struct CommandLine {
 	// status de cada comando si hay pipes y son builtins
 	int *statuspipesbt;	// eje: [-1, -1] al ser ningún comando un builtin
 	// SOLO se actualiza SI hay PIPES 
-	pid_t *waitpids; // array que contiene todos los pids de los comandos
+	pid_t *waitpids;	// array que contiene todos los pids de los comandos
 	// que no son builtn ins
 
 	// OPCIONALES

@@ -37,6 +37,7 @@ void setwait(pid_t * waitpids, long long childs);
 
 //OPCIONAL 1
 void sethere(int *herepipe);
+
 //OPCIONAL 2
 long long getnumber(char *str);
 void execifcommand(CommandLine *cl);
