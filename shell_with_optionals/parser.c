@@ -616,7 +616,9 @@ freememory(CommandLine *cl)
 	    && cl->status != PARSINGERROR) {
 
 		// ha llegado a ejecutar el comando y ha recibido su pid
-		free(cl->waitpids);
+		if(cl->numwords > 0){
+			free(cl->waitpids);
+		}
 	}
 	// solo se ha creado el de entrada 
 	if (cl->statusred == INPUTRED) {

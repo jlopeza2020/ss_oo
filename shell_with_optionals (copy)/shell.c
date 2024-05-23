@@ -53,7 +53,7 @@ main(int argc, char *argv[])
 	printf("Shell made by Julia López Augusto\n");
 	printf("Write EXIT to leave\n");
 
-	// OPCIONAL 2: Inicialmente ponemos result a 1 porque todavia
+	// OPCIONAL 2: Inicialmente ponemos result a 0 porque todavia
 	// no ha fallado ningún comando
 	// RESULT == 1 -> comando ha fallado
 	// RESULT == 0 -> comando ha tenido éxito
